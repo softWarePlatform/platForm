@@ -3,7 +3,8 @@ export default function Home() {
     <div className="container">
       <div className="card" style={{ marginTop: 18 }}>
         <div className="muted" style={{ marginBottom: 14, padding: "12px 14px", background: "#eff6ff", borderRadius: 12 }}>
-          <strong>演示数据：</strong>在 <code>backend</code> 执行 <code style={{ fontSize: 13 }}>npm run db:seed</code>
+          <strong>演示数据：</strong>在项目根目录执行 <code style={{ fontSize: 13 }}>npm run db:seed</code>（或进入{" "}
+          <code>backend</code> 后执行）；日常开发可在根目录 <code>npm run dev</code> 同时起前后端。
           。教师 <code>teacher@demo.local</code>；学生 <code>student@demo.local</code>（张三）、
           <code>li@demo.local</code>（李四）、<code>wang@demo.local</code>（王五）；密码均为{" "}
           <code>Demo123456</code>。含两门课、班级、多实验与作业及成绩演示。

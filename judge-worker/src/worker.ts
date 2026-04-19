@@ -1,4 +1,11 @@
+import { config as loadEnv } from "dotenv";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Worker } from "bullmq";
+
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
+loadEnv({ path: resolve(__dirname, "../../backend/.env") });
+loadEnv({ path: resolve(__dirname, "../.env") });
 import IORedis from "ioredis";
 import { PrismaClient } from "@prisma/client";
 import { normalizeOutput, runCode, type RunnerLanguage } from "./runner.js";
