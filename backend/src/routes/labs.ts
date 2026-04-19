@@ -1,0 +1,236 @@
+import type { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
+import { prisma } from "../lib/prisma.js";
+import { authRequired } from "../lib/authGuard.js";
+import { getJudgeQueue } from "../lib/queue.js";
+
+async function canAccessCourse(
+  userId: string,
+  role: string,
+  courseId: string,
+  teacherId: string,
+) {
+  if (role === "ADMIN" || teacherId === userId) return true;
+  const en = await prisma.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+  });
+  return !!en;
+}
+
+const labsRoutes: FastifyPluginAsync = async (app) => {
+  app.get(
+    "/courses/:courseId/labs",
+    { preHandler: authRequired() },
+    async (req, reply) => {
+      const { courseId } = req.params as { courseId: string };
+      const course = await prisma.course.findUnique({ where: { id: courseId } });
+      if (!course) return reply.code(404).send({ error: "课程不存在" });
+
+      const ok = await canAccessCourse(req.auth!.sub, req.auth!.role, courseId, course.teacherId);
+      if (!ok) return reply.code(403).send({ error: "未选课或无权访问" });
+
+      const labs = await prisma.lab.findMany({
+        where: { courseId },
+        orderBy: { title: "asc" },
+        select: { id: true, title: true, description: true, language: true },
+      });
+      return { labs };
+    },
+  );
+
+  app.post(
+    "/courses/:courseId/labs",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { courseId } = req.params as { courseId: string };
+      const course = await prisma.course.findUnique({ where: { id: courseId } });
+      if (!course || (req.auth!.role !== "ADMIN" && course.teacherId !== req.auth!.sub)) {
+        return reply.code(403).send({ error: "无权创建实验" });
+      }
+
+      const schema = z.object({
+        title: z.string().min(1),
+        description: z.string().optional(),
+        language: z.enum(["javascript", "python"]),
+        starterCode: z.string().optional(),
+      });
+      const body = schema.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: "参数无效" });
+
+      const lab = await prisma.lab.create({
+        data: {
+          courseId,
+          title: body.data.title,
+          description: body.data.description,
+          language: body.data.language,
+          starterCode: body.data.starterCode ?? "",
+        },
+      });
+      return { lab };
+    },
+  );
+
+  app.get("/labs/:id", { preHandler: authRequired() }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const lab = await prisma.lab.findUnique({
+      where: { id },
+      include: {
+        course: true,
+        testCases: req.auth!.role === "STUDENT" ? { where: { hidden: false } } : true,
+      },
+    });
+    if (!lab) return reply.code(404).send({ error: "实验不存在" });
+
+    const ok = await canAccessCourse(
+      req.auth!.sub,
+      req.auth!.role,
+      lab.courseId,
+      lab.course.teacherId,
+    );
+    if (!ok) return reply.code(403).send({ error: "无权访问" });
+
+    if (req.auth!.role === "STUDENT") {
+      return {
+        lab: {
+          id: lab.id,
+          title: lab.title,
+          description: lab.description,
+          language: lab.language,
+          starterCode: lab.starterCode,
+          testCases: lab.testCases,
+        },
+      };
+    }
+
+    const full = await prisma.lab.findUnique({
+      where: { id },
+      include: { testCases: true, course: { select: { id: true, title: true } } },
+    });
+    return { lab: full };
+  });
+
+  app.post(
+    "/labs/:id/testcases",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const lab = await prisma.lab.findUnique({
+        where: { id },
+        include: { course: true },
+      });
+      if (!lab || (req.auth!.role !== "ADMIN" && lab.course.teacherId !== req.auth!.sub)) {
+        return reply.code(403).send({ error: "无权编辑" });
+      }
+
+      const schema = z.object({
+        input: z.string(),
+        expected: z.string(),
+        hidden: z.boolean().optional(),
+        weight: z.number().int().positive().optional(),
+      });
+      const body = schema.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: "参数无效" });
+
+      const tc = await prisma.testCase.create({
+        data: {
+          labId: id,
+          input: body.data.input,
+          expected: body.data.expected,
+          hidden: body.data.hidden ?? false,
+          weight: body.data.weight ?? 1,
+        },
+      });
+      return { testCase: tc };
+    },
+  );
+
+  app.post("/labs/:id/submit", { preHandler: authRequired("STUDENT", "ADMIN") }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const schema = z.object({ code: z.string().min(1) });
+    const body = schema.safeParse(req.body);
+    if (!body.success) return reply.code(400).send({ error: "请提交代码" });
+
+    const lab = await prisma.lab.findUnique({
+      where: { id },
+      include: { course: true },
+    });
+    if (!lab) return reply.code(404).send({ error: "实验不存在" });
+
+    const ok = await canAccessCourse(
+      req.auth!.sub,
+      req.auth!.role,
+      lab.courseId,
+      lab.course.teacherId,
+    );
+    if (!ok) return reply.code(403).send({ error: "未选课" });
+
+    const submission = await prisma.submission.create({
+      data: {
+        labId: id,
+        userId: req.auth!.sub,
+        code: body.data.code,
+        status: "PENDING",
+      },
+    });
+
+    await getJudgeQueue().add(
+      "judge",
+      { submissionId: submission.id },
+      { jobId: submission.id },
+    );
+
+    return { submissionId: submission.id, status: submission.status };
+  });
+
+  app.get("/labs/:id/submissions", { preHandler: authRequired() }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const lab = await prisma.lab.findUnique({
+      where: { id },
+      include: { course: true },
+    });
+    if (!lab) return reply.code(404).send({ error: "实验不存在" });
+
+    if (req.auth!.role === "STUDENT") {
+      const rows = await prisma.submission.findMany({
+        where: { labId: id, userId: req.auth!.sub },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
+      return { submissions: rows };
+    }
+
+    if (lab.course.teacherId !== req.auth!.sub && req.auth!.role !== "ADMIN") {
+      return reply.code(403).send({ error: "无权查看全班提交" });
+    }
+
+    const rows = await prisma.submission.findMany({
+      where: { labId: id },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      include: { user: { select: { id: true, name: true, email: true } } },
+    });
+    return { submissions: rows };
+  });
+
+  app.get("/submissions/:submissionId", { preHandler: authRequired() }, async (req, reply) => {
+    const { submissionId } = req.params as { submissionId: string };
+    const sub = await prisma.submission.findUnique({
+      where: { id: submissionId },
+      include: {
+        lab: { include: { course: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+    if (!sub) return reply.code(404).send({ error: "记录不存在" });
+
+    if (req.auth!.role === "STUDENT") {
+      if (sub.userId !== req.auth!.sub) return reply.code(403).send({ error: "无权查看" });
+    } else if (req.auth!.role !== "ADMIN" && sub.lab.course.teacherId !== req.auth!.sub) {
+      return reply.code(403).send({ error: "无权查看" });
+    }
+
+    return { submission: sub };
+  });
+};
+
+export default labsRoutes;

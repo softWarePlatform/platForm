@@ -1,0 +1,39 @@
+在线教学与实训平台 — 本地与生产运行说明
+=====================================
+
+环境要求：Node.js 20+（含 npm）、Docker Desktop（可选，用于一键编排）。
+
+一、本地开发（推荐）
+1) 启动数据库与 Redis（或使用云数据库连接串）：
+   docker compose up -d db redis
+
+2) 后端：
+   cd backend
+   复制 .env.example 为 .env 并设置 DATABASE_URL、REDIS_URL、JWT_SECRET
+   npm install
+   npx prisma migrate deploy
+   npm run dev
+
+3) 前端（新终端）：
+   cd frontend
+   npm install
+   npm run dev
+   浏览器访问 Vite 提示的地址（默认 http://localhost:5173）；API 经代理走 /api。
+
+二、生产 / 演示（Docker 全栈）
+   docker compose build
+   docker compose up -d
+   浏览器访问 http://localhost （Nginx -> 前端静态资源 + /api 反代）
+
+   扩容示例（评测与课堂高峰）：
+   docker compose up -d --scale api=3 --scale judge-worker=4
+
+三、支撑约 1000 人同时在线的工程要点（本仓库已预留）
+   - Nginx 入口、无状态 API、会话用 JWT，便于横向加 api 实例。
+   - 自动评测走 Redis + BullMQ 队列，评测进程可独立扩 judge-worker。
+   - PostgreSQL 持久化；热点可再加 Redis 缓存层（可按迭代补充）。
+
+请先在本机安装 Node/npm 后执行上述命令；当前仓库若尚无 package-lock.json，npm install 会自动生成。
+
+安全提示：评测 Worker 在容器内调用 node/python 执行学生代码，属于教学演示级隔离；面向公网或多租户生产环境时，请改用
+Docker/K8s 沙箱、 cgroup 限额、seccomp、网络隔离等更强约束（对标 Educoder / OJ 常见做法）。
