@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Shell from "./components/Shell";
 import CourseDetail from "./pages/CourseDetail";
+import CourseManage from "./pages/CourseManage";
 import Courses from "./pages/Courses";
 import Gradebook from "./pages/Gradebook";
 import Home from "./pages/Home";
@@ -39,6 +40,14 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/courses" element={<Courses />} />
+        <Route
+          path="/courses/:courseId/manage"
+          element={
+            <RequireRole roles={["TEACHER", "ADMIN"]}>
+              <CourseManage />
+            </RequireRole>
+          }
+        />
         <Route path="/courses/:id" element={<CourseDetail />} />
         <Route
           path="/courses/:courseId/labs/:labId"

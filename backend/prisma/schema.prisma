@@ -36,16 +36,22 @@ model User {
   submissions           Submission[]
   homeworkSubmissions   HomeworkSubmission[]
   discussionPosts       DiscussionPost[]
+  materialsUploaded     CourseMaterial[]       @relation("MaterialUploader")
 }
 
 model Course {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  category    String?
-  teacherId   String
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id                   String    @id @default(uuid())
+  title                String
+  description          String?
+  category             String?
+  teacherId            String
+  published            Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  /** 开课 / 结课时间（用于展示与筛选） */
+  startAt              DateTime?
+  endAt                DateTime?
+  /** 知识图谱 JSON：{ nodes:[{id,label}], edges:[{from,to,label?}] } */
+  knowledgeGraphJson String?   @db.Text
 
   teacher           User             @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Cascade)
   labs              Lab[]
@@ -53,6 +59,24 @@ model Course {
   enrollments       Enrollment[]
   classes           Class[]
   discussionPosts   DiscussionPost[]
+  materials         CourseMaterial[]
+}
+
+model CourseMaterial {
+  id           String   @id @default(uuid())
+  courseId     String
+  title        String
+  fileName     String
+  storedPath   String
+  mimeType     String?
+  sizeBytes    Int
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploadedBy User   @relation("MaterialUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
 }
 
 model Class {
@@ -88,6 +112,24 @@ model Lab {
   course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   testCases   TestCase[]
   submissions Submission[]
+  files       LabFile[]
+}
+
+model LabFile {
+  id           String   @id @default(uuid())
+  labId        String
+  title        String
+  fileName     String
+  storedPath   String
+  mimeType     String?
+  sizeBytes    Int
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  lab        Lab  @relation(fields: [labId], references: [id], onDelete: Cascade)
+  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([labId])
 }
 
 model TestCase {

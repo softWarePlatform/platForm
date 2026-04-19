@@ -13,6 +13,8 @@ type CourseRow = {
 
 export default function Courses() {
   const [q, setQ] = useState("");
+  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [items, setItems] = useState<CourseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,10 +22,28 @@ export default function Courses() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      try {
+        const { data } = await api.get("/courses/categories");
+        if (!cancelled) setCategories(data.categories ?? []);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
       setLoading(true);
       setError(null);
       try {
-        const { data } = await api.get("/courses", { params: q ? { search: q } : {} });
+        const params: { search?: string; category?: string } = {};
+        if (q.trim()) params.search = q.trim();
+        if (category) params.category = category;
+        const { data } = await api.get("/courses", { params });
         if (!cancelled) setItems(data.courses);
       } catch {
         if (!cancelled) setError("加载失败");
@@ -34,23 +54,42 @@ export default function Courses() {
     return () => {
       cancelled = true;
     };
-  }, [q]);
+  }, [q, category]);
 
   return (
     <div className="container">
       <div className="spread" style={{ marginTop: 8 }}>
         <h2 style={{ margin: 0 }}>课程中心</h2>
-        <input
-          placeholder="搜索课程…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          style={{
-            padding: "10px 12px",
-            borderRadius: 10,
-            border: "1px solid var(--border)",
-            minWidth: 260,
-          }}
-        />
+        <div className="row">
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 10,
+              border: "1px solid var(--border)",
+              minWidth: 140,
+            }}
+          >
+            <option value="">全部分类</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <input
+            placeholder="搜索课程…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 10,
+              border: "1px solid var(--border)",
+              minWidth: 220,
+            }}
+          />
+        </div>
       </div>
       <div className="muted" style={{ marginTop: 8 }}>
         仅展示已发布课程；教师可在「教学台」管理未发布内容。
@@ -68,7 +107,7 @@ export default function Courses() {
                 {c.description ? c.description : "暂无简介"}
               </div>
               <div className="spread" style={{ marginTop: 14 }}>
-                <span className="muted">教师：{c.teacher.name}</span>
+                <span className="muted">{c.category ? `「${c.category}」 · ` : null}教师：{c.teacher.name}</span>
                 <span className="muted">选课：{c.enrollmentCount}</span>
               </div>
             </div>

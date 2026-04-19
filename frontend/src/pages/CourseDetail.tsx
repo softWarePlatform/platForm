@@ -3,6 +3,39 @@ import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
+function KgPreview({ json }: { json: string }) {
+  try {
+    const g = JSON.parse(json) as { nodes?: { id: string; label: string }[]; edges?: { from: string; to: string; label?: string }[] };
+    const nodes = g.nodes ?? [];
+    const edges = g.edges ?? [];
+    return (
+      <div className="grid" style={{ marginTop: 10, fontSize: 13, lineHeight: 1.6 }}>
+        <div>
+          <strong>节点</strong>
+          <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+            {nodes.map((n) => (
+              <li key={n.id}>{n.label}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <strong>关系</strong>
+          <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+            {edges.map((e, i) => (
+              <li key={i}>
+                {e.from} → {e.to}
+                {e.label ? `（${e.label}）` : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  } catch {
+    return <div className="muted">图谱数据格式异常</div>;
+  }
+}
+
 export default function CourseDetail() {
   const { id } = useParams();
   const { user, token } = useAuth();
@@ -21,6 +54,7 @@ export default function CourseDetail() {
   const [hwForm, setHwForm] = useState({ title: "", description: "", dueAt: "" });
   const [hwDrafts, setHwDrafts] = useState<Record<string, string>>({});
   const [err, setErr] = useState<string | null>(null);
+  const [materials, setMaterials] = useState<any[]>([]);
 
   const canUseQA = useMemo(() => Boolean(token), [token]);
 
@@ -71,18 +105,39 @@ export default function CourseDetail() {
     };
   }, [id, token]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!token || !id) {
+        setMaterials([]);
+        return;
+      }
+      try {
+        const { data } = await api.get(`/courses/${id}/materials`);
+        if (!cancelled) setMaterials(data.materials ?? []);
+      } catch {
+        if (!cancelled) setMaterials([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, token]);
+
   async function refreshSideData() {
     if (!token || !id) return;
-    const [l, h, d, c] = await Promise.all([
+    const [l, h, d, c, mat] = await Promise.all([
       api.get(`/courses/${id}/labs`).catch(() => ({ data: { labs: [] } })),
       api.get(`/courses/${id}/homework`).catch(() => ({ data: { homework: [] } })),
       api.get(`/courses/${id}/discussions`).catch(() => ({ data: { posts: [] } })),
       api.get(`/courses/${id}`).catch(() => ({ data: { course: null } })),
+      api.get(`/courses/${id}/materials`).catch(() => ({ data: { materials: [] } })),
     ]);
     setLabs(l.data.labs ?? []);
     setHomework(h.data.homework ?? []);
     setPosts(d.data.posts ?? []);
     if (c.data.course) setCourse(c.data.course);
+    setMaterials(mat.data.materials ?? []);
   }
 
   async function enroll() {
@@ -132,18 +187,70 @@ export default function CourseDetail() {
               </button>
             ) : null}
             {user?.role === "TEACHER" || user?.role === "ADMIN" ? (
-              <Link className="btn" to={`/courses/${id}/gradebook`}>
-                成绩册
-              </Link>
+              <>
+                <Link className="btn primary" to={`/courses/${id}/manage`}>
+                  课程管理
+                </Link>
+                <Link className="btn" to={`/courses/${id}/gradebook`}>
+                  成绩册
+                </Link>
+              </>
             ) : null}
           </div>
         </div>
         <div className="muted" style={{ marginTop: 12 }}>
           授课教师：{course.teacher?.name}（{course.teacher?.email}）
+          {course.category ? ` · 分类：${course.category}` : null}
         </div>
+        {(course.startAt || course.endAt) && (
+          <div className="muted" style={{ marginTop: 8 }}>
+            {course.startAt ? <>开课：{new Date(course.startAt).toLocaleString()} </> : null}
+            {course.endAt ? <>· 结课：{new Date(course.endAt).toLocaleString()}</> : null}
+          </div>
+        )}
       </div>
 
       {err ? <div className="err" style={{ marginTop: 10 }}>{err}</div> : null}
+
+      <div className="grid" style={{ marginTop: 14, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+        {token ? (
+          <div className="card">
+            <div style={{ fontWeight: 900 }}>课程资料 / 讲义</div>
+            <div className="grid" style={{ marginTop: 10 }}>
+              {materials.map((m) => (
+                <div key={m.id} className="row spread" style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                  <span style={{ fontWeight: 600 }}>{m.title}</span>
+                  <button
+                    type="button"
+                    className="btn primary"
+                    onClick={async () => {
+                      const res = await api.get(`/courses/${id}/materials/${m.id}/download`, {
+                        responseType: "blob",
+                      });
+                      const url = URL.createObjectURL(res.data);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = m.fileName;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    下载
+                  </button>
+                </div>
+              ))}
+              {materials.length === 0 ? <div className="muted">暂无资料</div> : null}
+            </div>
+          </div>
+        ) : null}
+
+        {course.knowledgeGraphJson ? (
+          <div className="card">
+            <div style={{ fontWeight: 900 }}>知识图谱（概览）</div>
+            <KgPreview json={course.knowledgeGraphJson} />
+          </div>
+        ) : null}
+      </div>
 
       {isTeacher ? (
         <div className="card" style={{ marginTop: 14 }}>

@@ -2,8 +2,23 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired, optionalAuth } from "../lib/authGuard.js";
+import { buildKnowledgeGraphFromCourse } from "../lib/knowledge-graph.js";
 
 const coursesRoutes: FastifyPluginAsync = async (app) => {
+  /** 已发布课程用到的分类列表（用于筛选） */
+  app.get("/courses/categories", async () => {
+    const rows = await prisma.course.findMany({
+      where: {
+        published: true,
+        AND: [{ category: { not: null } }, { category: { not: "" } }],
+      },
+      select: { category: true },
+      distinct: ["category"],
+      orderBy: { category: "asc" },
+    });
+    return { categories: rows.map((r) => r.category).filter(Boolean) as string[] };
+  });
+
   /** 学生 / 教师：浏览已发布课程 */
   app.get("/courses", async (req, reply) => {
     const q = z
@@ -72,6 +87,8 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
         description: z.string().optional(),
         category: z.string().optional(),
         published: z.boolean().optional(),
+        startAt: z.coerce.date().optional(),
+        endAt: z.coerce.date().optional(),
       });
       const body = schema.safeParse(req.body);
       if (!body.success) return reply.code(400).send({ error: "参数无效" });
@@ -83,6 +100,8 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
           category: body.data.category,
           published: body.data.published ?? false,
           teacherId: req.auth!.sub,
+          startAt: body.data.startAt,
+          endAt: body.data.endAt,
         },
       });
       return { course };
@@ -124,12 +143,134 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
         description: z.string().nullable().optional(),
         category: z.string().nullable().optional(),
         published: z.boolean().optional(),
+        startAt: z.coerce.date().nullable().optional(),
+        endAt: z.coerce.date().nullable().optional(),
+        knowledgeGraphJson: z.string().nullable().optional(),
       });
       const body = schema.safeParse(req.body);
       if (!body.success) return reply.code(400).send({ error: "参数无效" });
 
       const updated = await prisma.course.update({ where: { id }, data: body.data });
       return { course: updated };
+    },
+  );
+
+  /** 根据课程与实验标题生成知识图谱 JSON（教师可保存到课程） */
+  app.post(
+    "/courses/:id/knowledge-graph/generate",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const course = await prisma.course.findUnique({
+        where: { id },
+        include: { labs: { select: { title: true } } },
+      });
+      if (!course || (req.auth!.role !== "ADMIN" && course.teacherId !== req.auth!.sub)) {
+        return reply.code(403).send({ error: "无权操作" });
+      }
+
+      const schema = z.object({ save: z.boolean().optional() });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return reply.code(400).send({ error: "参数无效" });
+
+      const graph = buildKnowledgeGraphFromCourse({
+        title: course.title,
+        description: course.description,
+        labTitles: course.labs.map((l) => l.title),
+      });
+
+      if (parsed.data.save) {
+        await prisma.course.update({
+          where: { id },
+          data: { knowledgeGraphJson: JSON.stringify(graph) },
+        });
+      }
+
+      return { graph };
+    },
+  );
+
+  /** 教师：将学生分班（调整选课的 classId） */
+  app.patch(
+    "/courses/:courseId/enrollments/:enrollmentId",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { courseId, enrollmentId } = req.params as { courseId: string; enrollmentId: string };
+      const course = await prisma.course.findUnique({ where: { id: courseId } });
+      if (!course || (req.auth!.role !== "ADMIN" && course.teacherId !== req.auth!.sub)) {
+        return reply.code(403).send({ error: "无权操作" });
+      }
+
+      const schema = z.object({
+        classId: z.string().uuid().nullable().optional(),
+      });
+      const body = schema.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: "参数无效" });
+
+      const en = await prisma.enrollment.findFirst({
+        where: { id: enrollmentId, courseId },
+      });
+      if (!en) return reply.code(404).send({ error: "选课记录不存在" });
+
+      if (body.data.classId) {
+        const cls = await prisma.class.findFirst({
+          where: { id: body.data.classId, courseId },
+        });
+        if (!cls) return reply.code(400).send({ error: "班级不属于本课程" });
+      }
+
+      const updated = await prisma.enrollment.update({
+        where: { id: enrollmentId },
+        data: { classId: body.data.classId ?? null },
+      });
+      return { enrollment: updated };
+    },
+  );
+
+  app.patch(
+    "/courses/:courseId/classes/:classId",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { courseId, classId } = req.params as { courseId: string; classId: string };
+      const course = await prisma.course.findUnique({ where: { id: courseId } });
+      if (!course || (req.auth!.role !== "ADMIN" && course.teacherId !== req.auth!.sub)) {
+        return reply.code(403).send({ error: "无权操作" });
+      }
+
+      const schema = z.object({ name: z.string().min(1) });
+      const body = schema.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: "参数无效" });
+
+      const cls = await prisma.class.findFirst({ where: { id: classId, courseId } });
+      if (!cls) return reply.code(404).send({ error: "班级不存在" });
+
+      const updated = await prisma.class.update({
+        where: { id: classId },
+        data: { name: body.data.name },
+      });
+      return { class: updated };
+    },
+  );
+
+  app.delete(
+    "/courses/:courseId/classes/:classId",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { courseId, classId } = req.params as { courseId: string; classId: string };
+      const course = await prisma.course.findUnique({ where: { id: courseId } });
+      if (!course || (req.auth!.role !== "ADMIN" && course.teacherId !== req.auth!.sub)) {
+        return reply.code(403).send({ error: "无权操作" });
+      }
+
+      const cls = await prisma.class.findFirst({ where: { id: classId, courseId } });
+      if (!cls) return reply.code(404).send({ error: "班级不存在" });
+
+      await prisma.enrollment.updateMany({
+        where: { classId },
+        data: { classId: null },
+      });
+      await prisma.class.delete({ where: { id: classId } });
+      return { ok: true };
     },
   );
 

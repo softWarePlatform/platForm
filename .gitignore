@@ -7,3 +7,4 @@ dist
 backend/.env
 frontend/.env
 judge-worker/.env
+uploads/

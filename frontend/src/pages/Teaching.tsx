@@ -80,9 +80,14 @@ export default function Teaching() {
                     · 作业 {c._count?.homeworks ?? 0}
                   </div>
                 </div>
-                <Link className="btn" to={`/courses/${c.id}`}>
-                  打开
-                </Link>
+                <div className="row">
+                  <Link className="btn primary" to={`/courses/${c.id}/manage`}>
+                    课程管理
+                  </Link>
+                  <Link className="btn" to={`/courses/${c.id}`}>
+                    打开
+                  </Link>
+                </div>
               </div>
             ))}
             {courses.length === 0 ? <div className="muted">暂无课程</div> : null}
