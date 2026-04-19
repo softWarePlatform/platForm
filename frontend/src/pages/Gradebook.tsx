@@ -45,13 +45,56 @@ export default function Gradebook() {
   return (
     <div className="container">
       <div className="spread" style={{ marginTop: 10 }}>
-        <h2 style={{ margin: 0 }}>课程成绩册</h2>
-        <Link className="btn" to={`/courses/${courseId}`}>
-          返回课程
-        </Link>
+        <div>
+          <h2 style={{ margin: 0 }}>课程成绩册</h2>
+          {data.courseTitle ? (
+            <div className="muted" style={{ marginTop: 6 }}>
+              {data.courseTitle}
+            </div>
+          ) : null}
+        </div>
+        <div className="row">
+          <button
+            className="btn"
+            type="button"
+            onClick={async () => {
+              try {
+                const res = await api.get(`/courses/${courseId}/gradebook/export.csv`, {
+                  responseType: "blob",
+                });
+                const blob = res.data as Blob;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                const cd = res.headers["content-disposition"] as string | undefined;
+                let name = "成绩册.csv";
+                if (cd?.includes("filename*=")) {
+                  const m = cd.match(/filename\*=UTF-8''(.+)/);
+                  if (m?.[1]) {
+                    try {
+                      name = decodeURIComponent(m[1].replace(/;$/, ""));
+                    } catch {
+                      /* ignore */
+                    }
+                  }
+                }
+                a.download = name;
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch {
+                /* toast optional */
+              }
+            }}
+          >
+            导出 CSV
+          </button>
+          <Link className="btn" to={`/courses/${courseId}`}>
+            返回课程
+          </Link>
+        </div>
       </div>
       <div className="muted" style={{ marginTop: 8 }}>
-        该页为示例统计：展示每位学生各实验最高分与作业分数。线上可导出为 CSV/Excel（导出接口可后续补齐）。
+        展示每位学生各实验最高分与作业分数；「导出 CSV」可用 Excel 打开（UTF-8 BOM）。
       </div>
 
       <div className="card" style={{ marginTop: 14, overflow: "auto" }}>

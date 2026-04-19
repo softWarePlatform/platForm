@@ -1,4 +1,4 @@
-在线教学与实训平台 — 本地与生产运行说明
+  在线教学与实训平台 — 本地与生产运行说明
 =====================================
 
 环境要求：Node.js 20+（含 npm）、Docker Desktop（可选，用于一键编排）。
@@ -10,9 +10,14 @@
 2) 后端：
    cd backend
    复制 .env.example 为 .env 并设置 DATABASE_URL、REDIS_URL、JWT_SECRET
+   ##copy .env.example .env
    npm install
    npx prisma migrate deploy
+   npm run db:seed
    npm run dev
+
+   说明：db:seed 会写入多用户、两门课程、班级、实验/作业、讨论与示例提交（详见 prisma/seed.ts）。
+   教师 teacher@demo.local；学生 student@demo.local、li@demo.local、wang@demo.local；密码均为 Demo123456。
 
 3) 前端（新终端）：
    cd frontend

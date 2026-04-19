@@ -2,6 +2,12 @@ export default function Home() {
   return (
     <div className="container">
       <div className="card" style={{ marginTop: 18 }}>
+        <div className="muted" style={{ marginBottom: 14, padding: "12px 14px", background: "#eff6ff", borderRadius: 12 }}>
+          <strong>演示数据：</strong>在 <code>backend</code> 执行 <code style={{ fontSize: 13 }}>npm run db:seed</code>
+          。教师 <code>teacher@demo.local</code>；学生 <code>student@demo.local</code>（张三）、
+          <code>li@demo.local</code>（李四）、<code>wang@demo.local</code>（王五）；密码均为{" "}
+          <code>Demo123456</code>。含两门课、班级、多实验与作业及成绩演示。
+        </div>
         <div className="spread">
           <div>
             <h1 style={{ margin: "6px 0 6px" }}>在线教学与实训平台</h1>
