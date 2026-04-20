@@ -2,6 +2,7 @@ import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { config } from "./lib/config.js";
 import healthRoutes from "./routes/health.js";
 import authRoutes from "./routes/auth.js";
@@ -22,11 +23,24 @@ function parseOrigins(): boolean | string | string[] {
 }
 
 async function main() {
-  const app = Fastify({ logger: true });
+  const app = Fastify({
+    logger: true,
+    bodyLimit: config.bodyLimitBytes,
+    requestIdHeader: "x-request-id",
+    requestIdLogLabel: "requestId",
+  });
 
   await app.register(cors, {
     origin: parseOrigins(),
     credentials: true,
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const helmet = (await import("@fastify/helmet")).default as any;
+  await app.register(helmet, {
+    global: true,
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
   });
 
   // ESM 环境下使用动态 import 加载 multipart
@@ -36,8 +50,12 @@ async function main() {
 
   await app.register(rateLimit, {
     global: true,
-    max: 600,
+    max: config.globalRateLimitMaxPerMinute,
     timeWindow: "1 minute",
+  });
+
+  app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
+    reply.header("X-Request-ID", req.id);
   });
 
   await app.register(healthRoutes);

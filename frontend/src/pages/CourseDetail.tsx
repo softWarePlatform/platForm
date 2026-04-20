@@ -51,8 +51,19 @@ export default function CourseDetail() {
     tcIn: "",
     tcExp: "",
   });
-  const [hwForm, setHwForm] = useState({ title: "", description: "", dueAt: "" });
+  const [hwForm, setHwForm] = useState({
+    title: "",
+    description: "",
+    dueAt: "",
+    targetClassId: "",
+    published: true,
+  });
   const [hwDrafts, setHwDrafts] = useState<Record<string, string>>({});
+  const [hwQuestions, setHwQuestions] = useState<Record<string, any[]>>({});
+  const [hwQuestionDrafts, setHwQuestionDrafts] = useState<Record<string, string>>({});
+  const [hwAnswerDrafts, setHwAnswerDrafts] = useState<Record<string, string>>({});
+  const [hwSubmissions, setHwSubmissions] = useState<Record<string, any[]>>({});
+  const [hwAiPreview, setHwAiPreview] = useState<Record<string, { score: number; feedback: string }>>({});
   const [err, setErr] = useState<string | null>(null);
   const [materials, setMaterials] = useState<any[]>([]);
 
@@ -93,8 +104,10 @@ export default function CourseDetail() {
         ]);
         if (!cancelled) {
           setLabs(l.data.labs ?? []);
-          setHomework(h.data.homework ?? []);
+          const hws = h.data.homework ?? [];
+          setHomework(hws);
           setPosts(d.data.posts ?? []);
+          void loadHomeworkQuestions(hws);
         }
       } catch {
         /* ignore */
@@ -134,10 +147,30 @@ export default function CourseDetail() {
       api.get(`/courses/${id}/materials`).catch(() => ({ data: { materials: [] } })),
     ]);
     setLabs(l.data.labs ?? []);
-    setHomework(h.data.homework ?? []);
+    const hws = h.data.homework ?? [];
+    setHomework(hws);
     setPosts(d.data.posts ?? []);
     if (c.data.course) setCourse(c.data.course);
     setMaterials(mat.data.materials ?? []);
+    await loadHomeworkQuestions(hws);
+  }
+
+  async function loadHomeworkQuestions(hws: any[]) {
+    if (!token || hws.length === 0) {
+      setHwQuestions({});
+      return;
+    }
+    const pairs = await Promise.all(
+      hws.map(async (x) => {
+        try {
+          const { data } = await api.get(`/homework/${x.id}/questions`);
+          return [x.id, data.questions ?? []] as const;
+        } catch {
+          return [x.id, []] as const;
+        }
+      }),
+    );
+    setHwQuestions(Object.fromEntries(pairs));
   }
 
   async function enroll() {
@@ -355,8 +388,10 @@ export default function CourseDetail() {
                     title: hwForm.title,
                     description: hwForm.description || undefined,
                     dueAt: hwForm.dueAt ? new Date(hwForm.dueAt).toISOString() : undefined,
+                    targetClassId: hwForm.targetClassId || undefined,
+                    published: hwForm.published,
                   });
-                  setHwForm({ title: "", description: "", dueAt: "" });
+                  setHwForm({ title: "", description: "", dueAt: "", targetClassId: "", published: true });
                   await refreshSideData();
                 } catch (e2: unknown) {
                   const msg =
@@ -392,6 +427,22 @@ export default function CourseDetail() {
                   onChange={(e) => setHwForm({ ...hwForm, dueAt: e.target.value })}
                 />
               </div>
+              <div className="field">
+                <label>指定班级（可选，填 classId）</label>
+                <input
+                  value={hwForm.targetClassId}
+                  onChange={(e) => setHwForm({ ...hwForm, targetClassId: e.target.value })}
+                  placeholder="留空=全课程"
+                />
+              </div>
+              <label className="row">
+                <input
+                  type="checkbox"
+                  checked={hwForm.published}
+                  onChange={(e) => setHwForm({ ...hwForm, published: e.target.checked })}
+                />
+                <span className="muted">创建后立即发布给学生</span>
+              </label>
               <button className="btn primary" type="submit">
                 发布作业
               </button>
@@ -431,7 +482,35 @@ export default function CourseDetail() {
                   <div>
                     <div style={{ fontWeight: 700 }}>{h.title}</div>
                     <div className="muted">截止：{h.dueAt ? new Date(h.dueAt).toLocaleString() : "未设置"}</div>
+                    <div className="muted">
+                      {h.targetClass ? `面向班级：${h.targetClass.name}` : "面向全课程"}
+                      {h.published ? " · 已发布" : " · 未发布"}
+                    </div>
                   </div>
+                  {isTeacher ? (
+                    <div className="row">
+                      <button
+                        className="btn"
+                        type="button"
+                        onClick={async () => {
+                          await api.patch(`/homework/${h.id}/publish`, { published: !h.published });
+                          await refreshSideData();
+                        }}
+                      >
+                        {h.published ? "撤回作业" : "发布作业"}
+                      </button>
+                      <button
+                        className="btn primary"
+                        type="button"
+                        onClick={async () => {
+                          await api.patch(`/homework/${h.id}/release-grades`, {});
+                          await refreshSideData();
+                        }}
+                      >
+                        发布已批改成绩
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
 
                 {user?.role === "STUDENT" || user?.role === "ADMIN" ? (
@@ -468,6 +547,142 @@ export default function CourseDetail() {
                     学生登录并选课后可在上方提交。
                   </div>
                 )}
+
+                {isTeacher ? (
+                  <div className="card" style={{ marginTop: 10, boxShadow: "none" }}>
+                    <div className="row spread">
+                      <div style={{ fontWeight: 700 }}>批改台（教师）</div>
+                      <button
+                        className="btn"
+                        type="button"
+                        onClick={async () => {
+                          const { data } = await api.get(`/homework/${h.id}/submissions`);
+                          setHwSubmissions((m) => ({ ...m, [h.id]: data.submissions ?? [] }));
+                        }}
+                      >
+                        刷新提交
+                      </button>
+                    </div>
+                    <div className="grid" style={{ marginTop: 8 }}>
+                      {(hwSubmissions[h.id] ?? []).map((s: any) => (
+                        <div key={s.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                          <div className="muted">
+                            {s.user?.name} · {new Date(s.updatedAt).toLocaleString()}
+                          </div>
+                          <div style={{ marginTop: 6, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+                            {s.content}
+                          </div>
+                          <div className="row" style={{ marginTop: 6 }}>
+                            <button
+                              className="btn"
+                              type="button"
+                              onClick={async () => {
+                                const { data } = await api.post(`/homework/submissions/${s.id}/ai-suggest`, {
+                                  apply: false,
+                                });
+                                setHwAiPreview((m) => ({ ...m, [s.id]: data.suggestion }));
+                              }}
+                            >
+                              AI 建议
+                            </button>
+                            <button
+                              className="btn"
+                              type="button"
+                              onClick={async () => {
+                                await api.post(`/homework/submissions/${s.id}/ai-suggest`, {
+                                  apply: true,
+                                });
+                                const { data } = await api.get(`/homework/${h.id}/submissions`);
+                                setHwSubmissions((m) => ({ ...m, [h.id]: data.submissions ?? [] }));
+                              }}
+                            >
+                              一键应用 AI
+                            </button>
+                          </div>
+                          {hwAiPreview[s.id] ? (
+                            <div className="muted" style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>
+                              AI建议分：{hwAiPreview[s.id].score}
+                              {"\n"}
+                              {hwAiPreview[s.id].feedback}
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                      {(hwSubmissions[h.id] ?? []).length === 0 ? (
+                        <div className="muted">暂无学生提交，点击“刷新提交”加载。</div>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="card" style={{ marginTop: 10, boxShadow: "none" }}>
+                  <div style={{ fontWeight: 700 }}>作业问答</div>
+                  <div className="grid" style={{ marginTop: 8 }}>
+                    {(hwQuestions[h.id] ?? []).map((q: any) => (
+                      <div key={q.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                        <div className="muted">
+                          {q.user?.name ?? "匿名"} · {new Date(q.createdAt).toLocaleString()}
+                        </div>
+                        <div style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>问：{q.question}</div>
+                        {q.answer ? (
+                          <div style={{ marginTop: 6, whiteSpace: "pre-wrap" }} className="muted">
+                            答：{q.answer}
+                          </div>
+                        ) : isTeacher ? (
+                          <div className="grid" style={{ marginTop: 6 }}>
+                            <textarea
+                              rows={2}
+                              placeholder="输入回复"
+                              value={hwAnswerDrafts[q.id] ?? ""}
+                              onChange={(e) => setHwAnswerDrafts({ ...hwAnswerDrafts, [q.id]: e.target.value })}
+                            />
+                            <button
+                              className="btn"
+                              type="button"
+                              onClick={async () => {
+                                const answer = (hwAnswerDrafts[q.id] ?? "").trim();
+                                if (!answer) return;
+                                await api.patch(`/homework/questions/${q.id}/answer`, { answer });
+                                setHwAnswerDrafts({ ...hwAnswerDrafts, [q.id]: "" });
+                                await refreshSideData();
+                              }}
+                            >
+                              回复
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="muted" style={{ marginTop: 6 }}>教师暂未回复</div>
+                        )}
+                      </div>
+                    ))}
+                    {(hwQuestions[h.id] ?? []).length === 0 ? <div className="muted">暂无提问</div> : null}
+                    {token ? (
+                      <div className="grid" style={{ marginTop: 6 }}>
+                        <textarea
+                          rows={2}
+                          placeholder="提一个与本作业相关的问题"
+                          value={hwQuestionDrafts[h.id] ?? ""}
+                          onChange={(e) =>
+                            setHwQuestionDrafts({ ...hwQuestionDrafts, [h.id]: e.target.value })
+                          }
+                        />
+                        <button
+                          className="btn"
+                          type="button"
+                          onClick={async () => {
+                            const question = (hwQuestionDrafts[h.id] ?? "").trim();
+                            if (!question) return;
+                            await api.post(`/homework/${h.id}/questions`, { question });
+                            setHwQuestionDrafts({ ...hwQuestionDrafts, [h.id]: "" });
+                            await refreshSideData();
+                          }}
+                        >
+                          提交问题
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
               </div>
             ))}
             {(course.homeworks ?? homework).length === 0 ? <div className="muted">暂无作业</div> : null}

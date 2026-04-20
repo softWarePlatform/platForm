@@ -9,8 +9,10 @@ import Home from "./pages/Home";
 import Lab from "./pages/Lab";
 import Login from "./pages/Login";
 import MyHomework from "./pages/MyHomework";
+import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import Teaching from "./pages/Teaching";
+import AdminUsers from "./pages/AdminUsers";
 import { useAuth } from "./auth/AuthContext";
 
 function RequireAuth({ children }: { children: ReactElement }) {
@@ -78,6 +80,22 @@ export default function App() {
           element={
             <RequireRole roles={["STUDENT", "ADMIN"]}>
               <MyHomework />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <RequireAuth>
+              <Profile />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RequireRole roles={["ADMIN"]}>
+              <AdminUsers />
             </RequireRole>
           }
         />

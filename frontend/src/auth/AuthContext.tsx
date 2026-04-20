@@ -8,6 +8,7 @@ export type User = {
   name: string;
   role: Role;
   avatarUrl?: string | null;
+  emailVerified?: boolean;
 };
 
 type AuthState = {

@@ -74,6 +74,23 @@
    - Nginx 入口、无状态 API、JWT，便于横向扩展 API 实例。
    - 自动评测走 Redis + BullMQ，评测与 Web 解耦，可独立扩 judge-worker。
    - PostgreSQL 持久化；需要时可加 Redis 缓存层。
+   - 安全基线：API 已启用 rate-limit、基础安全响应头（helmet）、请求体大小限制、请求 ID 回传。
+   - 健康检查：/health/live（存活）、/health/ready（DB+Redis 就绪）。
+
+三、非功能验证（本地）
+-------------------------------------------------------------------------------
+
+   1) 可用性检查：
+      打开 http://127.0.0.1:3000/health/live 与 /health/ready，应返回 ok=true。
+
+   2) 基础压测（冒烟）：
+      在项目根目录执行：
+      npm run perf:smoke
+
+      可通过环境变量调整：
+      CONCURRENCY=100 REQUESTS=2000 TARGET_URL=http://127.0.0.1:3000/health/ready npm run perf:smoke
+
+      输出会给出吞吐 req/s，用于和你的机器资源做横向扩容估算。
 
 -------------------------------------------------------------------------------
 附录 A：Docker 全栈（可选，非课程作业必做）

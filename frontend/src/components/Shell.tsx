@@ -48,6 +48,16 @@ export default function Shell() {
                   我的作业
                 </NavLink>
               ) : null}
+              {user ? (
+                <NavLink to="/profile" style={linkStyle}>
+                  个人中心
+                </NavLink>
+              ) : null}
+              {user?.role === "ADMIN" ? (
+                <NavLink to="/admin/users" style={linkStyle}>
+                  用户管理
+                </NavLink>
+              ) : null}
             </nav>
           </div>
 
@@ -57,6 +67,7 @@ export default function Shell() {
                 <span className="muted">
                   {user.name}（{user.role === "TEACHER" ? "教师" : user.role === "ADMIN" ? "管理员" : "学生"}）
                 </span>
+                {!user.emailVerified ? <span className="err">邮箱未验证</span> : null}
                 <button
                   className="btn"
                   onClick={() => {

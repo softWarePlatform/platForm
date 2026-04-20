@@ -4,6 +4,8 @@
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 const prisma = new PrismaClient();
 
@@ -19,29 +21,53 @@ const HW_A1 = "00000000-0000-4000-8000-000000000020";
 const HW_A2 = "00000000-0000-4000-8000-000000000021";
 const HW_B1 = "00000000-0000-4000-8000-000000000022";
 const CLASS_C1 = "00000000-0000-4000-8000-000000000030";
+const ADMIN_ID = "00000000-0000-4000-8000-000000000099";
+
+const UPLOAD_ROOT = join(process.cwd(), "uploads");
+
+async function ensureFile(rel: string, content: string) {
+  const abs = join(UPLOAD_ROOT, ...rel.split("/").filter(Boolean));
+  await mkdir(join(abs, ".."), { recursive: true });
+  await writeFile(abs, content, "utf8");
+}
 
 async function main() {
   const hash = await bcrypt.hash(DEMO_PASSWORD, 12);
 
+  const admin = await prisma.user.upsert({
+    where: { id: ADMIN_ID },
+    update: {},
+    create: {
+      id: ADMIN_ID,
+      email: "admin@demo.local",
+      name: "演示管理员",
+      role: "ADMIN",
+      passwordHash: hash,
+      emailVerifiedAt: new Date(),
+    },
+  });
+
   const teacher = await prisma.user.upsert({
     where: { email: "teacher@demo.local" },
-    update: {},
+    update: { emailVerifiedAt: new Date() },
     create: {
       email: "teacher@demo.local",
       name: "张老师",
       role: "TEACHER",
       passwordHash: hash,
+      emailVerifiedAt: new Date(),
     },
   });
 
   const s1 = await prisma.user.upsert({
     where: { email: "student@demo.local" },
-    update: {},
+    update: { emailVerifiedAt: new Date() },
     create: {
       email: "student@demo.local",
       name: "张三",
       role: "STUDENT",
       passwordHash: hash,
+      emailVerifiedAt: new Date(),
     },
   });
 
@@ -77,6 +103,8 @@ async function main() {
       category: "程序设计",
       published: true,
       teacherId: teacher.id,
+      labWeight: 0.6,
+      homeworkWeight: 0.4,
     },
   });
 
@@ -90,6 +118,8 @@ async function main() {
       category: "数据结构",
       published: true,
       teacherId: teacher.id,
+      labWeight: 0.5,
+      homeworkWeight: 0.5,
     },
   });
 
@@ -155,6 +185,83 @@ async function main() {
     ],
   });
 
+  /** 课程资料（讲义/讲稿） */
+  await prisma.courseMaterial.deleteMany({ where: { courseId: { in: [course1.id, course2.id] } } });
+  // 写入示例文件到 backend/uploads
+  await ensureFile(`courses/${course1.id}/seed_syllabus.txt`, "【演示课程资料】\n\n本文件由 seed.ts 生成，用于演示课程资料上传/下载。\n");
+  await ensureFile(`courses/${course1.id}/seed_slides.txt`, "【演示讲义】\n\n1) Hello 输出\n2) A+B 输入输出\n3) 注意标准输入与输出格式\n");
+  await ensureFile(`courses/${course2.id}/seed_readme.txt`, "【数据结构导论】\n\n本讲义用于演示课程资料。\n");
+
+  await prisma.courseMaterial.createMany({
+    data: [
+      {
+        courseId: course1.id,
+        title: "课程大纲（seed）",
+        fileName: "syllabus.txt",
+        storedPath: `courses/${course1.id}/seed_syllabus.txt`,
+        mimeType: "text/plain",
+        sizeBytes: 100,
+        uploadedById: teacher.id,
+      },
+      {
+        courseId: course1.id,
+        title: "第一讲讲义（seed）",
+        fileName: "slides.txt",
+        storedPath: `courses/${course1.id}/seed_slides.txt`,
+        mimeType: "text/plain",
+        sizeBytes: 160,
+        uploadedById: teacher.id,
+      },
+      {
+        courseId: course2.id,
+        title: "课程说明（seed）",
+        fileName: "readme.txt",
+        storedPath: `courses/${course2.id}/seed_readme.txt`,
+        mimeType: "text/plain",
+        sizeBytes: 80,
+        uploadedById: teacher.id,
+      },
+    ],
+  });
+
+  /** 实验附件（数据文件/说明） */
+  await prisma.labFile.deleteMany({ where: { labId: { in: [labHello.id, labApb.id, labP42.id] } } });
+  await ensureFile(`labs/${labApb.id}/seed_input_examples.txt`, "3 5\n10 20\n");
+  await ensureFile(`labs/${labApb.id}/seed_hint.txt`, "提示：读取一行两个整数，输出其和。\n");
+  await ensureFile(`labs/${labHello.id}/seed_readme.txt`, "输出一行 Hello，注意不要输出多余文字。\n");
+
+  await prisma.labFile.createMany({
+    data: [
+      {
+        labId: labApb.id,
+        title: "样例输入（seed）",
+        fileName: "input_examples.txt",
+        storedPath: `labs/${labApb.id}/seed_input_examples.txt`,
+        mimeType: "text/plain",
+        sizeBytes: 20,
+        uploadedById: teacher.id,
+      },
+      {
+        labId: labApb.id,
+        title: "实验提示（seed）",
+        fileName: "hint.txt",
+        storedPath: `labs/${labApb.id}/seed_hint.txt`,
+        mimeType: "text/plain",
+        sizeBytes: 60,
+        uploadedById: teacher.id,
+      },
+      {
+        labId: labHello.id,
+        title: "实验说明补充（seed）",
+        fileName: "readme.txt",
+        storedPath: `labs/${labHello.id}/seed_readme.txt`,
+        mimeType: "text/plain",
+        sizeBytes: 50,
+        uploadedById: teacher.id,
+      },
+    ],
+  });
+
   const hw1 = await prisma.homework.upsert({
     where: { id: HW_A1 },
     update: {},
@@ -164,6 +271,8 @@ async function main() {
       title: "作业一：在线实验心得",
       description: "不少于 30 字，谈谈在线编程与本地环境的差异。",
       dueAt: new Date(Date.now() + 5 * 24 * 3600 * 1000),
+      published: true,
+      publishedAt: new Date(),
     },
   });
 
@@ -176,6 +285,10 @@ async function main() {
       title: "作业二：算法复杂度",
       description: "简述 O(n) 与 O(n²) 的区别并各举一例。",
       dueAt: new Date(Date.now() + 10 * 24 * 3600 * 1000),
+      // 按班级发布示例：只发给 course1 的 CLASS_C1
+      targetClassId: CLASS_C1,
+      published: true,
+      publishedAt: new Date(),
     },
   });
 
@@ -188,6 +301,8 @@ async function main() {
       title: "思考题：你最想实现的数据结构",
       description: "任选一种（栈/队列/树等），说明用途（50 字以上）。",
       dueAt: new Date(Date.now() + 14 * 24 * 3600 * 1000),
+      published: true,
+      publishedAt: new Date(),
     },
   });
 
@@ -356,6 +471,8 @@ async function main() {
         score: 88,
         feedback: "态度认真，可补充具体功能建议。",
         graded: true,
+        released: true,
+        releasedAt: new Date(),
       },
       {
         homeworkId: hw1.id,
@@ -365,6 +482,8 @@ async function main() {
         score: 92,
         feedback: "写得清晰，可继续保持。",
         graded: true,
+        released: false,
+        releasedAt: null,
       },
       {
         homeworkId: hw1.id,
@@ -382,6 +501,8 @@ async function main() {
         score: 90,
         feedback: "概念准确。",
         graded: true,
+        released: true,
+        releasedAt: new Date(),
       },
       {
         homeworkId: hw2.id,
@@ -391,6 +512,8 @@ async function main() {
         score: 85,
         feedback: "举例可再具体。",
         graded: true,
+        released: true,
+        releasedAt: new Date(),
       },
       {
         homeworkId: hwB1.id,
@@ -400,6 +523,8 @@ async function main() {
         score: 95,
         feedback: "有思考深度。",
         graded: true,
+        released: false,
+        releasedAt: null,
       },
       {
         homeworkId: hwB1.id,
@@ -408,16 +533,47 @@ async function main() {
         score: null,
         feedback: null,
         graded: false,
+        released: false,
+      },
+    ],
+  });
+
+  /** 作业问答：提问/回答示例 */
+  await prisma.homeworkQuestion.deleteMany({ where: { homeworkId: { in: [hw1.id, hw2.id, hwB1.id] } } });
+  await prisma.homeworkQuestion.createMany({
+    data: [
+      {
+        homeworkId: hw1.id,
+        userId: s1.id,
+        question: "老师，作业一可以写成条目式总结吗？还是需要完整段落？",
+        answer: "可以条目式，但每条尽量讲清楚原因与例子，避免只写一句话。",
+        answeredById: teacher.id,
+        answeredAt: new Date(),
+      },
+      {
+        homeworkId: hw2.id,
+        userId: s2.id,
+        question: "O(n log n) 属于比 O(n) 更慢吗？能举个排序例子吗？",
+        answer: "是的，O(n log n) 比 O(n) 慢。比如归并排序/快速排序平均是 O(n log n)。",
+        answeredById: teacher.id,
+        answeredAt: new Date(),
+      },
+      {
+        homeworkId: hwB1.id,
+        userId: s2.id,
+        question: "我写栈的应用场景太少了，会扣分吗？",
       },
     ],
   });
 
   console.log("Seed OK — 演示数据已写入（可重复执行）。");
+  console.log(`  管理员: admin@demo.local / ${DEMO_PASSWORD}`);
   console.log(`  教师: teacher@demo.local / ${DEMO_PASSWORD}`);
   console.log(`  学生: student@demo.local（张三）、li@demo.local（李四）、wang@demo.local（王五） / ${DEMO_PASSWORD}`);
   console.log("  课程一:", course1.title, course1.id);
   console.log("  课程二:", course2.title, course2.id);
   console.log("  班级:", cls.name);
+  console.log("  已生成课程资料与实验附件文件：backend/uploads 下");
 }
 
 main()
