@@ -162,7 +162,7 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
 
       const rows = await prisma.testCase.findMany({
         where: { labId: id },
-        orderBy: { createdAt: "asc" as any },
+        orderBy: { id: "asc" },
       });
       return { testCases: rows };
     },
@@ -380,10 +380,10 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
 
       const norm = (s: string) =>
         s
-          .replace(/\\r\\n/g, \"\\n\")
-          .replace(/\\/\\*[\\s\\S]*?\\*\\//g, \"\") // block comments
-          .replace(/(^|\\n)\\s*\\/\\/.*(?=\\n|$)/g, \"\") // line comments
-          .replace(/\\s+/g, \" \")
+          .replace(/\r\n/g, "\n")
+          .replace(/\/\*[\s\S]*?\*\//g, "") // block comments
+          .replace(/(^|\n)\s*\/\/.*(?=\n|$)/g, "") // line comments
+          .replace(/\s+/g, " ")
           .trim()
           .toLowerCase();
 

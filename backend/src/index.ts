@@ -29,9 +29,9 @@ async function main() {
     credentials: true,
   });
 
-  // 动态加载：避免 TS 在未安装依赖时直接报错（构建/运行时仍需 npm install）
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-var-requires
-  const multipart = require("@fastify/multipart") as any;
+  // ESM 环境下使用动态 import 加载 multipart
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const multipart = (await import("@fastify/multipart")).default as any;
   await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } });
 
   await app.register(rateLimit, {
