@@ -262,6 +262,17 @@ async function main() {
     ],
   });
 
+  /** 班级须在带 targetClassId 的作业之前创建（Homework_targetClassId_fkey） */
+  const cls = await prisma.class.upsert({
+    where: { id: CLASS_C1 },
+    update: {},
+    create: {
+      id: CLASS_C1,
+      courseId: course1.id,
+      name: "计科 2022-1 班（演示）",
+    },
+  });
+
   const hw1 = await prisma.homework.upsert({
     where: { id: HW_A1 },
     update: {},
@@ -303,16 +314,6 @@ async function main() {
       dueAt: new Date(Date.now() + 14 * 24 * 3600 * 1000),
       published: true,
       publishedAt: new Date(),
-    },
-  });
-
-  const cls = await prisma.class.upsert({
-    where: { id: CLASS_C1 },
-    update: {},
-    create: {
-      id: CLASS_C1,
-      courseId: course1.id,
-      name: "计科 2022-1 班（演示）",
     },
   });
 

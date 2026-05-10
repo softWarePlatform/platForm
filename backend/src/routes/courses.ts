@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired, optionalAuth } from "../lib/authGuard.js";
 import { buildKnowledgeGraphFromCourse } from "../lib/knowledge-graph.js";
+import { teachingHomeworkOverviewForTeacher } from "../lib/teaching-homework-overview.js";
 
 const coursesRoutes: FastifyPluginAsync = async (app) => {
   /** 已发布课程用到的分类列表（用于筛选） */
@@ -62,19 +63,20 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
     };
   });
 
-  /** 教师：我的课程（含未发布） */
+  /** 教师：我的课程（含未发布）；管理员返回全部课程。同时附带作业测评列表 */
   app.get(
     "/courses/mine",
     { preHandler: authRequired("TEACHER", "ADMIN") },
     async (req) => {
       const list = await prisma.course.findMany({
-        where: { teacherId: req.auth!.sub },
+        where: req.auth!.role === "ADMIN" ? {} : { teacherId: req.auth!.sub },
         orderBy: { createdAt: "desc" },
         include: {
           _count: { select: { enrollments: true, labs: true, homeworks: true } },
         },
       });
-      return { courses: list };
+      const teachingHomework = await teachingHomeworkOverviewForTeacher(req.auth!.sub, req.auth!.role);
+      return { courses: list, teachingHomework };
     },
   );
 

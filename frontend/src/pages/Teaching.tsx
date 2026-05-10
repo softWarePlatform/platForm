@@ -38,9 +38,16 @@ export default function Teaching() {
 
   return (
     <div className="container">
-      <h2 style={{ marginTop: 10 }}>教学台</h2>
-      <div className="muted" style={{ marginTop: 8 }}>
-        创建课程、发布内容；实验测试用例请在课程详情进入实验后由教师接口创建（也可直接用 API 调试）。
+      <div className="spread" style={{ marginTop: 10, alignItems: "flex-start" }}>
+        <div>
+          <h2 style={{ margin: 0 }}>教学台</h2>
+          <div className="muted" style={{ marginTop: 8 }}>
+            创建课程、发布内容；实验测试用例请在课程详情进入实验后由教师接口创建（也可直接用 API 调试）。
+          </div>
+        </div>
+        <Link className="btn primary" to="/teaching/homework">
+          作业测评
+        </Link>
       </div>
 
       <div className="grid" style={{ marginTop: 16, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
@@ -80,12 +87,18 @@ export default function Teaching() {
                     · 作业 {c._count?.homeworks ?? 0}
                   </div>
                 </div>
-                <div className="row">
+                <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
                   <Link className="btn primary" to={`/courses/${c.id}/manage`}>
                     课程管理
                   </Link>
                   <Link className="btn" to={`/courses/${c.id}`}>
-                    打开
+                    打开课程
+                  </Link>
+                  <Link className="btn" to={`/courses/${c.id}#course-homework`}>
+                    作业批改
+                  </Link>
+                  <Link className="btn" to={`/courses/${c.id}/gradebook`}>
+                    成绩册
                   </Link>
                 </div>
               </div>

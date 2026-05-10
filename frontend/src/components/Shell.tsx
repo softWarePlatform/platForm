@@ -39,9 +39,14 @@ export default function Shell() {
                 课程中心
               </NavLink>
               {user?.role === "TEACHER" || user?.role === "ADMIN" ? (
-                <NavLink to="/teaching" style={linkStyle}>
-                  教学台
-                </NavLink>
+                <>
+                  <NavLink to="/teaching" style={linkStyle}>
+                    教学台
+                  </NavLink>
+                  <NavLink to="/teaching/homework" style={linkStyle}>
+                    作业测评
+                  </NavLink>
+                </>
               ) : null}
               {user?.role === "STUDENT" || user?.role === "ADMIN" ? (
                 <NavLink to="/my-homework" style={linkStyle}>

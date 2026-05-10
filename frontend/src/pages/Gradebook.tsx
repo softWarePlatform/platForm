@@ -162,6 +162,13 @@ export default function Gradebook() {
       ) : null}
 
       <div className="card" style={{ marginTop: 14, overflow: "auto" }}>
+        {data.students.length === 0 ? (
+          <div className="muted" style={{ padding: 16, lineHeight: 1.7 }}>
+            当前还没有选课学生，成绩册为空。请让学生从「课程中心」选课后刷新本页；作业批改请在
+            <Link to={`/courses/${courseId}`}>课程详情</Link>
+            的「作业」区块操作。
+          </div>
+        ) : null}
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr>

@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/authGuard.js";
+import { teachingHomeworkOverviewForTeacher } from "../lib/teaching-homework-overview.js";
 
 async function enrolledOrTeacher(userId: string, role: string, courseId: string, teacherId: string) {
   if (role === "ADMIN" || teacherId === userId) return true;
@@ -10,7 +11,17 @@ async function enrolledOrTeacher(userId: string, role: string, courseId: string,
   }));
 }
 
+function csvEscape(cell: string) {
+  if (/[",\n\r]/.test(cell)) return `"${cell.replace(/"/g, '""')}"`;
+  return cell;
+}
+
 const homeworkRoutes: FastifyPluginAsync = async (app) => {
+  /** 教师：本人授课课程下的全部作业（测评入口列表） */
+  app.get("/homework/teaching", { preHandler: authRequired("TEACHER", "ADMIN") }, async (req) => {
+    return teachingHomeworkOverviewForTeacher(req.auth!.sub, req.auth!.role);
+  });
+
   app.post(
     "/courses/:courseId/homework",
     { preHandler: authRequired("TEACHER", "ADMIN") },
@@ -198,13 +209,57 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
   );
 
   app.get(
-    "/homework/:id/submissions",
+    "/homework/:id/export-grades.csv",
     { preHandler: authRequired("TEACHER", "ADMIN") },
     async (req, reply) => {
       const { id } = req.params as { id: string };
       const hw = await prisma.homework.findUnique({
         where: { id },
         include: { course: true },
+      });
+      if (!hw) return reply.code(404).send({ error: "作业不存在" });
+      if (hw.course.teacherId !== req.auth!.sub && req.auth!.role !== "ADMIN") {
+        return reply.code(403).send({ error: "无权导出" });
+      }
+
+      const rows = await prisma.homeworkSubmission.findMany({
+        where: { homeworkId: id },
+        include: { user: { select: { name: true, email: true } } },
+        orderBy: { updatedAt: "desc" },
+      });
+
+      const header = ["姓名", "邮箱", "分数", "已批改", "成绩已发布", "反馈", "最后更新(ISO)"];
+      const lines = [header.join(",")];
+      for (const r of rows) {
+        const cells = [
+          csvEscape(r.user.name),
+          csvEscape(r.user.email),
+          r.score == null ? "" : String(r.score),
+          r.graded ? "是" : "否",
+          r.released ? "是" : "否",
+          csvEscape((r.feedback ?? "").replace(/\r\n/g, "\n")),
+          csvEscape(new Date(r.updatedAt).toISOString()),
+        ];
+        lines.push(cells.join(","));
+      }
+
+      const safeTitle = hw.title.replace(/[\\/:*?"<>|]/g, "_").slice(0, 60);
+      const filename = `作业成绩_${safeTitle}.csv`;
+      return reply
+        .header("Content-Type", "text/csv; charset=utf-8")
+        .header("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`)
+        .send(`\ufeff${lines.join("\n")}\n`);
+    },
+  );
+
+  app.get(
+    "/homework/:id/submissions",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const hw = await prisma.homework.findUnique({
+        where: { id },
+        include: { course: { select: { id: true, title: true, teacherId: true } } },
       });
       if (!hw) return reply.code(404).send({ error: "作业不存在" });
       if (hw.course.teacherId !== req.auth!.sub && req.auth!.role !== "ADMIN") {
@@ -216,7 +271,17 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
         include: { user: { select: { id: true, name: true, email: true } } },
         orderBy: { updatedAt: "desc" },
       });
-      return { submissions: rows };
+      return {
+        homework: {
+          id: hw.id,
+          title: hw.title,
+          description: hw.description,
+          courseId: hw.courseId,
+          courseTitle: hw.course.title,
+          published: hw.published,
+        },
+        submissions: rows,
+      };
     },
   );
 

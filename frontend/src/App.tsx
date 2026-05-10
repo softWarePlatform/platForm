@@ -12,6 +12,8 @@ import MyHomework from "./pages/MyHomework";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import Teaching from "./pages/Teaching";
+import TeachingHomeworkList from "./pages/TeachingHomeworkList";
+import HomeworkTeacherReview from "./pages/HomeworkTeacherReview";
 import AdminUsers from "./pages/AdminUsers";
 import { useAuth } from "./auth/AuthContext";
 
@@ -64,6 +66,22 @@ export default function App() {
           element={
             <RequireRole roles={["TEACHER", "ADMIN"]}>
               <Gradebook />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/teaching/homework/:homeworkId"
+          element={
+            <RequireRole roles={["TEACHER", "ADMIN"]}>
+              <HomeworkTeacherReview />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/teaching/homework"
+          element={
+            <RequireRole roles={["TEACHER", "ADMIN"]}>
+              <TeachingHomeworkList />
             </RequireRole>
           }
         />
