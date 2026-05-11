@@ -11,6 +11,7 @@ type GradebookStudent = {
     title: string;
     score: number | null;
     graded: boolean;
+    released: boolean;
   }>;
   summary: {
     labAverage: number | null;
@@ -81,6 +82,7 @@ async function loadGradebook(courseId: string): Promise<{
         title: h.title,
         score: row?.score ?? null,
         graded: row?.graded ?? false,
+        released: row?.released ?? false,
       };
     });
 
@@ -163,7 +165,126 @@ function toCsv(data: NonNullable<Awaited<ReturnType<typeof loadGradebook>>>): st
   return `\ufeff${lines.join("\n")}\n`;
 }
 
+function homeworkCellForStudent(h: GradebookStudent["homework"][number]): string {
+  if (!h.graded) return "待批改";
+  if (!h.released) return "已批改（成绩待发布）";
+  return h.score == null ? "" : String(h.score);
+}
+
+/** 学生个人成绩册：课程总览（权重、均分、总评、排名、人数）+ 各课实验/作业分项 */
+async function buildMyGradebookCsv(userId: string): Promise<string> {
+  const enrollments = await prisma.enrollment.findMany({
+    where: { userId },
+    include: { course: { select: { id: true, title: true } } },
+  });
+
+  const overviewHeader = [
+    "记录类型",
+    "课程名称",
+    "课程ID",
+    "实验权重",
+    "作业权重",
+    "实验均分",
+    "作业均分",
+    "总评",
+    "排名",
+    "选课人数",
+  ];
+  const detailHeader = [
+    "记录类型",
+    "课程名称",
+    "课程ID",
+    "分项类型",
+    "项目标题",
+    "分数或状态",
+    "作业成绩已发布",
+    "说明",
+  ];
+
+  const overviewRows: string[] = [];
+  const detailRows: string[] = [];
+
+  for (const en of enrollments) {
+    const data = await loadGradebook(en.course.id);
+    if (!data) continue;
+    const mine = data.students.find((s) => s.user.id === userId);
+    if (!mine) continue;
+    const classSize = data.students.length;
+    overviewRows.push(
+      [
+        csvEscape("课程总览"),
+        csvEscape(data.courseTitle),
+        csvEscape(data.courseId),
+        csvEscape(String(data.weights.lab)),
+        csvEscape(String(data.weights.homework)),
+        csvEscape(mine.summary.labAverage == null ? "" : mine.summary.labAverage.toFixed(2)),
+        csvEscape(mine.summary.homeworkAverage == null ? "" : mine.summary.homeworkAverage.toFixed(2)),
+        csvEscape(mine.summary.totalScore == null ? "" : mine.summary.totalScore.toFixed(2)),
+        csvEscape(mine.rank == null ? "" : String(mine.rank)),
+        csvEscape(String(classSize)),
+      ].join(","),
+    );
+
+    for (const lab of mine.labs) {
+      detailRows.push(
+        [
+          csvEscape("分项成绩"),
+          csvEscape(data.courseTitle),
+          csvEscape(data.courseId),
+          csvEscape("实验"),
+          csvEscape(lab.title),
+          csvEscape(lab.bestScore == null ? "" : String(lab.bestScore)),
+          csvEscape(""),
+          csvEscape("各实验取提交最高分"),
+        ].join(","),
+      );
+    }
+    for (const h of mine.homework) {
+      detailRows.push(
+        [
+          csvEscape("分项成绩"),
+          csvEscape(data.courseTitle),
+          csvEscape(data.courseId),
+          csvEscape("作业"),
+          csvEscape(h.title),
+          csvEscape(homeworkCellForStudent(h)),
+          csvEscape(h.graded ? (h.released ? "是" : "否") : ""),
+          csvEscape(""),
+        ].join(","),
+      );
+    }
+  }
+
+  const lines = [
+    [csvEscape("文件说明"), csvEscape("个人成绩册：含各门课总评、排名、权重、实验/作业分项；作业具体分数仅在教师发布后显示")].join(","),
+    "",
+    overviewHeader.join(","),
+    ...overviewRows,
+    "",
+    detailHeader.join(","),
+    ...detailRows,
+  ];
+  return `\ufeff${lines.join("\n")}\n`;
+}
+
 const gradesRoutes: FastifyPluginAsync = async (app) => {
+  app.get(
+    "/grades/me/export.csv",
+    { preHandler: authRequired("STUDENT", "ADMIN") },
+    async (req, reply) => {
+      const uid = req.auth!.sub;
+      const user = await prisma.user.findUnique({ where: { id: uid }, select: { name: true } });
+      const safe = (user?.name ?? "我").replace(/[\\/:*?"<>|]/g, "_").slice(0, 40);
+      const csv = await buildMyGradebookCsv(uid);
+      const filename = `我的成绩册_${safe}.csv`;
+      return reply
+        .header("Content-Type", "text/csv; charset=utf-8")
+        .header("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`)
+        .send(csv);
+    },
+  );
+
+  /** 学生成绩总览：每门选课一条 — totalScore/rank/classSize/weights 见各字段 */
   app.get("/grades/me", { preHandler: authRequired("STUDENT", "ADMIN") }, async (req) => {
     const uid = req.auth!.sub;
 
@@ -182,8 +303,10 @@ const gradesRoutes: FastifyPluginAsync = async (app) => {
           courseId: data.courseId,
           courseTitle: data.courseTitle,
           rank: mine.rank,
+          /** 参与本课程成绩排名的人数（当前为选课总人数） */
           classSize: data.students.length,
           summary: mine.summary,
+          /** 总评 = 实验均分×lab + 作业均分×homework（与教师成绩册一致） */
           weights: data.weights,
         };
       }),
