@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
@@ -29,6 +30,7 @@
     "ioredis": "^5.6.0",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^6.5.0",
+    "teaching-platform": "file:..",
     "zod": "^3.24.2"
   },
   "devDependencies": {

@@ -63,6 +63,7 @@ export default function CourseDetail() {
   const [hwQuestionDrafts, setHwQuestionDrafts] = useState<Record<string, string>>({});
   const [hwAnswerDrafts, setHwAnswerDrafts] = useState<Record<string, string>>({});
   const [hwSubmissions, setHwSubmissions] = useState<Record<string, any[]>>({});
+  const [hwGradeDrafts, setHwGradeDrafts] = useState<Record<string, { score: string; feedback: string }>>({});
   const [hwAiPreview, setHwAiPreview] = useState<Record<string, { score: number; feedback: string }>>({});
   const [err, setErr] = useState<string | null>(null);
   const [materials, setMaterials] = useState<any[]>([]);
@@ -75,6 +76,49 @@ export default function CourseDetail() {
     if (user.role === "ADMIN") return true;
     return user.id === course.teacher?.id;
   }, [user, course]);
+
+  /** 课程详情里的 homeworks/labs 字段不全；登录后应以专用接口结果为准，避免 `course.homeworks ?? state` 永远用简略列表 */
+  const displayLabs = useMemo(() => {
+    if (labs.length > 0) return labs;
+    return course?.labs ? course.labs : labs;
+  }, [labs, course?.labs]);
+  const displayHomework = useMemo(() => {
+    if (homework.length > 0) return homework;
+    return course?.homeworks ? course.homeworks : homework;
+  }, [homework, course?.homeworks]);
+
+  /** 教师：进入课程后自动拉取各作业提交，便于批改与统计 */
+  useEffect(() => {
+    if (!isTeacher || !token || !id) return;
+    let cancelled = false;
+    (async () => {
+      for (const h of displayHomework) {
+        try {
+          const { data } = await api.get(`/homework/${h.id}/submissions`);
+          if (cancelled) return;
+          const list = data.submissions ?? [];
+          setHwSubmissions((m) => ({ ...m, [h.id]: list }));
+          setHwGradeDrafts((prev) => {
+            const next = { ...prev };
+            for (const s of list) {
+              if (next[s.id] == null) {
+                next[s.id] = {
+                  score: s.score != null ? String(s.score) : "",
+                  feedback: s.feedback ?? "",
+                };
+              }
+            }
+            return next;
+          });
+        } catch {
+          /* ignore */
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isTeacher, token, id, displayHomework]);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,6 +161,15 @@ export default function CourseDetail() {
       cancelled = true;
     };
   }, [id, token]);
+
+  /** 教学台「作业批改」链接带 #course-homework 时滚到作业区 */
+  useEffect(() => {
+    if (!course) return;
+    if (window.location.hash !== "#course-homework") return;
+    requestAnimationFrame(() => {
+      document.getElementById("course-homework")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [course, id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -458,7 +511,7 @@ export default function CourseDetail() {
             需要先登录并完成选课（学生），或教师从教学台查看。
           </div>
           <div className="grid" style={{ marginTop: 12 }}>
-            {(course.labs ?? labs).map((l: any) => (
+            {displayLabs.map((l: any) => (
               <div key={l.id} className="row spread" style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
                 <div>
                   <div style={{ fontWeight: 700 }}>{l.title}</div>
@@ -469,14 +522,14 @@ export default function CourseDetail() {
                 </Link>
               </div>
             ))}
-            {(course.labs ?? labs).length === 0 ? <div className="muted">暂无实验</div> : null}
+            {displayLabs.length === 0 ? <div className="muted">暂无实验</div> : null}
           </div>
         </div>
 
-        <div className="card">
+        <div className="card" id="course-homework">
           <div style={{ fontWeight: 900 }}>作业</div>
           <div className="grid" style={{ marginTop: 12 }}>
-            {(course.homeworks ?? homework).map((h: any) => (
+            {displayHomework.map((h: any) => (
               <div key={h.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
                 <div className="row spread">
                   <div>
@@ -557,17 +610,47 @@ export default function CourseDetail() {
                         type="button"
                         onClick={async () => {
                           const { data } = await api.get(`/homework/${h.id}/submissions`);
-                          setHwSubmissions((m) => ({ ...m, [h.id]: data.submissions ?? [] }));
+                          const list = data.submissions ?? [];
+                          setHwSubmissions((m) => ({ ...m, [h.id]: list }));
+                          setHwGradeDrafts((prev) => {
+                            const next = { ...prev };
+                            for (const row of list) {
+                              next[row.id] = {
+                                score: row.score != null ? String(row.score) : "",
+                                feedback: row.feedback ?? "",
+                              };
+                            }
+                            return next;
+                          });
                         }}
                       >
                         刷新提交
                       </button>
                     </div>
+                    {(() => {
+                      const list = hwSubmissions[h.id] ?? [];
+                      const graded = list.filter((x: { graded?: boolean }) => x.graded).length;
+                      const released = list.filter((x: { released?: boolean }) => x.released).length;
+                      const nums = list
+                        .filter((x: { graded?: boolean; score?: number | null }) => x.graded && x.score != null)
+                        .map((x: { score: number }) => Number(x.score));
+                      const avg = nums.length ? nums.reduce((a: number, b: number) => a + b, 0) / nums.length : null;
+                      return (
+                        <div className="muted" style={{ marginTop: 8, lineHeight: 1.6 }}>
+                          提交 {list.length} · 已批改 {graded} · 成绩已发布 {released}
+                          {avg != null ? ` · 已批改均分 ${avg.toFixed(1)}` : ""}
+                        </div>
+                      );
+                    })()}
                     <div className="grid" style={{ marginTop: 8 }}>
                       {(hwSubmissions[h.id] ?? []).map((s: any) => (
                         <div key={s.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 8 }}>
                           <div className="muted">
                             {s.user?.name} · {new Date(s.updatedAt).toLocaleString()}
+                            <span style={{ marginLeft: 8 }}>
+                              {!s.graded ? "· 待批改" : s.released ? "· 成绩已发布给学生" : "· 已批改（待发布）"}
+                              {s.graded && s.score != null ? ` · 当前分 ${s.score}` : ""}
+                            </span>
                           </div>
                           <div style={{ marginTop: 6, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
                             {s.content}
@@ -593,7 +676,18 @@ export default function CourseDetail() {
                                   apply: true,
                                 });
                                 const { data } = await api.get(`/homework/${h.id}/submissions`);
-                                setHwSubmissions((m) => ({ ...m, [h.id]: data.submissions ?? [] }));
+                                const list = data.submissions ?? [];
+                                setHwSubmissions((m) => ({ ...m, [h.id]: list }));
+                                setHwGradeDrafts((prev) => {
+                                  const next = { ...prev };
+                                  for (const row of list) {
+                                    next[row.id] = {
+                                      score: row.score != null ? String(row.score) : "",
+                                      feedback: row.feedback ?? "",
+                                    };
+                                  }
+                                  return next;
+                                });
                               }}
                             >
                               一键应用 AI
@@ -606,10 +700,78 @@ export default function CourseDetail() {
                               {hwAiPreview[s.id].feedback}
                             </div>
                           ) : null}
+                          <div className="grid" style={{ marginTop: 10 }}>
+                            <div className="row" style={{ gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                              <label className="muted">分数（0–100）</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={1}
+                                style={{ width: 96 }}
+                                value={hwGradeDrafts[s.id]?.score ?? ""}
+                                onChange={(e) =>
+                                  setHwGradeDrafts((m) => ({
+                                    ...m,
+                                    [s.id]: {
+                                      score: e.target.value,
+                                      feedback: m[s.id]?.feedback ?? s.feedback ?? "",
+                                    },
+                                  }))
+                                }
+                              />
+                            </div>
+                            <textarea
+                              rows={3}
+                              placeholder="批改反馈（可选）"
+                              value={hwGradeDrafts[s.id]?.feedback ?? ""}
+                              onChange={(e) =>
+                                setHwGradeDrafts((m) => ({
+                                  ...m,
+                                  [s.id]: {
+                                    score: m[s.id]?.score ?? (s.score != null ? String(s.score) : ""),
+                                    feedback: e.target.value,
+                                  },
+                                }))
+                              }
+                            />
+                            <button
+                              className="btn primary"
+                              type="button"
+                              onClick={async () => {
+                                const raw = hwGradeDrafts[s.id]?.score ?? "";
+                                const score = Number(raw);
+                                if (!Number.isFinite(score) || score < 0 || score > 100) {
+                                  setErr("请输入 0–100 之间的分数");
+                                  return;
+                                }
+                                setErr(null);
+                                await api.patch(`/homework/submissions/${s.id}/grade`, {
+                                  score,
+                                  feedback: (hwGradeDrafts[s.id]?.feedback ?? "").trim() || undefined,
+                                });
+                                const { data } = await api.get(`/homework/${h.id}/submissions`);
+                                const list = data.submissions ?? [];
+                                setHwSubmissions((m) => ({ ...m, [h.id]: list }));
+                                setHwGradeDrafts((prev) => {
+                                  const next = { ...prev };
+                                  for (const row of list) {
+                                    next[row.id] = {
+                                      score: row.score != null ? String(row.score) : "",
+                                      feedback: row.feedback ?? "",
+                                    };
+                                  }
+                                  return next;
+                                });
+                              }}
+                            >
+                              保存批改
+                            </button>
+                          </div>
                         </div>
                       ))}
                       {(hwSubmissions[h.id] ?? []).length === 0 ? (
-                        <div className="muted">暂无学生提交，点击“刷新提交”加载。</div>
+                        <div className="muted">暂无学生提交；若刚选课，请点「刷新提交」。</div>
                       ) : null}
                     </div>
                   </div>
@@ -685,7 +847,7 @@ export default function CourseDetail() {
                 </div>
               </div>
             ))}
-            {(course.homeworks ?? homework).length === 0 ? <div className="muted">暂无作业</div> : null}
+            {displayHomework.length === 0 ? <div className="muted">暂无作业</div> : null}
           </div>
         </div>
       </div>

@@ -42,6 +42,15 @@ a {
   padding: 18px;
 }
 
+/* 首页功能入口：可点击卡片 */
+a.card.home-feature-tile {
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+a.card.home-feature-tile:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
+}
+
 .grid {
   display: grid;
   gap: 14px;
