@@ -151,12 +151,16 @@ export default function Gradebook() {
       {data.distribution ? (
         <div className="card" style={{ marginTop: 14 }}>
           <div style={{ fontWeight: 800 }}>总评分布</div>
-          <div className="row" style={{ marginTop: 10, gap: 10 }}>
+          <div className="muted" style={{ marginTop: 6, fontSize: 13, lineHeight: 1.5 }}>
+            按加权总评分段；仅统计已算出总评的学生。「暂无总评」表示实验与作业均分皆不可用（不计入各分段）。
+          </div>
+          <div className="row" style={{ marginTop: 10, gap: 10, flexWrap: "wrap" }}>
             <span className="muted">&lt;60：{data.distribution.lt60}</span>
-            <span className="muted">60-69：{data.distribution.b60_69}</span>
-            <span className="muted">70-79：{data.distribution.b70_79}</span>
-            <span className="muted">80-89：{data.distribution.b80_89}</span>
+            <span className="muted">60–69：{data.distribution.b60_69}</span>
+            <span className="muted">70–79：{data.distribution.b70_79}</span>
+            <span className="muted">80–89：{data.distribution.b80_89}</span>
             <span className="muted">90+：{data.distribution.gte90}</span>
+            <span className="muted">暂无总评：{data.distribution.noTotalScore ?? 0}</span>
           </div>
         </div>
       ) : null}
@@ -198,7 +202,8 @@ export default function Gradebook() {
                   <div className="grid">
                     {s.homework.map((h: any) => (
                       <div key={h.homeworkId} className="muted">
-                        {h.title}：{!h.graded ? "未批改" : `${Number(h.score).toFixed(1)}`}
+                        {h.title}：
+                        {!h.graded ? "未批改" : h.score == null ? "—" : `${Number(h.score).toFixed(1)}`}
                       </div>
                     ))}
                   </div>

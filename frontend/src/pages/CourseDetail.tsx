@@ -64,7 +64,10 @@ export default function CourseDetail() {
   const [hwAnswerDrafts, setHwAnswerDrafts] = useState<Record<string, string>>({});
   const [hwSubmissions, setHwSubmissions] = useState<Record<string, any[]>>({});
   const [hwGradeDrafts, setHwGradeDrafts] = useState<Record<string, { score: string; feedback: string }>>({});
-  const [hwAiPreview, setHwAiPreview] = useState<Record<string, { score: number; feedback: string }>>({});
+  const [hwAiPreview, setHwAiPreview] = useState<
+    Record<string, { score: number; feedback: string; source?: string }>
+  >({});
+  const [hwAiBusy, setHwAiBusy] = useState<Record<string, boolean>>({});
   const [err, setErr] = useState<string | null>(null);
   const [materials, setMaterials] = useState<any[]>([]);
 
@@ -604,7 +607,12 @@ export default function CourseDetail() {
                 {isTeacher ? (
                   <div className="card" style={{ marginTop: 10, boxShadow: "none" }}>
                     <div className="row spread">
-                      <div style={{ fontWeight: 700 }}>批改台（教师）</div>
+                      <div>
+                        <div style={{ fontWeight: 700 }}>批改台（教师）</div>
+                        <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>
+                          AI 建议：可在 backend/.env 指向本机 Ollama（OLLAMA_BASE_URL）免费开源模型，或配置 OPENAI_API_KEY 等云端接口；未配置则仅用本地启发式。分数需教师终审。
+                        </div>
+                      </div>
                       <button
                         className="btn"
                         type="button"
@@ -659,35 +667,72 @@ export default function CourseDetail() {
                             <button
                               className="btn"
                               type="button"
+                              disabled={hwAiBusy[s.id]}
                               onClick={async () => {
-                                const { data } = await api.post(`/homework/submissions/${s.id}/ai-suggest`, {
-                                  apply: false,
-                                });
-                                setHwAiPreview((m) => ({ ...m, [s.id]: data.suggestion }));
+                                setHwAiBusy((m) => ({ ...m, [s.id]: true }));
+                                setErr(null);
+                                try {
+                                  const { data } = await api.post(`/homework/submissions/${s.id}/ai-suggest`, {
+                                    apply: false,
+                                  });
+                                  setHwAiPreview((m) => ({
+                                    ...m,
+                                    [s.id]: {
+                                      ...data.suggestion,
+                                      source: data.source as string | undefined,
+                                    },
+                                  }));
+                                } catch (e2: unknown) {
+                                  const msg =
+                                    typeof e2 === "object" && e2 !== null && "response" in e2
+                                      ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
+                                      : null;
+                                  setErr(msg ?? "AI 建议请求失败");
+                                } finally {
+                                  setHwAiBusy((m) => ({ ...m, [s.id]: false }));
+                                }
                               }}
                             >
-                              AI 建议
+                              {hwAiBusy[s.id] ? "生成中…" : "AI 建议"}
                             </button>
                             <button
                               className="btn"
                               type="button"
+                              disabled={hwAiBusy[s.id]}
                               onClick={async () => {
-                                await api.post(`/homework/submissions/${s.id}/ai-suggest`, {
-                                  apply: true,
-                                });
-                                const { data } = await api.get(`/homework/${h.id}/submissions`);
-                                const list = data.submissions ?? [];
-                                setHwSubmissions((m) => ({ ...m, [h.id]: list }));
-                                setHwGradeDrafts((prev) => {
-                                  const next = { ...prev };
-                                  for (const row of list) {
-                                    next[row.id] = {
-                                      score: row.score != null ? String(row.score) : "",
-                                      feedback: row.feedback ?? "",
-                                    };
-                                  }
-                                  return next;
-                                });
+                                setHwAiBusy((m) => ({ ...m, [s.id]: true }));
+                                setErr(null);
+                                try {
+                                  await api.post(`/homework/submissions/${s.id}/ai-suggest`, {
+                                    apply: true,
+                                  });
+                                  const { data } = await api.get(`/homework/${h.id}/submissions`);
+                                  const list = data.submissions ?? [];
+                                  setHwSubmissions((m) => ({ ...m, [h.id]: list }));
+                                  setHwGradeDrafts((prev) => {
+                                    const next = { ...prev };
+                                    for (const row of list) {
+                                      next[row.id] = {
+                                        score: row.score != null ? String(row.score) : "",
+                                        feedback: row.feedback ?? "",
+                                      };
+                                    }
+                                    return next;
+                                  });
+                                  setHwAiPreview((m) => {
+                                    const n = { ...m };
+                                    delete n[s.id];
+                                    return n;
+                                  });
+                                } catch (e2: unknown) {
+                                  const msg =
+                                    typeof e2 === "object" && e2 !== null && "response" in e2
+                                      ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
+                                      : null;
+                                  setErr(msg ?? "一键应用失败");
+                                } finally {
+                                  setHwAiBusy((m) => ({ ...m, [s.id]: false }));
+                                }
                               }}
                             >
                               一键应用 AI
@@ -695,6 +740,10 @@ export default function CourseDetail() {
                           </div>
                           {hwAiPreview[s.id] ? (
                             <div className="muted" style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>
+                              <div style={{ fontSize: 12 }}>
+                                来源：
+                                {hwAiPreview[s.id].source === "heuristic" ? "本地启发式" : "AI 模型"}
+                              </div>
                               AI建议分：{hwAiPreview[s.id].score}
                               {"\n"}
                               {hwAiPreview[s.id].feedback}

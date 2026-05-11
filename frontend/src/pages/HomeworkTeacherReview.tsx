@@ -14,7 +14,10 @@ export default function HomeworkTeacherReview() {
   } | null>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [drafts, setDrafts] = useState<Record<string, { score: string; feedback: string }>>({});
-  const [aiPreview, setAiPreview] = useState<Record<string, { score: number; feedback: string }>>({});
+  const [aiPreview, setAiPreview] = useState<
+    Record<string, { score: number; feedback: string; source?: string }>
+  >({});
+  const [aiBusy, setAiBusy] = useState<Record<string, boolean>>({});
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -169,19 +172,45 @@ export default function HomeworkTeacherReview() {
               <button
                 className="btn"
                 type="button"
+                disabled={aiBusy[s.id]}
                 onClick={async () => {
-                  const { data } = await api.post(`/homework/submissions/${s.id}/ai-suggest`, { apply: false });
-                  setAiPreview((m) => ({ ...m, [s.id]: data.suggestion }));
+                  setAiBusy((m) => ({ ...m, [s.id]: true }));
+                  setErr(null);
+                  try {
+                    const { data } = await api.post(`/homework/submissions/${s.id}/ai-suggest`, { apply: false });
+                    setAiPreview((m) => ({
+                      ...m,
+                      [s.id]: { ...data.suggestion, source: data.source as string | undefined },
+                    }));
+                  } catch {
+                    setErr("AI 建议请求失败");
+                  } finally {
+                    setAiBusy((m) => ({ ...m, [s.id]: false }));
+                  }
                 }}
               >
-                AI 建议
+                {aiBusy[s.id] ? "生成中…" : "AI 建议"}
               </button>
               <button
                 className="btn"
                 type="button"
+                disabled={aiBusy[s.id]}
                 onClick={async () => {
-                  await api.post(`/homework/submissions/${s.id}/ai-suggest`, { apply: true });
-                  await load();
+                  setAiBusy((m) => ({ ...m, [s.id]: true }));
+                  setErr(null);
+                  try {
+                    await api.post(`/homework/submissions/${s.id}/ai-suggest`, { apply: true });
+                    await load();
+                    setAiPreview((m) => {
+                      const n = { ...m };
+                      delete n[s.id];
+                      return n;
+                    });
+                  } catch {
+                    setErr("一键应用失败");
+                  } finally {
+                    setAiBusy((m) => ({ ...m, [s.id]: false }));
+                  }
                 }}
               >
                 一键应用 AI
@@ -189,6 +218,10 @@ export default function HomeworkTeacherReview() {
             </div>
             {aiPreview[s.id] ? (
               <div className="muted" style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>
+                <div style={{ fontSize: 12 }}>
+                  来源：
+                  {aiPreview[s.id].source === "heuristic" ? "本地启发式" : "AI 模型"}
+                </div>
                 AI建议分：{aiPreview[s.id].score}
                 {"\n"}
                 {aiPreview[s.id].feedback}

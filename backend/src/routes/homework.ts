@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/authGuard.js";
 import { teachingHomeworkOverviewForTeacher } from "../lib/teaching-homework-overview.js";
+import { suggestHomeworkGrading } from "../lib/ai-homework-suggest.js";
+import { resolveHomeworkAi } from "../lib/homework-ai-config.js";
 
 async function enrolledOrTeacher(userId: string, role: string, courseId: string, teacherId: string) {
   if (role === "ADMIN" || teacherId === userId) return true;
@@ -342,42 +344,39 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(403).send({ error: "无权操作" });
       }
 
-      const text = row.content.trim();
-      const len = text.length;
-      const paragraphs = text.split(/\n{2,}/).filter((x) => x.trim().length > 0).length;
-      const keywords = ["复杂度", "算法", "数据结构", "实现", "思路", "边界", "优化", "案例"];
-      const hit = keywords.filter((k) => text.includes(k)).length;
-
-      // 简易启发式：长度 + 结构 + 关键词覆盖（演示用）
-      const score =
-        Math.max(
-          0,
-          Math.min(
-            100,
-            Math.round(
-              35 +
-                Math.min(35, len / 20) +
-                Math.min(10, paragraphs * 3) +
-                Math.min(20, hit * 4),
-            ),
-          ),
-        );
-      const feedback = [
-        `AI建议分数：${score}（仅供教师参考）`,
-        len < 60 ? "内容较短，建议补充分析过程与关键步骤。" : "内容长度充足。",
-        hit < 2 ? "关键词覆盖较少，建议补充术语与关键概念。" : "关键词覆盖较好。",
-        paragraphs <= 1 ? "建议分段组织答案，增强可读性。" : "结构分段较清晰。",
-      ].join("\n");
+      const hwAi = resolveHomeworkAi();
+      const ai = await suggestHomeworkGrading({
+        apiKey: hwAi.apiKey,
+        omitBearerAuth: hwAi.omitBearerAuth,
+        baseUrl: hwAi.baseUrl,
+        model: hwAi.model,
+        homeworkTitle: row.homework.title,
+        homeworkDescription: row.homework.description,
+        studentName: row.user.name,
+        submissionContent: row.content,
+      });
+      const { score, feedback } = ai;
 
       if (body.data.apply) {
         const updated = await prisma.homeworkSubmission.update({
           where: { id: sid },
           data: { score, feedback, graded: true, released: false, releasedAt: null },
         });
-        return { suggestion: { score, feedback }, applied: true, submission: updated };
+        return {
+          suggestion: { score, feedback },
+          applied: true,
+          submission: updated,
+          source: ai.source,
+          fallbackReason: ai.fallbackReason,
+        };
       }
 
-      return { suggestion: { score, feedback }, applied: false };
+      return {
+        suggestion: { score, feedback },
+        applied: false,
+        source: ai.source,
+        fallbackReason: ai.fallbackReason,
+      };
     },
   );
 

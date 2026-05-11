@@ -14,6 +14,7 @@ import homeworkRoutes from "./routes/homework.js";
 import gradesRoutes from "./routes/grades.js";
 import discussionsRoutes from "./routes/discussions.js";
 import aiHelpRoutes from "./routes/ai-help.js";
+import { resolveHomeworkAi } from "./lib/homework-ai-config.js";
 
 function parseOrigins(): boolean | string | string[] {
   const raw = config.corsOrigin;
@@ -68,6 +69,13 @@ async function main() {
   await app.register(gradesRoutes);
   await app.register(discussionsRoutes);
   await app.register(aiHelpRoutes);
+
+  const ha = resolveHomeworkAi();
+  app.log.info(
+    ha.apiKey || ha.omitBearerAuth
+      ? `作业批改 AI：${ha.hint} → ${ha.baseUrl} / ${ha.model}${ha.omitBearerAuth ? "（无 Bearer）" : ""}`
+      : "作业批改 AI：未配置云端密钥且未指向本机 Ollama（见 .env.example），将仅用本地启发式",
+  );
 
   await app.listen({ port: config.port, host: "0.0.0.0" });
 }

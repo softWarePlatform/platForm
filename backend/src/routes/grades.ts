@@ -25,12 +25,15 @@ async function loadGradebook(courseId: string): Promise<{
   courseTitle: string;
   courseId: string;
   weights: { lab: number; homework: number };
+  /** 按总评分数分段人数（左闭右开区间边界：<60、[60,70)、…、[90,+∞)）；仅统计 totalScore 非空的学生 */
   distribution: {
     lt60: number;
     b60_69: number;
     b70_79: number;
     b80_89: number;
     gte90: number;
+    /** 无法得到总评（实验均分与作业均分均为空）的人数，不计入上方五段 */
+    noTotalScore: number;
   };
   students: GradebookStudent[];
 } | null> {
@@ -67,12 +70,13 @@ async function loadGradebook(courseId: string): Promise<{
   const students: GradebookStudent[] = studentIds.map((sid) => {
     const user = course.enrollments.find((e) => e.userId === sid)!.user;
     const labScores = course.labs.map((lab) => {
-      const best = submissions
+      const numericScores = submissions
         .filter((s) => s.labId === lab.id && s.userId === sid)
         .map((s) => s.score)
-        .filter((x): x is number => x != null)
-        .reduce((a, b) => Math.max(a, b), 0);
-      return { labId: lab.id, title: lab.title, bestScore: best || null };
+        .filter((x): x is number => x != null);
+      /** 无提交时 best 为 null；得分为 0 时保留 0（勿用 `x || null`） */
+      const bestScore = numericScores.length === 0 ? null : Math.max(...numericScores);
+      return { labId: lab.id, title: lab.title, bestScore };
     });
 
     const hwForStudent = course.homeworks.map((h) => {
@@ -115,10 +119,20 @@ async function loadGradebook(courseId: string): Promise<{
     s.rank = rankMap.get(s.user.id);
   });
 
-  const dist = { lt60: 0, b60_69: 0, b70_79: 0, b80_89: 0, gte90: 0 };
+  students.sort((a, b) => {
+    const ra = a.rank ?? Number.MAX_SAFE_INTEGER;
+    const rb = b.rank ?? Number.MAX_SAFE_INTEGER;
+    if (ra !== rb) return ra - rb;
+    return a.user.email.localeCompare(b.user.email);
+  });
+
+  const dist = { lt60: 0, b60_69: 0, b70_79: 0, b80_89: 0, gte90: 0, noTotalScore: 0 };
   for (const s of students) {
     const t = s.summary.totalScore;
-    if (t == null) continue;
+    if (t == null) {
+      dist.noTotalScore++;
+      continue;
+    }
     if (t < 60) dist.lt60++;
     else if (t < 70) dist.b60_69++;
     else if (t < 80) dist.b70_79++;
@@ -161,6 +175,15 @@ function toCsv(data: NonNullable<Awaited<ReturnType<typeof loadGradebook>>>): st
     ];
     lines.push(cells.join(","));
   }
+
+  lines.push("");
+  lines.push([csvEscape("指标"), csvEscape("人数")].join(","));
+  lines.push([csvEscape("<60"), csvEscape(String(data.distribution.lt60))].join(","));
+  lines.push([csvEscape("60-69"), csvEscape(String(data.distribution.b60_69))].join(","));
+  lines.push([csvEscape("70-79"), csvEscape(String(data.distribution.b70_79))].join(","));
+  lines.push([csvEscape("80-89"), csvEscape(String(data.distribution.b80_89))].join(","));
+  lines.push([csvEscape("90+"), csvEscape(String(data.distribution.gte90))].join(","));
+  lines.push([csvEscape("暂无总评"), csvEscape(String(data.distribution.noTotalScore))].join(","));
 
   return `\ufeff${lines.join("\n")}\n`;
 }
