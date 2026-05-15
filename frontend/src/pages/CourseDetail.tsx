@@ -41,16 +41,10 @@ export default function CourseDetail() {
   const { user, token } = useAuth();
   const [course, setCourse] = useState<any>(null);
   const [labs, setLabs] = useState<any[]>([]);
+  const [labSets, setLabSets] = useState<any[]>([]);
   const [homework, setHomework] = useState<any[]>([]);
   const [posts, setPosts] = useState<any[]>([]);
   const [newPost, setNewPost] = useState({ title: "", body: "" });
-  const [labForm, setLabForm] = useState({
-    title: "",
-    language: "javascript",
-    starterCode: 'console.log("Hello")\n',
-    tcIn: "",
-    tcExp: "",
-  });
   const [hwForm, setHwForm] = useState({
     title: "",
     description: "",
@@ -59,9 +53,6 @@ export default function CourseDetail() {
     published: true,
   });
   const [hwDrafts, setHwDrafts] = useState<Record<string, string>>({});
-  const [hwQuestions, setHwQuestions] = useState<Record<string, any[]>>({});
-  const [hwQuestionDrafts, setHwQuestionDrafts] = useState<Record<string, string>>({});
-  const [hwAnswerDrafts, setHwAnswerDrafts] = useState<Record<string, string>>({});
   const [hwSubmissions, setHwSubmissions] = useState<Record<string, any[]>>({});
   const [hwAiPreview, setHwAiPreview] = useState<Record<string, { score: number; feedback: string }>>({});
   const [err, setErr] = useState<string | null>(null);
@@ -97,17 +88,18 @@ export default function CourseDetail() {
     (async () => {
       if (!token || !id) return;
       try {
-        const [l, h, d] = await Promise.all([
+        const [l, h, d, ls] = await Promise.all([
           api.get(`/courses/${id}/labs`).catch(() => ({ data: { labs: [] } })),
           api.get(`/courses/${id}/homework`).catch(() => ({ data: { homework: [] } })),
           api.get(`/courses/${id}/discussions`).catch(() => ({ data: { posts: [] } })),
+          api.get(`/courses/${id}/lab-sets`).catch(() => ({ data: { labSets: [] } })),
         ]);
         if (!cancelled) {
           setLabs(l.data.labs ?? []);
+          setLabSets(ls.data.labSets ?? []);
           const hws = h.data.homework ?? [];
           setHomework(hws);
           setPosts(d.data.posts ?? []);
-          void loadHomeworkQuestions(hws);
         }
       } catch {
         /* ignore */
@@ -139,38 +131,21 @@ export default function CourseDetail() {
 
   async function refreshSideData() {
     if (!token || !id) return;
-    const [l, h, d, c, mat] = await Promise.all([
+    const [l, h, d, c, mat, ls] = await Promise.all([
       api.get(`/courses/${id}/labs`).catch(() => ({ data: { labs: [] } })),
       api.get(`/courses/${id}/homework`).catch(() => ({ data: { homework: [] } })),
       api.get(`/courses/${id}/discussions`).catch(() => ({ data: { posts: [] } })),
       api.get(`/courses/${id}`).catch(() => ({ data: { course: null } })),
       api.get(`/courses/${id}/materials`).catch(() => ({ data: { materials: [] } })),
+      api.get(`/courses/${id}/lab-sets`).catch(() => ({ data: { labSets: [] } })),
     ]);
     setLabs(l.data.labs ?? []);
+    setLabSets(ls.data.labSets ?? []);
     const hws = h.data.homework ?? [];
     setHomework(hws);
     setPosts(d.data.posts ?? []);
     if (c.data.course) setCourse(c.data.course);
     setMaterials(mat.data.materials ?? []);
-    await loadHomeworkQuestions(hws);
-  }
-
-  async function loadHomeworkQuestions(hws: any[]) {
-    if (!token || hws.length === 0) {
-      setHwQuestions({});
-      return;
-    }
-    const pairs = await Promise.all(
-      hws.map(async (x) => {
-        try {
-          const { data } = await api.get(`/homework/${x.id}/questions`);
-          return [x.id, data.questions ?? []] as const;
-        } catch {
-          return [x.id, []] as const;
-        }
-      }),
-    );
-    setHwQuestions(Object.fromEntries(pairs));
   }
 
   async function enroll() {
@@ -285,101 +260,121 @@ export default function CourseDetail() {
         ) : null}
       </div>
 
-      {isTeacher ? (
-        <div className="card" style={{ marginTop: 14 }}>
-          <div style={{ fontWeight: 900 }}>教师：快速创建实验与作业</div>
-          <div className="muted" style={{ marginTop: 8, lineHeight: 1.7 }}>
-            实验会附赠首条评测用例（可选）。更复杂用例可通过 API `POST /labs/:id/testcases` 追加。
+      <div className="grid" style={{ marginTop: 16, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+        <div className="card">
+          <div style={{ fontWeight: 900 }}>实验</div>
+          <div className="muted" style={{ marginTop: 8 }}>
+            {isTeacher
+              ? "在本区新建实验集、进入实验或管理题目；与下方列表为同一块区域，不再单独重复。"
+              : "请先进入「实验」查看截止时间、题目列表与通过情况，再进入单题页面。"}
           </div>
-
-          <div className="grid" style={{ marginTop: 12, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-            <form
-              className="card grid"
-              style={{ boxShadow: "none" }}
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setErr(null);
-                try {
-                  const { data } = await api.post(`/courses/${id}/labs`, {
-                    title: labForm.title,
-                    language: labForm.language,
-                    starterCode: labForm.starterCode,
-                    description: "在课程页快速创建",
-                  });
-                  const labId = data.lab.id as string;
-                  if (labForm.tcIn || labForm.tcExp) {
-                    await api.post(`/labs/${labId}/testcases`, {
-                      input: labForm.tcIn,
-                      expected: labForm.tcExp,
-                      hidden: false,
-                      weight: 1,
+          {isTeacher ? (
+            <div className="row" style={{ marginTop: 12, flexWrap: "wrap", gap: 8 }}>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={async () => {
+                  setErr(null);
+                  try {
+                    await api.post(`/courses/${id}/lab-sets`, {
+                      title: `新实验 ${new Date().toLocaleString()}`,
                     });
+                    await refreshSideData();
+                  } catch (e2: unknown) {
+                    const msg =
+                      typeof e2 === "object" && e2 !== null && "response" in e2
+                        ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
+                        : null;
+                    setErr(msg ?? "创建实验失败");
                   }
-                  setLabForm({
-                    title: "",
-                    language: "javascript",
-                    starterCode: 'console.log("Hello")\n',
-                    tcIn: "",
-                    tcExp: "",
-                  });
-                  await refreshSideData();
-                } catch (e2: unknown) {
-                  const msg =
-                    typeof e2 === "object" && e2 !== null && "response" in e2
-                      ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
-                      : null;
-                  setErr(msg ?? "创建实验失败");
-                }
-              }}
-            >
-              <div style={{ fontWeight: 800 }}>新建实验</div>
-              <div className="field">
-                <label>标题</label>
-                <input
-                  value={labForm.title}
-                  onChange={(e) => setLabForm({ ...labForm, title: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="field">
-                <label>语言</label>
-                <select
-                  value={labForm.language}
-                  onChange={(e) =>
-                    setLabForm({
-                      ...labForm,
-                      language: e.target.value as "javascript" | "python",
-                    })
-                  }
-                >
-                  <option value="javascript">JavaScript (Node)</option>
-                  <option value="python">Python 3</option>
-                </select>
-              </div>
-              <div className="field">
-                <label>起始代码</label>
-                <textarea
-                  rows={5}
-                  value={labForm.starterCode}
-                  onChange={(e) => setLabForm({ ...labForm, starterCode: e.target.value })}
-                />
-              </div>
-              <div className="field">
-                <label>第一条用例输入（stdin）</label>
-                <textarea rows={3} value={labForm.tcIn} onChange={(e) => setLabForm({ ...labForm, tcIn: e.target.value })} />
-              </div>
-              <div className="field">
-                <label>第一条用例期望输出（stdout）</label>
-                <textarea rows={3} value={labForm.tcExp} onChange={(e) => setLabForm({ ...labForm, tcExp: e.target.value })} />
-              </div>
-              <button className="btn primary" type="submit">
-                创建实验
+                }}
+              >
+                新建实验集
               </button>
-            </form>
+            </div>
+          ) : null}
+          <div className="grid" style={{ marginTop: 12 }}>
+            {labSets.length > 0
+              ? labSets.map((s: any) => (
+                  <div
+                    key={s.id}
+                    className="row spread"
+                    style={{ borderTop: "1px solid var(--border)", paddingTop: 12, alignItems: "center" }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{s.title}</div>
+                      <div className="muted" style={{ fontSize: 13 }}>
+                        {s.problemCount ?? 0} 道题目
+                        {s.dueAt
+                          ? ` · 截止 ${new Date(s.dueAt).toLocaleString()}`
+                          : " · 未设置截止时间"}
+                      </div>
+                    </div>
+                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                      <Link className="btn primary" to={`/courses/${id}/lab-sets/${s.id}`}>
+                        进入实验
+                      </Link>
+                      {isTeacher ? (
+                        <>
+                          <Link className="btn" to={`/courses/${id}/lab-sets/${s.id}/manage`}>
+                            管理
+                          </Link>
+                          <button
+                            type="button"
+                            className="btn"
+                            style={{ color: "#f85149" }}
+                            onClick={async () => {
+                              const n = Number(s.problemCount ?? 0);
+                              const extra =
+                                n > 0
+                                  ? `将删除本集下 ${n} 道题及全部测试用例与学生提交，且不可恢复。`
+                                  : "将删除本实验集（当前无题目），不可恢复。";
+                              if (!confirm(`确定删除实验集「${s.title}」？${extra}`)) return;
+                              setErr(null);
+                              try {
+                                await api.delete(`/courses/${id}/lab-sets/${s.id}`, {
+                                  params: n > 0 ? { force: 1 } : {},
+                                });
+                                await refreshSideData();
+                              } catch (e2: unknown) {
+                                const msg =
+                                  typeof e2 === "object" && e2 !== null && "response" in e2
+                                    ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
+                                    : null;
+                                setErr(msg ?? "删除失败");
+                              }
+                            }}
+                          >
+                            删除
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                ))
+              : (course.labs ?? labs).map((l: any) => (
+                  <div key={l.id} className="row spread" style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{l.title}</div>
+                      <div className="muted">{l.language}</div>
+                    </div>
+                    <Link className="btn primary" to={`/courses/${id}/labs/${l.id}`}>
+                      进入实验
+                    </Link>
+                  </div>
+                ))}
+            {labSets.length === 0 && (course.labs ?? labs).length === 0 ? (
+              <div className="muted">暂无实验</div>
+            ) : null}
+          </div>
+        </div>
 
+        <div className="card">
+          <div style={{ fontWeight: 900 }}>作业</div>
+          {isTeacher ? (
             <form
-              className="card grid"
-              style={{ boxShadow: "none" }}
+              className="grid"
+              style={{ marginTop: 12, paddingBottom: 12, borderBottom: "1px solid var(--border)" }}
               onSubmit={async (e) => {
                 e.preventDefault();
                 setErr(null);
@@ -414,7 +409,7 @@ export default function CourseDetail() {
               <div className="field">
                 <label>说明</label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={hwForm.description}
                   onChange={(e) => setHwForm({ ...hwForm, description: e.target.value })}
                 />
@@ -428,7 +423,7 @@ export default function CourseDetail() {
                 />
               </div>
               <div className="field">
-                <label>指定班级（可选，填 classId）</label>
+                <label>指定班级（可选）</label>
                 <input
                   value={hwForm.targetClassId}
                   onChange={(e) => setHwForm({ ...hwForm, targetClassId: e.target.value })}
@@ -444,37 +439,10 @@ export default function CourseDetail() {
                 <span className="muted">创建后立即发布给学生</span>
               </label>
               <button className="btn primary" type="submit">
-                发布作业
+                创建作业
               </button>
             </form>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="grid" style={{ marginTop: 16, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-        <div className="card">
-          <div style={{ fontWeight: 900 }}>实验</div>
-          <div className="muted" style={{ marginTop: 8 }}>
-            需要先登录并完成选课（学生），或教师从教学台查看。
-          </div>
-          <div className="grid" style={{ marginTop: 12 }}>
-            {(course.labs ?? labs).map((l: any) => (
-              <div key={l.id} className="row spread" style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 700 }}>{l.title}</div>
-                  <div className="muted">{l.language}</div>
-                </div>
-                <Link className="btn primary" to={`/courses/${id}/labs/${l.id}`}>
-                  进入实验
-                </Link>
-              </div>
-            ))}
-            {(course.labs ?? labs).length === 0 ? <div className="muted">暂无实验</div> : null}
-          </div>
-        </div>
-
-        <div className="card">
-          <div style={{ fontWeight: 900 }}>作业</div>
+          ) : null}
           <div className="grid" style={{ marginTop: 12 }}>
             {(course.homeworks ?? homework).map((h: any) => (
               <div key={h.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
@@ -615,73 +583,8 @@ export default function CourseDetail() {
                   </div>
                 ) : null}
 
-                <div className="card" style={{ marginTop: 10, boxShadow: "none" }}>
-                  <div style={{ fontWeight: 700 }}>作业问答</div>
-                  <div className="grid" style={{ marginTop: 8 }}>
-                    {(hwQuestions[h.id] ?? []).map((q: any) => (
-                      <div key={q.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-                        <div className="muted">
-                          {q.user?.name ?? "匿名"} · {new Date(q.createdAt).toLocaleString()}
-                        </div>
-                        <div style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>问：{q.question}</div>
-                        {q.answer ? (
-                          <div style={{ marginTop: 6, whiteSpace: "pre-wrap" }} className="muted">
-                            答：{q.answer}
-                          </div>
-                        ) : isTeacher ? (
-                          <div className="grid" style={{ marginTop: 6 }}>
-                            <textarea
-                              rows={2}
-                              placeholder="输入回复"
-                              value={hwAnswerDrafts[q.id] ?? ""}
-                              onChange={(e) => setHwAnswerDrafts({ ...hwAnswerDrafts, [q.id]: e.target.value })}
-                            />
-                            <button
-                              className="btn"
-                              type="button"
-                              onClick={async () => {
-                                const answer = (hwAnswerDrafts[q.id] ?? "").trim();
-                                if (!answer) return;
-                                await api.patch(`/homework/questions/${q.id}/answer`, { answer });
-                                setHwAnswerDrafts({ ...hwAnswerDrafts, [q.id]: "" });
-                                await refreshSideData();
-                              }}
-                            >
-                              回复
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="muted" style={{ marginTop: 6 }}>教师暂未回复</div>
-                        )}
-                      </div>
-                    ))}
-                    {(hwQuestions[h.id] ?? []).length === 0 ? <div className="muted">暂无提问</div> : null}
-                    {token ? (
-                      <div className="grid" style={{ marginTop: 6 }}>
-                        <textarea
-                          rows={2}
-                          placeholder="提一个与本作业相关的问题"
-                          value={hwQuestionDrafts[h.id] ?? ""}
-                          onChange={(e) =>
-                            setHwQuestionDrafts({ ...hwQuestionDrafts, [h.id]: e.target.value })
-                          }
-                        />
-                        <button
-                          className="btn"
-                          type="button"
-                          onClick={async () => {
-                            const question = (hwQuestionDrafts[h.id] ?? "").trim();
-                            if (!question) return;
-                            await api.post(`/homework/${h.id}/questions`, { question });
-                            setHwQuestionDrafts({ ...hwQuestionDrafts, [h.id]: "" });
-                            await refreshSideData();
-                          }}
-                        >
-                          提交问题
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
+                <div className="muted" style={{ marginTop: 10, fontSize: 13, lineHeight: 1.6 }}>
+                  作业答疑与讨论请统一使用页面下方<strong>「课程问答」</strong>，发帖标题建议注明作业名称「{h.title}」，避免重复专区。
                 </div>
               </div>
             ))}

@@ -103,8 +103,14 @@ export default function Gradebook() {
         </div>
       </div>
       <div className="muted" style={{ marginTop: 8 }}>
-        展示每位学生各实验最高分与作业分数；「导出 CSV」可用 Excel 打开（UTF-8 BOM）。
+        实验成绩按<strong>实验集</strong>分组：每集内为各题最高分，<strong>集均分</strong>为其算术平均；<strong>实验总均分</strong>为各集均分的算术平均。导出
+        CSV 含各题得分与各实验集均分列，UTF-8 BOM 便于 Excel 打开。
       </div>
+      {data.labGradingRule ? (
+        <div className="muted" style={{ marginTop: 6, fontSize: 13 }}>
+          {data.labGradingRule}
+        </div>
+      ) : null}
 
       <div className="card grid" style={{ marginTop: 14 }}>
         <div style={{ fontWeight: 800 }}>成绩权重配置</div>
@@ -179,12 +185,36 @@ export default function Gradebook() {
                   <div className="muted">{s.user.email}</div>
                 </td>
                 <td style={{ padding: 10, borderBottom: "1px solid var(--border)", verticalAlign: "top" }}>
-                  <div className="grid">
-                    {s.labs.map((l: any) => (
-                      <div key={l.labId} className="muted">
-                        {l.title}：{l.bestScore == null ? "—" : `${Number(l.bestScore).toFixed(1)}`}
-                      </div>
-                    ))}
+                  <div className="grid" style={{ gap: 10 }}>
+                    {(s.labSets ?? []).length > 0
+                      ? (s.labSets as Array<{
+                          labSetId: string;
+                          labSetTitle: string;
+                          setAverage: number | null;
+                          labs: Array<{ labId: string; title: string; bestScore: number | null }>;
+                        }>).map((g) => (
+                          <div key={g.labSetId}>
+                            <div style={{ fontWeight: 700, fontSize: 13 }}>
+                              {g.labSetTitle}
+                              <span className="muted" style={{ fontWeight: 500, marginLeft: 8 }}>
+                                集均：
+                                {g.setAverage == null ? "—" : `${Number(g.setAverage).toFixed(1)}`}
+                              </span>
+                            </div>
+                            <div className="grid" style={{ marginTop: 4, gap: 4 }}>
+                              {g.labs.map((l) => (
+                                <div key={l.labId} className="muted" style={{ fontSize: 12, paddingLeft: 8 }}>
+                                  {l.title}：{l.bestScore == null ? "—" : `${Number(l.bestScore).toFixed(1)}`}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      : (s.labs ?? []).map((l: any) => (
+                          <div key={l.labId} className="muted">
+                            {l.title}：{l.bestScore == null ? "—" : `${Number(l.bestScore).toFixed(1)}`}
+                          </div>
+                        ))}
                   </div>
                 </td>
                 <td style={{ padding: 10, borderBottom: "1px solid var(--border)", verticalAlign: "top" }}>

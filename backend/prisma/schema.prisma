@@ -66,6 +66,7 @@ model Course {
 
   teacher           User             @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Cascade)
   labs              Lab[]
+  labSets           LabSet[]
   homeworks         Homework[]
   enrollments       Enrollment[]
   classes           Class[]
@@ -113,18 +114,41 @@ model Enrollment {
   @@unique([userId, courseId])
 }
 
-model Lab {
-  id          String @id @default(uuid())
+/** 实验集（综合实验）：一门课下可包含多道 Lab 题目 */
+model LabSet {
+  id          String    @id @default(uuid())
   courseId    String
   title       String
   description String?
-  language    String
-  starterCode String?
+  dueAt       DateTime?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
 
-  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  testCases   TestCase[]
-  submissions Submission[]
-  files       LabFile[]
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  labs   Lab[]
+
+  @@index([courseId])
+}
+
+model Lab {
+  id             String  @id @default(uuid())
+  courseId       String
+  labSetId       String
+  title          String
+  description    String?
+  /** Markdown 题干（与 description 并存；前端可优先渲染此字段） */
+  descriptionMd  String? @db.Text
+  language       String
+  starterCode    String?
+
+  course           Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  labSet           LabSet           @relation(fields: [labSetId], references: [id], onDelete: Cascade)
+  testCases        TestCase[]
+  submissions      Submission[]
+  files            LabFile[]
+  discussionPosts  DiscussionPost[]
+
+  @@index([labSetId])
 }
 
 model LabFile {
@@ -227,11 +251,17 @@ model HomeworkQuestion {
 model DiscussionPost {
   id        String   @id @default(uuid())
   courseId  String
+  /** 非空表示本题讨论帖；空表示课程级讨论 */
+  labId     String?
   userId    String
   title     String
   body      String
   createdAt DateTime @default(now())
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lab    Lab?   @relation(fields: [labId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([labId])
 }
