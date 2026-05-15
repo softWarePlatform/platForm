@@ -17,6 +17,19 @@ async function canAccessCourse(
   return !!en;
 }
 
+function parseSubmissionResultDetails(
+  resultJson: string | null,
+): Array<{ testCaseId?: string; pass?: boolean }> {
+  if (!resultJson) return [];
+  try {
+    const p = JSON.parse(resultJson) as { details?: unknown };
+    if (!Array.isArray(p.details)) return [];
+    return p.details.filter((x): x is Record<string, unknown> => x != null && typeof x === "object");
+  } catch {
+    return [];
+  }
+}
+
 const labsRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/courses/:courseId/labs",
@@ -51,17 +64,27 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
       const schema = z.object({
         title: z.string().min(1),
         description: z.string().optional(),
+        descriptionMd: z.string().optional(),
         language: z.enum(["javascript", "python"]),
         starterCode: z.string().optional(),
+        labSetId: z.string().uuid(),
       });
       const body = schema.safeParse(req.body);
-      if (!body.success) return reply.code(400).send({ error: "参数无效" });
+      if (!body.success) return reply.code(400).send({ error: "参数无效：需提供所属实验集 labSetId" });
+
+      const ls = await prisma.labSet.findFirst({
+        where: { id: body.data.labSetId, courseId },
+      });
+      if (!ls) return reply.code(400).send({ error: "实验集不存在或不属于本课程" });
+      const labSetId = ls.id;
 
       const lab = await prisma.lab.create({
         data: {
           courseId,
+          labSetId,
           title: body.data.title,
           description: body.data.description,
+          descriptionMd: body.data.descriptionMd,
           language: body.data.language,
           starterCode: body.data.starterCode ?? "",
         },
@@ -76,6 +99,7 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
       where: { id },
       include: {
         course: true,
+        labSet: { select: { id: true, title: true, dueAt: true } },
         testCases: req.auth!.role === "STUDENT" ? { where: { hidden: false } } : true,
       },
     });
@@ -95,8 +119,10 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
           id: lab.id,
           title: lab.title,
           description: lab.description,
+          descriptionMd: lab.descriptionMd,
           language: lab.language,
           starterCode: lab.starterCode,
+          labSet: lab.labSet,
           testCases: lab.testCases,
         },
       };
@@ -104,10 +130,168 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
 
     const full = await prisma.lab.findUnique({
       where: { id },
-      include: { testCases: true, course: { select: { id: true, title: true } } },
+      include: {
+        testCases: true,
+        labSet: { select: { id: true, title: true, dueAt: true, description: true, sortOrder: true } },
+        course: { select: { id: true, title: true } },
+      },
     });
     return { lab: full };
   });
+
+  /**
+   * 教师/管理员：单题统计 + 各用例通过人数（基于 resultJson.details，与 judge-worker 写入结构一致）
+   * 学生侧逐用例测评展示仍用 GET /submissions/:id/feedback（保留）
+   */
+  app.get(
+    "/labs/:id/teacher-metrics",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const lab = await prisma.lab.findUnique({
+        where: { id },
+        include: {
+          course: true,
+          testCases: { orderBy: { id: "asc" } },
+        },
+      });
+      if (!lab) return reply.code(404).send({ error: "实验不存在" });
+      if (req.auth!.role !== "ADMIN" && lab.course.teacherId !== req.auth!.sub) {
+        return reply.code(403).send({ error: "无权查看" });
+      }
+
+      const enrollRows = await prisma.enrollment.findMany({
+        where: { courseId: lab.courseId },
+        select: { userId: true },
+      });
+      const enrolledIds = new Set(enrollRows.map((e) => e.userId));
+
+      const subs = await prisma.submission.findMany({
+        where: {
+          labId: id,
+          status: { notIn: ["PENDING", "JUDGING"] },
+        },
+        select: { userId: true, status: true, resultJson: true },
+      });
+
+      const submissionCount = subs.length;
+      const distinctSubmitters = new Set(subs.map((s) => s.userId)).size;
+      let acceptedStudentCount = 0;
+      for (const uid of enrolledIds) {
+        if (subs.some((s) => s.userId === uid && s.status === "ACCEPTED")) acceptedStudentCount += 1;
+      }
+
+      /** 选课学生中，至少在某次提交里对该用例判为通过的人数 */
+      const passUsersByCase = new Map<string, Set<string>>();
+      for (const tc of lab.testCases) {
+        passUsersByCase.set(tc.id, new Set());
+      }
+      /** 曾出现在 details 中的提交次数（用于粗看参与度） */
+      const verdictSubmissionsByCase = new Map<string, number>();
+      for (const tc of lab.testCases) {
+        verdictSubmissionsByCase.set(tc.id, 0);
+      }
+
+      for (const s of subs) {
+        const details = parseSubmissionResultDetails(s.resultJson);
+        const seenCase = new Set<string>();
+        for (const row of details) {
+          const tid = typeof row.testCaseId === "string" ? row.testCaseId : undefined;
+          if (!tid || !passUsersByCase.has(tid)) continue;
+          if (!seenCase.has(tid)) {
+            verdictSubmissionsByCase.set(tid, (verdictSubmissionsByCase.get(tid) ?? 0) + 1);
+            seenCase.add(tid);
+          }
+          if (row.pass === true && enrolledIds.has(s.userId)) {
+            passUsersByCase.get(tid)!.add(s.userId);
+          }
+        }
+      }
+
+      const testCaseStats = lab.testCases.map((tc) => ({
+        testCaseId: tc.id,
+        hidden: tc.hidden,
+        weight: tc.weight,
+        passStudentCount: passUsersByCase.get(tc.id)?.size ?? 0,
+        submissionsWithVerdictOnCase: verdictSubmissionsByCase.get(tc.id) ?? 0,
+      }));
+
+      return {
+        labId: lab.id,
+        title: lab.title,
+        enrollmentCount: enrolledIds.size,
+        submissionCount,
+        distinctSubmitters,
+        acceptedStudentCount,
+        testCaseStats,
+        note: "passStudentCount 仅统计选课学生；基于历次提交中该用例曾出现且 pass=true 的记录。",
+      };
+    },
+  );
+
+  /** 教师/管理员：更新题目（已对学生可见的题目也可改题干/语言/初始代码等） */
+  app.patch(
+    "/labs/:id",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const lab = await prisma.lab.findUnique({
+        where: { id },
+        include: { course: true },
+      });
+      if (!lab) return reply.code(404).send({ error: "实验不存在" });
+      if (req.auth!.role !== "ADMIN" && lab.course.teacherId !== req.auth!.sub) {
+        return reply.code(403).send({ error: "无权修改" });
+      }
+
+      const schema = z.object({
+        title: z.string().min(1).optional(),
+        description: z.string().optional().nullable(),
+        descriptionMd: z.string().optional().nullable(),
+        language: z.enum(["javascript", "python"]).optional(),
+        starterCode: z.string().optional().nullable(),
+      });
+      const body = schema.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: "参数无效" });
+      const patch = Object.fromEntries(
+        Object.entries(body.data).filter(([, v]) => v !== undefined),
+      ) as Record<string, unknown>;
+      if (Object.keys(patch).length === 0) {
+        return reply.code(400).send({ error: "无更新字段" });
+      }
+
+      const updated = await prisma.lab.update({
+        where: { id },
+        data: patch as {
+          title?: string;
+          description?: string | null;
+          descriptionMd?: string | null;
+          language?: string;
+          starterCode?: string | null;
+        },
+      });
+      return { lab: updated };
+    },
+  );
+
+  /** 教师/管理员：删除题目（级联删除用例、提交、附件等） */
+  app.delete(
+    "/labs/:id",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const lab = await prisma.lab.findUnique({
+        where: { id },
+        include: { course: true },
+      });
+      if (!lab) return reply.code(404).send({ error: "实验不存在" });
+      if (req.auth!.role !== "ADMIN" && lab.course.teacherId !== req.auth!.sub) {
+        return reply.code(403).send({ error: "无权删除" });
+      }
+      await prisma.lab.delete({ where: { id } });
+      return { ok: true };
+    },
+  );
 
   // 实验附件上传/下载由 routes/lab-files.ts 提供
 
@@ -143,6 +327,50 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
         },
       });
       return { testCase: tc };
+    },
+  );
+
+  /** 教师/管理员：批量创建测试用例（JSON，用于弹窗多行/文件导入） */
+  app.post(
+    "/labs/:id/testcases/batch",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const lab = await prisma.lab.findUnique({
+        where: { id },
+        include: { course: true },
+      });
+      if (!lab || (req.auth!.role !== "ADMIN" && lab.course.teacherId !== req.auth!.sub)) {
+        return reply.code(403).send({ error: "无权编辑" });
+      }
+
+      const item = z.object({
+        input: z.string().max(200_000),
+        expected: z.string().max(200_000),
+        hidden: z.boolean().optional(),
+        weight: z.number().int().positive().max(1000).optional(),
+      });
+      const schema = z.object({
+        testCases: z.array(item).min(1).max(60),
+      });
+      const body = schema.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: "参数无效：testCases 为 1～60 条" });
+
+      const created = await prisma.$transaction(
+        body.data.testCases.map((tc) =>
+          prisma.testCase.create({
+            data: {
+              labId: id,
+              input: tc.input,
+              expected: tc.expected,
+              hidden: tc.hidden ?? false,
+              weight: tc.weight ?? 1,
+            },
+          }),
+        ),
+      );
+
+      return { count: created.length, testCases: created };
     },
   );
 
@@ -215,7 +443,7 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  app.post("/labs/:id/submit", { preHandler: authRequired("STUDENT", "ADMIN") }, async (req, reply) => {
+  app.post("/labs/:id/submit", { preHandler: authRequired("STUDENT", "TEACHER", "ADMIN") }, async (req, reply) => {
     const { id } = req.params as { id: string };
     const schema = z.object({ code: z.string().min(1) });
     const body = schema.safeParse(req.body);
@@ -223,7 +451,7 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
 
     const lab = await prisma.lab.findUnique({
       where: { id },
-      include: { course: true },
+      include: { course: true, labSet: { select: { dueAt: true } } },
     });
     if (!lab) return reply.code(404).send({ error: "实验不存在" });
 
@@ -234,6 +462,11 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
       lab.course.teacherId,
     );
     if (!ok) return reply.code(403).send({ error: "未选课" });
+
+    const due = lab.labSet.dueAt;
+    if (due != null && Date.now() > due.getTime()) {
+      return reply.code(403).send({ error: "已超过实验截止时间，无法提交" });
+    }
 
     const submission = await prisma.submission.create({
       data: {
@@ -303,7 +536,10 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
     return { submission: sub };
   });
 
-  /** 学生友好反馈（会自动隐藏 hidden 用例的 I/O） */
+  /**
+   * 学生友好反馈（会自动隐藏 hidden 用例的 I/O）。
+   * 逐用例通过情况见 feedback.details[].testCaseId / pass；教师聚合见 GET /labs/:labId/teacher-metrics。
+   */
   app.get(
     "/submissions/:submissionId/feedback",
     { preHandler: authRequired() },

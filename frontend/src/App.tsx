@@ -7,6 +7,8 @@ import Courses from "./pages/Courses";
 import Gradebook from "./pages/Gradebook";
 import Home from "./pages/Home";
 import Lab from "./pages/Lab";
+import LabSetHub from "./pages/LabSetHub";
+import LabSetManage from "./pages/LabSetManage";
 import Login from "./pages/Login";
 import MyHomework from "./pages/MyHomework";
 import Profile from "./pages/Profile";
@@ -53,6 +55,22 @@ export default function App() {
           }
         />
         <Route path="/courses/:id" element={<CourseDetail />} />
+        <Route
+          path="/courses/:courseId/lab-sets/:labSetId/manage"
+          element={
+            <RequireRole roles={["TEACHER", "ADMIN"]}>
+              <LabSetManage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/courses/:courseId/lab-sets/:labSetId"
+          element={
+            <RequireAuth>
+              <LabSetHub />
+            </RequireAuth>
+          }
+        />
         <Route
           path="/courses/:courseId/labs/:labId"
           element={

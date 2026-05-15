@@ -9,6 +9,7 @@ import authRoutes from "./routes/auth.js";
 import coursesRoutes from "./routes/courses.js";
 import courseMaterialsRoutes from "./routes/course-materials.js";
 import labsRoutes from "./routes/labs.js";
+import labSetsRoutes from "./routes/lab-sets.js";
 import labFilesRoutes from "./routes/lab-files.js";
 import homeworkRoutes from "./routes/homework.js";
 import gradesRoutes from "./routes/grades.js";
@@ -63,11 +64,13 @@ async function main() {
   await app.register(authRoutes);
   await app.register(coursesRoutes);
   await app.register(courseMaterialsRoutes);
+  await app.register(labSetsRoutes);
+  /** 含 /labs/:labId/discussions，需在通配 /labs/:id 之前注册 */
+  await app.register(discussionsRoutes);
   await app.register(labsRoutes);
   await app.register(labFilesRoutes);
   await app.register(homeworkRoutes);
   await app.register(gradesRoutes);
-  await app.register(discussionsRoutes);
   await app.register(aiHelpRoutes);
 
   const ha = resolveHomeworkAi();

@@ -14,6 +14,8 @@ const DEMO_PASSWORD = "Demo123456";
 /** 固定 UUID，便于 upsert 与幂等重跑 */
 const CID1 = "00000000-0000-4000-8000-000000000001";
 const CID2 = "00000000-0000-4000-8000-000000000002";
+const LS_C1 = "00000000-0000-4000-8000-000000000013";
+const LS_C2 = "00000000-0000-4000-8000-000000000014";
 const LAB_HELLO = "00000000-0000-4000-8000-000000000010";
 const LAB_APB = "00000000-0000-4000-8000-000000000011";
 const LAB_P42 = "00000000-0000-4000-8000-000000000012";
@@ -123,14 +125,43 @@ async function main() {
     },
   });
 
+  const labSet1 = await prisma.labSet.upsert({
+    where: { id: LS_C1 },
+    update: { title: "程序设计综合实验（演示）" },
+    create: {
+      id: LS_C1,
+      courseId: course1.id,
+      title: "程序设计综合实验（演示）",
+      description: "含 Hello 与 A+B 两道题目，用于演示实验集 → 多题结构。",
+      sortOrder: 0,
+    },
+  });
+
+  const labSet2 = await prisma.labSet.upsert({
+    where: { id: LS_C2 },
+    update: { title: "入门实验（演示）" },
+    create: {
+      id: LS_C2,
+      courseId: course2.id,
+      title: "入门实验（演示）",
+      description: "单题演示：整数输出。",
+      sortOrder: 0,
+    },
+  });
+
   const labHello = await prisma.lab.upsert({
     where: { id: LAB_HELLO },
-    update: {},
+    update: {
+      labSetId: labSet1.id,
+      descriptionMd: "## 标准输出\n\n输出一行 `Hello`。Node 下使用 `console.log`。",
+    },
     create: {
       id: LAB_HELLO,
       courseId: course1.id,
+      labSetId: labSet1.id,
       title: "实验一：标准输出",
       description: "输出一行 Hello。Node 下使用 console.log。",
+      descriptionMd: "## 标准输出\n\n输出一行 `Hello`。Node 下使用 `console.log`。",
       language: "javascript",
       starterCode: 'console.log("Hello")\n',
     },
@@ -138,12 +169,17 @@ async function main() {
 
   const labApb = await prisma.lab.upsert({
     where: { id: LAB_APB },
-    update: {},
+    update: {
+      labSetId: labSet1.id,
+      descriptionMd: "## A+B（Python）\n\n读入一行两个整数，输出其和。",
+    },
     create: {
       id: LAB_APB,
       courseId: course1.id,
+      labSetId: labSet1.id,
       title: "实验二：A+B（Python）",
       description: "读入一行两个整数，输出其和。",
+      descriptionMd: "## A+B（Python）\n\n读入一行两个整数，输出其和。",
       language: "python",
       starterCode: "a, b = map(int, input().split())\nprint(a + b)\n",
     },
@@ -151,12 +187,17 @@ async function main() {
 
   const labP42 = await prisma.lab.upsert({
     where: { id: LAB_P42 },
-    update: {},
+    update: {
+      labSetId: labSet2.id,
+      descriptionMd: "## 整数输出\n\n输出整数 **42**。\n",
+    },
     create: {
       id: LAB_P42,
       courseId: course2.id,
+      labSetId: labSet2.id,
       title: "实验：整数输出",
       description: "输出整数 42。",
+      descriptionMd: "## 整数输出\n\n输出整数 **42**。\n",
       language: "python",
       starterCode: "print(42)\n",
     },
@@ -262,7 +303,7 @@ async function main() {
     ],
   });
 
-  /** 须在引用 targetClassId 的作业之前创建班级 */
+  /** 须在引用 targetClassId 的作业之前创建班级（含 targetClassId 的作业依赖 Class 行须已存在） */
   const cls = await prisma.class.upsert({
     where: { id: CLASS_C1 },
     update: {},

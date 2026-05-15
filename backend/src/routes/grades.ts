@@ -3,9 +3,22 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/authGuard.js";
 
+type LabScoreCell = { labId: string; title: string; bestScore: number | null };
+
+type LabSetGrade = {
+  labSetId: string;
+  labSetTitle: string;
+  /** 该实验集内各题最高分的算术平均（仅统计已有分数的题目） */
+  setAverage: number | null;
+  labs: LabScoreCell[];
+};
+
 type GradebookStudent = {
   user: { id: string; name: string; email: string };
-  labs: Array<{ labId: string; title: string; bestScore: number | null }>;
+  /** 按实验集分组；实验总均分 = 各集 setAverage 的算术平均（仅统计有 setAverage 的集） */
+  labSets: LabSetGrade[];
+  /** 展平题目（顺序与 labSets 一致），便于导出 */
+  labs: LabScoreCell[];
   homework: Array<{
     homeworkId: string;
     title: string;
@@ -21,10 +34,26 @@ type GradebookStudent = {
   rank?: number;
 };
 
+/** 每题取该学生最高分；无提交为 null，得分为 0 时保留 0（勿用 `x || null`）。 */
+function bestScoreForLab(
+  submissions: Array<{ labId: string; userId: string; score: number | null }>,
+  userId: string,
+  labId: string,
+): number | null {
+  const nums = submissions
+    .filter((s) => s.labId === labId && s.userId === userId)
+    .map((s) => s.score)
+    .filter((x): x is number => x != null);
+  if (nums.length === 0) return null;
+  return Math.max(...nums);
+}
+
 async function loadGradebook(courseId: string): Promise<{
   courseTitle: string;
   courseId: string;
   weights: { lab: number; homework: number };
+  labColumnPlan: Array<{ labSetId: string; labSetTitle: string; labId: string; labTitle: string }>;
+  labGradingRule: string;
   /** 按总评分数分段人数（左闭右开区间边界：<60、[60,70)、…、[90,+∞)）；仅统计 totalScore 非空的学生 */
   distribution: {
     lt60: number;
@@ -41,7 +70,12 @@ async function loadGradebook(courseId: string): Promise<{
     where: { id: courseId },
     include: {
       enrollments: { include: { user: true } },
-      labs: true,
+      labSets: {
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        include: {
+          labs: { orderBy: { title: "asc" }, select: { id: true, title: true } },
+        },
+      },
       homeworks: true,
       classes: { select: { id: true, name: true } },
     },
@@ -52,6 +86,7 @@ async function loadGradebook(courseId: string): Promise<{
 
   const submissions = await prisma.submission.findMany({
     where: { userId: { in: studentIds }, lab: { courseId } },
+    select: { labId: true, userId: true, score: true },
   });
 
   const hwSubs = await prisma.homeworkSubmission.findMany({
@@ -67,17 +102,38 @@ async function loadGradebook(courseId: string): Promise<{
     homework: course.homeworkWeight,
   };
 
+  const labColumnPlan = course.labSets.flatMap((ls) =>
+    ls.labs.map((l) => ({
+      labSetId: ls.id,
+      labSetTitle: ls.title,
+      labId: l.id,
+      labTitle: l.title,
+    })),
+  );
+
+  const labGradingRule =
+    "实验总均分 = 各「实验集均分」的算术平均；每实验集均分 = 该集内各题最高分的算术平均（仅统计已有分数的提交）。";
+
   const students: GradebookStudent[] = studentIds.map((sid) => {
     const user = course.enrollments.find((e) => e.userId === sid)!.user;
-    const labScores = course.labs.map((lab) => {
-      const numericScores = submissions
-        .filter((s) => s.labId === lab.id && s.userId === sid)
-        .map((s) => s.score)
-        .filter((x): x is number => x != null);
-      /** 无提交时 best 为 null；得分为 0 时保留 0（勿用 `x || null`） */
-      const bestScore = numericScores.length === 0 ? null : Math.max(...numericScores);
-      return { labId: lab.id, title: lab.title, bestScore };
+
+    const labSets: LabSetGrade[] = course.labSets.map((ls) => {
+      const labs: LabScoreCell[] = ls.labs.map((lab) => ({
+        labId: lab.id,
+        title: lab.title,
+        bestScore: bestScoreForLab(submissions, sid, lab.id),
+      }));
+      const inSet = labs.map((x) => x.bestScore).filter((x): x is number => x != null);
+      const setAverage = inSet.length ? inSet.reduce((a, b) => a + b, 0) / inSet.length : null;
+      return {
+        labSetId: ls.id,
+        labSetTitle: ls.title,
+        setAverage,
+        labs,
+      };
     });
+
+    const labs: LabScoreCell[] = labSets.flatMap((g) => g.labs);
 
     const hwForStudent = course.homeworks.map((h) => {
       const row = hwSubs.find((x) => x.homeworkId === h.id && x.userId === sid);
@@ -90,12 +146,13 @@ async function loadGradebook(courseId: string): Promise<{
       };
     });
 
-    const labNums = labScores.map((x) => x.bestScore).filter((x): x is number => x != null);
+    const setMeans = labSets.map((g) => g.setAverage).filter((x): x is number => x != null);
+    const labAverage = setMeans.length ? setMeans.reduce((a, b) => a + b, 0) / setMeans.length : null;
+
     const hwNums = hwForStudent
       .filter((x) => x.graded)
       .map((x) => x.score)
       .filter((x): x is number => x != null);
-    const labAverage = labNums.length ? labNums.reduce((a, b) => a + b, 0) / labNums.length : null;
     const homeworkAverage = hwNums.length ? hwNums.reduce((a, b) => a + b, 0) / hwNums.length : null;
     const totalScore =
       labAverage == null && homeworkAverage == null
@@ -104,7 +161,8 @@ async function loadGradebook(courseId: string): Promise<{
 
     return {
       user: { id: user.id, name: user.name, email: user.email },
-      labs: labScores,
+      labSets,
+      labs,
       homework: hwForStudent,
       summary: { labAverage, homeworkAverage, totalScore },
     };
@@ -140,7 +198,15 @@ async function loadGradebook(courseId: string): Promise<{
     else dist.gte90++;
   }
 
-  return { courseTitle: course.title, courseId: course.id, students, weights, distribution: dist };
+  return {
+    courseTitle: course.title,
+    courseId: course.id,
+    students,
+    weights,
+    labColumnPlan,
+    labGradingRule,
+    distribution: dist,
+  };
 }
 
 function csvEscape(cell: string): string {
@@ -154,17 +220,37 @@ function toCsv(data: NonNullable<Awaited<ReturnType<typeof loadGradebook>>>): st
   }
 
   const first = data.students[0]!;
-  const labCols = first.labs.map((l) => `实验_${l.title}`);
-  const hwCols = first.homework.map((h) => `作业_${h.title}`);
-
-  const header = ["姓名", "邮箱", ...labCols, ...hwCols, "实验均分", "作业均分", "总评", "排名"];
-  const lines = [header.join(",")];
+  const setIds = uniqueLabSetIdsFromPlan(data.labColumnPlan);
+  const setTitleById = new Map(data.labColumnPlan.map((c) => [c.labSetId, c.labSetTitle]));
+  const headerCells = [
+    csvEscape("姓名"),
+    csvEscape("邮箱"),
+    ...data.labColumnPlan.map((c) => csvEscape(`${c.labSetTitle} / ${c.labTitle}`)),
+    ...setIds.map((id) => csvEscape(`实验集均分 ${setTitleById.get(id) ?? id}`)),
+    ...first.homework.map((h) => csvEscape(`作业 ${h.title}`)),
+    csvEscape("实验总均分"),
+    csvEscape("作业均分"),
+    csvEscape("总评"),
+    csvEscape("排名"),
+  ];
+  const lines = [headerCells.join(",")];
 
   for (const row of data.students) {
+    const scoreByLab = new Map(row.labs.map((l) => [l.labId, l.bestScore]));
+    const setAvgById = new Map(row.labSets.map((g) => [g.labSetId, g.setAverage]));
+
     const cells = [
       csvEscape(row.user.name),
       csvEscape(row.user.email),
-      ...row.labs.map((l) => csvEscape(l.bestScore == null ? "" : String(l.bestScore))),
+      ...data.labColumnPlan.map((c) =>
+        csvEscape(
+          scoreByLab.get(c.labId) == null ? "" : String(scoreByLab.get(c.labId)),
+        ),
+      ),
+      ...setIds.map((id) => {
+        const v = setAvgById.get(id);
+        return csvEscape(v == null ? "" : v.toFixed(2));
+      }),
       ...row.homework.map((h) =>
         csvEscape(!h.graded ? "未批改" : h.score == null ? "" : String(h.score)),
       ),
@@ -290,6 +376,18 @@ async function buildMyGradebookCsv(userId: string): Promise<string> {
   return `\ufeff${lines.join("\n")}\n`;
 }
 
+/** labColumnPlan 顺序下，按实验集 id 去重且保序 */
+function uniqueLabSetIdsFromPlan(plan: Array<{ labSetId: string }>): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const p of plan) {
+    if (seen.has(p.labSetId)) continue;
+    seen.add(p.labSetId);
+    out.push(p.labSetId);
+  }
+  return out;
+}
+
 const gradesRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/grades/me/export.csv",
@@ -409,6 +507,8 @@ const gradesRoutes: FastifyPluginAsync = async (app) => {
         courseId: data.courseId,
         courseTitle: data.courseTitle,
         weights: data.weights,
+        labColumnPlan: data.labColumnPlan,
+        labGradingRule: data.labGradingRule,
         distribution: data.distribution,
         students: data.students,
       };
