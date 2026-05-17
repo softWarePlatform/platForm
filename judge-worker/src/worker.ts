@@ -6,7 +6,7 @@ import { Worker } from "bullmq";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 loadEnv({ path: resolve(__dirname, "../../backend/.env") });
 loadEnv({ path: resolve(__dirname, "../.env") });
-import IORedis from "ioredis";
+import { Redis } from "ioredis";
 import { PrismaClient } from "@prisma/client";
 import { normalizeOutput, runCode, type RunnerLanguage } from "./runner.js";
 
@@ -18,7 +18,7 @@ const redisUrl = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
 const queueName = "judge-submissions";
 const defaultTimeout = Number(process.env.JUDGE_TIMEOUT_MS ?? 8000);
 
-const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
+const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
 
 function mapLanguage(dbLang: string): RunnerLanguage {
   if (dbLang === "python") return "python";

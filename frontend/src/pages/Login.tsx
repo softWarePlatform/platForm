@@ -18,7 +18,7 @@ export default function Login() {
     try {
       const { data } = await api.post("/auth/login", { email, password });
       setSession(data.token, data.user);
-      nav("/courses");
+      nav("/");
     } catch (err: unknown) {
       const msg =
         typeof err === "object" && err !== null && "response" in err

@@ -31,39 +31,39 @@ export default function Shell() {
             <Link to="/" style={{ textDecoration: "none", fontWeight: 800 }}>
               教学实训平台
             </Link>
-            <nav className="row" style={{ marginLeft: 8 }}>
-              <NavLink to="/" end style={linkStyle}>
-                首页
-              </NavLink>
-              <NavLink to="/courses" style={linkStyle}>
-                课程中心
-              </NavLink>
-              {user?.role === "TEACHER" || user?.role === "ADMIN" ? (
-                <>
-                  <NavLink to="/teaching" style={linkStyle}>
-                    教学台
-                  </NavLink>
-                  <NavLink to="/teaching/homework" style={linkStyle}>
-                    作业测评
-                  </NavLink>
-                </>
-              ) : null}
-              {user?.role === "STUDENT" || user?.role === "ADMIN" ? (
-                <NavLink to="/my-homework" style={linkStyle}>
-                  我的作业
+            {user ? (
+              <nav className="row" style={{ marginLeft: 8 }}>
+                <NavLink to="/" end style={linkStyle}>
+                  主界面
                 </NavLink>
-              ) : null}
-              {user ? (
+                {user.role === "STUDENT" || user.role === "ADMIN" ? (
+                  <NavLink to="/enrollment" style={linkStyle}>
+                    选课系统
+                  </NavLink>
+                ) : null}
+                {user.role === "STUDENT" || user.role === "ADMIN" ? (
+                  <NavLink to="/my-homework" style={linkStyle}>
+                    我的作业
+                  </NavLink>
+                ) : null}
+                {user.role === "TEACHER" || user.role === "ADMIN" ? (
+                  <NavLink to="/teaching/homework" style={linkStyle}>
+                    我的作业
+                  </NavLink>
+                ) : null}
+                <NavLink to="/messages" style={linkStyle}>
+                  站内消息
+                </NavLink>
                 <NavLink to="/profile" style={linkStyle}>
                   个人中心
                 </NavLink>
-              ) : null}
-              {user?.role === "ADMIN" ? (
-                <NavLink to="/admin/users" style={linkStyle}>
-                  用户管理
-                </NavLink>
-              ) : null}
-            </nav>
+                {user.role === "ADMIN" ? (
+                  <NavLink to="/admin/users" style={linkStyle}>
+                    用户管理
+                  </NavLink>
+                ) : null}
+              </nav>
+            ) : null}
           </div>
 
           <div className="row">

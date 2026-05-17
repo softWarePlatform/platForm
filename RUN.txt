@@ -23,6 +23,7 @@
      teaching_platform，用户名密码与下文 DATABASE_URL 一致。
 
    · 仅当本机能从 Docker Hub 拉镜像时，可用：docker compose up -d db redis
+     本项目的 Postgres 映射为宿主机 5433→容器 5432，不占 5432，可与 openGauss 等并存。
      （拉不动镜像时不要用 Docker，请用本机或云数据库。）
 
 2）后端环境变量
@@ -41,8 +42,8 @@
    npx prisma migrate deploy
    npm run db:seed
 
-   演示账号见种子脚本输出；教师 teacher@demo.local，学生 student@demo.local、li@demo.local、
-   wang@demo.local，密码均为 Demo123456。
+   演示账号见终端输出；管理员 admin@demo.local，教师 teacher@demo.local，学生 student@demo.local、
+   li@demo.local、wang@demo.local，密码均为 Demo123456。
 
 4）一键启动前端 + 后端（在项目根目录 platForm，勿在子目录）
 
@@ -51,6 +52,13 @@
    浏览器访问 http://localhost:5173（Vite 会把 /api 代理到本机 3000 端口后端）。
 
    也可分两个终端：cd backend && npm run dev 与 cd frontend && npm run dev。
+
+   【若浏览器登录时报错，且终端出现 http proxy error / ECONNREFUSED 127.0.0.1:3000】
+   含义：前端在跑，但本机 3000 上没有 API（后端未监听或已崩溃退出）。
+   处理：看同一窗口里带 [api] 前缀的日志是否有报错（常见：连不上数据库 P1001、端口被占用）。
+   单独验证后端：另开终端执行 cd backend && npm run dev，应看到监听成功；再访问
+   http://127.0.0.1:3000/health/live 应返回 JSON。确认 PostgreSQL（如 Docker 的 db 已起、.env 端口为 5433）
+   与 Redis 已启动后再 npm run dev。
 
 5）自动评测（提交实验代码时需要）
 
@@ -97,6 +105,7 @@
 -------------------------------------------------------------------------------
 
    用途：在单机上用 Nginx + 容器模拟「上线」部署（访问 http://localhost 80 端口）。
+   数据库：宿主机连接使用 localhost:5433（compose 内服务名仍为 db:5432）。
    若本机无法从 Docker Hub 拉镜像，请直接跳过本附录，只使用上文「一、本地开发」。
 
    docker compose build
@@ -110,6 +119,27 @@
 
    多为网络或 IPv6 问题。可尝试：镜像加速、代理、手机热点、或完全不用 Docker，仅按「一」用本机数据库 +
    npm 运行。
+
+-------------------------------------------------------------------------------
+附录 C：API 容器连接「宿主机上的 openGauss / Postgres」（不抢 5432 上的第二个库容器）
+-------------------------------------------------------------------------------
+
+   场景：本机已有 openGauss（或 platform-postgres）把 5432 映射到宿主机，不想再起 docker-compose.yml
+   里的 db 服务，以免端口或习惯冲突。
+
+   1）先启动你的 openGauss 容器，保证在 Windows 上可通过 127.0.0.1:5432 连上（或你映射的其它宿主机端口）。
+
+   2）在 backend/.env 里把数据库主机写成容器能访问的宿主机地址：
+      DATABASE_URL=postgresql://用户名:密码@host.docker.internal:5432/数据库名?schema=public
+      （若 openGauss 映射的是 5433:5432，则把上面的 5432 改成 5433。）
+
+   3）在项目根目录执行（用 backend/.env 做变量替换）：
+      docker compose -f docker-compose.host-db.yml --env-file backend/.env up -d --build
+
+   启动后 API 暴露在 http://127.0.0.1:3000 ；评测依赖本 compose 内的 Redis。
+
+   兼容说明：本项目 Prisma 面向 PostgreSQL。openGauss 仅「兼容」PG 协议，迁移与运行时若报错，请使用本仓库
+   docker-compose.yml 中的官方 Postgres（默认已映射到宿主机 5433，与 5432 上的库并存）。
 
 -------------------------------------------------------------------------------
 安全提示

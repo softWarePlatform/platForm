@@ -303,7 +303,7 @@ async function main() {
     ],
   });
 
-  /** 须在引用 targetClassId 的作业之前创建班级（含 targetClassId 的作业依赖 Class 行须已存在） */
+  /** 须在引用 targetClassId 的作业之前创建班级，否则违反 Homework_targetClassId_fkey */
   const cls = await prisma.class.upsert({
     where: { id: CLASS_C1 },
     update: {},

@@ -11,7 +11,7 @@ type CourseRow = {
   enrollmentCount: number;
 };
 
-export default function Courses() {
+export default function Courses({ enrollmentMode = false }: { enrollmentMode?: boolean }) {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
@@ -59,7 +59,7 @@ export default function Courses() {
   return (
     <div className="container">
       <div className="spread" style={{ marginTop: 8 }}>
-        <h2 style={{ margin: 0 }}>课程中心</h2>
+        <h2 style={{ margin: 0 }}>{enrollmentMode ? "选课系统" : "课程中心"}</h2>
         <div className="row">
           <select
             value={category}
@@ -92,7 +92,9 @@ export default function Courses() {
         </div>
       </div>
       <div className="muted" style={{ marginTop: 8 }}>
-        仅展示已发布课程；教师可在「教学台」管理未发布内容。
+        {enrollmentMode
+          ? "选课后将同步到主界面课表与「我的课程」。仅展示已发布课程。"
+          : "仅展示已发布课程；教师可在「教学台」管理未发布内容。"}
       </div>
 
       {error ? <div className="err">{error}</div> : null}

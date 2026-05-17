@@ -97,7 +97,7 @@ export default function Gradebook() {
           >
             导出 CSV
           </button>
-          <Link className="btn" to={`/courses/${courseId}`}>
+          <Link className="btn" to={`/courses/${courseId}/grades`}>
             返回课程
           </Link>
         </div>
@@ -175,7 +175,7 @@ export default function Gradebook() {
         {data.students.length === 0 ? (
           <div className="muted" style={{ padding: 16, lineHeight: 1.7 }}>
             当前还没有选课学生，成绩册为空。请让学生从「课程中心」选课后刷新本页；作业批改请在
-            <Link to={`/courses/${courseId}`}>课程详情</Link>
+            <Link to={`/courses/${courseId}`}>返回课程主页</Link>
             的「作业」区块操作。
           </div>
         ) : null}

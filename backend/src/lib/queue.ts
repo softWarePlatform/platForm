@@ -1,12 +1,12 @@
 import { Queue } from "bullmq";
-import IORedis from "ioredis";
+import { Redis } from "ioredis";
 import { config } from "./config.js";
 
-let connection: IORedis | null = null;
+let connection: Redis | null = null;
 
-function getConnection(): IORedis {
+function getConnection(): Redis {
   if (!connection) {
-    connection = new IORedis(config.redisUrl, { maxRetriesPerRequest: null });
+    connection = new Redis(config.redisUrl, { maxRetriesPerRequest: null });
   }
   return connection;
 }
