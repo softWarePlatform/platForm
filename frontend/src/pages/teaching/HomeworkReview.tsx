@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api } from "../api/client";
+import { api } from "../../api/client";
 
 export default function HomeworkTeacherReview() {
   const { homeworkId } = useParams();
@@ -138,11 +138,11 @@ export default function HomeworkTeacherReview() {
         <Link className="btn" to="/teaching/homework">
           ← 作业测评列表
         </Link>
-        <Link className="btn" to={`/courses/${meta.courseId}`}>
-          课程详情
+        <Link className="btn" to={`/courses/${meta.courseId}/announcements`}>
+          课程主页
         </Link>
-        <Link className="btn" to={`/courses/${meta.courseId}#course-homework`}>
-          课程内作业区
+        <Link className="btn" to={`/courses/${meta.courseId}/homework`}>
+          课程内作业
         </Link>
       </div>
 

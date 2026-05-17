@@ -1,23 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/authGuard.js";
-
-/** 由课程 id 生成稳定演示用上课时间（无课表表时的占位） */
-function deriveScheduleSlots(courseId: string) {
-  let h = 0;
-  for (let i = 0; i < courseId.length; i++) h = (h * 31 + courseId.charCodeAt(i)) >>> 0;
-  const dayOfWeek = (h % 5) + 1;
-  const periodStart = (h % 4) + 1;
-  const roomNo = (h % 5) + 1;
-  return [
-    {
-      dayOfWeek,
-      periodStart,
-      periodEnd: periodStart + 1,
-      room: `教学楼 A${roomNo}0${((h >> 4) % 4) + 1}`,
-    },
-  ];
-}
+import { parseScheduleSlotsJson, type ScheduleSlot } from "../lib/scheduleSlots.js";
 
 function currentSemesterLabel() {
   const now = new Date();
@@ -47,7 +31,7 @@ const dashboardRoutes: FastifyPluginAsync = async (app) => {
       pendingLabs: number;
       announcementCount: number;
       isHistory: boolean;
-      scheduleSlots: ReturnType<typeof deriveScheduleSlots>;
+      scheduleSlots: ScheduleSlot[];
     };
 
     const deadlines: Array<{
@@ -66,6 +50,7 @@ const dashboardRoutes: FastifyPluginAsync = async (app) => {
         category: string | null;
         startAt: Date | null;
         endAt: Date | null;
+        scheduleSlotsJson: string | null;
         teacher: { name: string };
         homeworks: Array<{ id: string; title: string; dueAt: Date | null; published: boolean }>;
         labSets: Array<{ id: string; title: string; dueAt: Date | null; labs: Array<{ id: string }> }>;
@@ -132,6 +117,23 @@ const dashboardRoutes: FastifyPluginAsync = async (app) => {
         }
       }
 
+      let announcementCount = 0;
+      if (opts.forStudent) {
+        const ann = await prisma.courseAnnouncement.findMany({
+          where: { courseId: course.id },
+          select: { id: true },
+        });
+        if (ann.length > 0) {
+          const readCount = await prisma.announcementRead.count({
+            where: {
+              userId: uid,
+              announcementId: { in: ann.map((a) => a.id) },
+            },
+          });
+          announcementCount = ann.length - readCount;
+        }
+      }
+
       return {
         id: course.id,
         title: course.title,
@@ -142,9 +144,9 @@ const dashboardRoutes: FastifyPluginAsync = async (app) => {
         progressPercent,
         pendingHomework,
         pendingLabs,
-        announcementCount: 0,
+        announcementCount,
         isHistory,
-        scheduleSlots: deriveScheduleSlots(course.id),
+        scheduleSlots: parseScheduleSlotsJson(course.scheduleSlotsJson, course.id),
       };
     };
 

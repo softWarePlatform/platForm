@@ -1,17 +1,34 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import CustomEventEditor from "./CustomEventEditor";
+import {
+  draftFromEvent,
+  draftToEvent,
+  emptyCustomEventDraft,
+  type CustomEventDraft,
+} from "./customEventForm";
 import type { CustomScheduleEvent, DashboardCourse, DashboardDeadline } from "./types";
 import { loadCustomEvents, saveCustomEvents } from "./scheduleStorage";
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
+const COURSE_COLORS = ["#dbeafe", "#dcfce7", "#fef3c7", "#fce7f3", "#e0e7ff", "#ffedd5"];
+
+function courseColor(courseId: string): string {
+  let h = 0;
+  for (let i = 0; i < courseId.length; i++) h = (h * 31 + courseId.charCodeAt(i)) >>> 0;
+  return COURSE_COLORS[h % COURSE_COLORS.length];
+}
+
 type Cell = {
   key: string;
   courseId: string;
+  customId?: string;
   title: string;
   teacher: string;
   room: string;
+  note?: string;
   day: number;
   p0: number;
   p1: number;
@@ -47,14 +64,10 @@ export default function WeeklySchedule({ courses, deadlines }: Props) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [parity, setParity] = useState<"all" | "odd" | "even">("all");
   const [custom, setCustom] = useState<CustomScheduleEvent[]>(() => loadCustomEvents());
-  const [showAdd, setShowAdd] = useState(false);
-  const [draft, setDraft] = useState({
-    title: "",
-    dayOfWeek: 1,
-    periodStart: 3,
-    periodEnd: 4,
-    room: "",
-  });
+  const [editorMode, setEditorMode] = useState<"add" | "edit" | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editorDraft, setEditorDraft] = useState<CustomEventDraft>(() => emptyCustomEventDraft());
+  const [saveOk, setSaveOk] = useState(false);
 
   const anchor = useMemo(() => addDays(startOfWeek(new Date()), weekOffset * 7), [weekOffset]);
   const weekLabel = useMemo(() => {
@@ -81,7 +94,7 @@ export default function WeeklySchedule({ courses, deadlines }: Props) {
           p0: slot.periodStart,
           p1: slot.periodEnd,
           kind: "course",
-          color: "#dbeafe",
+          color: courseColor(c.id),
         });
       }
     }
@@ -91,9 +104,11 @@ export default function WeeklySchedule({ courses, deadlines }: Props) {
       list.push({
         key: e.id,
         courseId: "",
+        customId: e.id,
         title: e.title,
-        teacher: "自定义",
+        teacher: "个人事项",
         room: e.room ?? "",
+        note: e.note,
         day: e.dayOfWeek,
         p0: e.periodStart,
         p1: e.periodEnd,
@@ -114,23 +129,58 @@ export default function WeeklySchedule({ courses, deadlines }: Props) {
     });
   }, [deadlines, anchor]);
 
-  function addCustom() {
-    if (!draft.title.trim()) return;
-    const ev: CustomScheduleEvent = {
-      id: `custom-${Date.now()}`,
-      title: draft.title.trim(),
-      dayOfWeek: draft.dayOfWeek,
-      periodStart: draft.periodStart,
-      periodEnd: Math.max(draft.periodEnd, draft.periodStart),
-      room: draft.room.trim() || undefined,
-      color: "#fef3c7",
-      weekParity: parity === "all" ? "all" : parity,
-    };
-    const next = [...custom, ev];
+  function persistCustom(next: CustomScheduleEvent[]) {
     setCustom(next);
     saveCustomEvents(next);
-    setShowAdd(false);
-    setDraft({ title: "", dayOfWeek: 1, periodStart: 3, periodEnd: 4, room: "" });
+  }
+
+  function closeEditor() {
+    setEditorMode(null);
+    setEditingId(null);
+    setSaveOk(false);
+  }
+
+  function openAdd() {
+    setEditorMode("add");
+    setEditingId(null);
+    setEditorDraft(
+      emptyCustomEventDraft({
+        weekParity: parity === "all" ? "all" : parity,
+      }),
+    );
+    setSaveOk(false);
+  }
+
+  function openEdit(eventId: string) {
+    const ev = custom.find((e) => e.id === eventId);
+    if (!ev) return;
+    setEditorMode("edit");
+    setEditingId(eventId);
+    setEditorDraft(draftFromEvent(ev));
+    setSaveOk(false);
+  }
+
+  function saveEditor() {
+    if (!editorDraft.title.trim()) return;
+    if (editorDraft.periodEnd < editorDraft.periodStart) return;
+
+    if (editorMode === "add") {
+      const ev = draftToEvent(`custom-${Date.now()}`, editorDraft);
+      persistCustom([...custom, ev]);
+    } else if (editingId) {
+      const ev = draftToEvent(editingId, editorDraft);
+      persistCustom(custom.map((e) => (e.id === editingId ? ev : e)));
+    }
+    setSaveOk(true);
+    window.setTimeout(() => {
+      closeEditor();
+    }, 800);
+  }
+
+  function deleteEditor() {
+    if (!editingId || !confirm("确定删除该个人事项吗？")) return;
+    persistCustom(custom.filter((e) => e.id !== editingId));
+    closeEditor();
   }
 
   return (
@@ -158,8 +208,12 @@ export default function WeeklySchedule({ courses, deadlines }: Props) {
             <option value="odd">单周</option>
             <option value="even">双周</option>
           </select>
-          <button type="button" className="btn" onClick={() => setShowAdd((v) => !v)}>
-            添加事项
+          <button
+            type="button"
+            className="btn"
+            onClick={() => (editorMode === "add" ? closeEditor() : openAdd())}
+          >
+            {editorMode === "add" ? "取消添加" : "添加事项"}
           </button>
           <button type="button" className="btn muted-btn" disabled title="导出功能规划中">
             导出课表
@@ -167,9 +221,18 @@ export default function WeeklySchedule({ courses, deadlines }: Props) {
         </div>
       </PanelHeader>
 
-      {showAdd ? (
-        <div className="card" style={{ marginBottom: 12, boxShadow: "none", padding: 12 }}>
-          <AddEventRow draft={draft} setDraft={setDraft} onAdd={addCustom} onCancel={() => setShowAdd(false)} />
+      {editorMode ? (
+        <div style={{ marginBottom: 12 }}>
+          <CustomEventEditor
+            mode={editorMode}
+            draft={editorDraft}
+            setDraft={setEditorDraft}
+            onSave={saveEditor}
+            onCancel={closeEditor}
+            onDelete={editorMode === "edit" ? deleteEditor : undefined}
+            saveLabel={saveOk ? "已保存" : undefined}
+          />
+          {saveOk ? <div className="save-ok" style={{ marginTop: 8 }}>保存成功</div> : null}
         </div>
       ) : null}
 
@@ -182,7 +245,7 @@ export default function WeeklySchedule({ courses, deadlines }: Props) {
             </div>
           ))}
           {PERIODS.map((p) => (
-            <ScheduleRow key={p} period={p} cells={cells} />
+            <ScheduleRow key={p} period={p} cells={cells} onCustomClick={openEdit} />
           ))}
         </div>
       </div>
@@ -204,7 +267,7 @@ export default function WeeklySchedule({ courses, deadlines }: Props) {
       ) : null}
 
       <p className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-        选课/退课后课表中的课程会随「我的课程」更新；上课时间目前为演示数据，完整课表待选课模块扩展后接入。
+        课程块点击进入课程主页；个人事项（彩色块）点击可编辑时间、地点、颜色与备注，或删除。连续节次以同色填充。
       </p>
     </section>
   );
@@ -219,85 +282,50 @@ function PanelHeader({ title, children }: { title: string; children?: React.Reac
   );
 }
 
-function AddEventRow({
-  draft,
-  setDraft,
-  onAdd,
-  onCancel,
+function ScheduleRow({
+  period,
+  cells,
+  onCustomClick,
 }: {
-  draft: { title: string; dayOfWeek: number; periodStart: number; periodEnd: number; room: string };
-  setDraft: Dispatch<SetStateAction<typeof draft>>;
-  onAdd: () => void;
-  onCancel: () => void;
+  period: number;
+  cells: Cell[];
+  onCustomClick: (id: string) => void;
 }) {
-  const inputStyle = { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)" };
-  return (
-    <div className="row" style={{ flexWrap: "wrap" }}>
-      <input
-        placeholder="事项名称（自习、组会…）"
-        value={draft.title}
-        onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-        style={{ ...inputStyle, flex: 1, minWidth: 160 }}
-      />
-      <select
-        value={draft.dayOfWeek}
-        onChange={(e) => setDraft((d) => ({ ...d, dayOfWeek: Number(e.target.value) }))}
-        className="dash-select"
-      >
-        {WEEKDAYS.map((w, i) => (
-          <option key={w} value={i + 1}>
-            {w}
-          </option>
-        ))}
-      </select>
-      <span className="muted">第</span>
-      <input
-        type="number"
-        min={1}
-        max={8}
-        value={draft.periodStart}
-        onChange={(e) => setDraft((d) => ({ ...d, periodStart: Number(e.target.value) }))}
-        style={{ ...inputStyle, width: 48 }}
-      />
-      <span className="muted">–</span>
-      <input
-        type="number"
-        max={8}
-        min={1}
-        value={draft.periodEnd}
-        onChange={(e) => setDraft((d) => ({ ...d, periodEnd: Number(e.target.value) }))}
-        style={{ ...inputStyle, width: 48 }}
-      />
-      <span className="muted">节</span>
-      <input
-        placeholder="地点"
-        value={draft.room}
-        onChange={(e) => setDraft((d) => ({ ...d, room: e.target.value }))}
-        style={{ ...inputStyle, width: 100 }}
-      />
-      <button type="button" className="btn primary" onClick={onAdd}>
-        保存
-      </button>
-      <button type="button" className="btn" onClick={onCancel}>
-        取消
-      </button>
-    </div>
-  );
-}
-
-function ScheduleRow({ period, cells }: { period: number; cells: Cell[] }) {
   return (
     <>
       <div className="schedule-period">{period}</div>
       {WEEKDAYS.map((_, dayIdx) => {
         const day = dayIdx + 1;
         const hit = cells.find((c) => c.day === day && period >= c.p0 && period <= c.p1);
-        if (!hit || hit.p0 !== period) {
+        if (!hit) {
           return <div key={`${day}-${period}`} className="schedule-cell" />;
         }
+        const isStart = period === hit.p0;
+        const isEnd = period === hit.p1;
+        const spanClass = [
+          "schedule-cell",
+          "schedule-cell--filled",
+          isStart && isEnd
+            ? "schedule-cell--span-single"
+            : isStart
+              ? "schedule-cell--span-start"
+              : isEnd
+                ? "schedule-cell--span-end"
+                : "schedule-cell--span-mid",
+        ].join(" ");
+
         return (
-          <div key={`${day}-${period}`} className="schedule-cell schedule-cell--filled">
-            <ScheduleEvent hit={hit} />
+          <div
+            key={`${day}-${period}`}
+            className={spanClass}
+            style={{ background: hit.color, borderColor: hit.color }}
+          >
+            <ScheduleCellContent
+              hit={hit}
+              spanEnd={hit.p1}
+              isStart={isStart}
+              onCustomClick={onCustomClick}
+            />
           </div>
         );
       })}
@@ -305,34 +333,72 @@ function ScheduleRow({ period, cells }: { period: number; cells: Cell[] }) {
   );
 }
 
-function ScheduleEvent({ hit }: { hit: Cell }) {
-  const body = (
-    <>
-      <div style={{ fontWeight: 700, fontSize: 12 }}>{hit.title}</div>
-      <div className="muted" style={{ fontSize: 11 }}>
-        {hit.p0}–{hit.p1} 节 · {hit.room || "—"}
-      </div>
-      <div className="muted" style={{ fontSize: 11 }}>
-        {hit.teacher}
-      </div>
-    </>
-  );
+function ScheduleCellContent({
+  hit,
+  spanEnd,
+  isStart,
+  onCustomClick,
+}: {
+  hit: Cell;
+  spanEnd: number;
+  isStart: boolean;
+  onCustomClick: (id: string) => void;
+}) {
+  const periodLabel =
+    hit.p0 === spanEnd ? `第 ${hit.p0} 节` : `第 ${hit.p0}–${spanEnd} 节`;
+  const fillClass = isStart ? "" : " schedule-event--span-fill";
 
   if (hit.kind === "course" && hit.courseId) {
     return (
       <Link
         to={`/courses/${hit.courseId}/announcements`}
-        className="schedule-event"
-        style={{ background: hit.color, display: "block", textDecoration: "none", color: "inherit" }}
+        className={`schedule-event schedule-event--course${fillClass}`}
+        style={{ background: isStart ? hit.color : "transparent", textDecoration: "none", color: "inherit" }}
+        title={isStart ? undefined : hit.title}
       >
-        {body}
+        {isStart ? (
+          <>
+            <div style={{ fontWeight: 700, fontSize: 12 }}>{hit.title}</div>
+            <div className="muted" style={{ fontSize: 11 }}>
+              {periodLabel} · {hit.room || "—"}
+            </div>
+            <div className="muted" style={{ fontSize: 11 }}>
+              {hit.teacher}
+            </div>
+          </>
+        ) : (
+          <span className="schedule-event__sr">{hit.title}</span>
+        )}
       </Link>
     );
   }
 
   return (
-    <div className="schedule-event" style={{ background: hit.color }}>
-      {body}
-    </div>
+    <button
+      type="button"
+      className={`schedule-event schedule-event--custom${fillClass}`}
+      style={{ background: isStart ? hit.color : "transparent" }}
+      onClick={() => hit.customId && onCustomClick(hit.customId)}
+      aria-label={isStart ? undefined : `编辑：${hit.title}`}
+      title={isStart ? "点击编辑" : hit.title}
+    >
+      {isStart ? (
+        <>
+          <div style={{ fontWeight: 700, fontSize: 12 }}>{hit.title}</div>
+          <div className="muted" style={{ fontSize: 11 }}>
+            {periodLabel} · {hit.room || "—"}
+          </div>
+          {hit.note ? (
+            <div className="muted" style={{ fontSize: 11, marginTop: 2 }} title={hit.note}>
+              {hit.note.length > 24 ? `${hit.note.slice(0, 24)}…` : hit.note}
+            </div>
+          ) : (
+            <div className="muted" style={{ fontSize: 11 }}>
+              点击编辑
+            </div>
+          )}
+        </>
+      ) : null}
+    </button>
   );
 }

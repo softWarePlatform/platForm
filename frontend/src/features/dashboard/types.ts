@@ -43,6 +43,8 @@ export type CustomScheduleEvent = {
   periodStart: number;
   periodEnd: number;
   room?: string;
+  /** 备注说明 */
+  note?: string;
   color: string;
   weekParity?: "all" | "odd" | "even";
 };

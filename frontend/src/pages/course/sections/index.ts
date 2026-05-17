@@ -1,4 +1,5 @@
 export { default as CourseAnnouncements } from "./CourseAnnouncements";
+export { default as CourseAnnouncementDetail } from "./CourseAnnouncementDetail";
 export { default as CourseMaterials } from "./CourseMaterials";
 export { default as CourseHomework } from "./CourseHomework";
 export { default as CourseLabs } from "./CourseLabs";

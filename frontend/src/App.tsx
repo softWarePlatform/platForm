@@ -1,16 +1,22 @@
 import type { ReactElement } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Shell from "./components/Shell";
+import CoursesRedirect from "./components/CoursesRedirect";
 import CourseLayout from "./pages/course/CourseLayout";
 import CourseManage from "./pages/CourseManage";
 import {
   CourseAnnouncements,
+  CourseAnnouncementDetail,
   CourseGrades,
   CourseHomework,
   CourseLabs,
   CourseMaterials,
   CoursePractice,
 } from "./pages/course/sections";
+import EnrollmentPage from "./pages/enrollment/EnrollmentPage";
+import TeachingHub from "./pages/teaching/TeachingHub";
+import HomeworkList from "./pages/teaching/HomeworkList";
+import HomeworkReview from "./pages/teaching/HomeworkReview";
 import Gradebook from "./pages/Gradebook";
 import Home from "./pages/Home";
 import Lab from "./pages/Lab";
@@ -21,9 +27,6 @@ import Messages from "./pages/Messages";
 import MyHomework from "./pages/MyHomework";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
-import Enrollment from "./pages/Enrollment";
-import TeachingHomeworkList from "./pages/TeachingHomeworkList";
-import HomeworkTeacherReview from "./pages/HomeworkTeacherReview";
 import AdminUsers from "./pages/AdminUsers";
 import { useAuth } from "./auth/AuthContext";
 
@@ -53,9 +56,16 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/enrollment" element={<Enrollment />} />
+        <Route
+          path="/enrollment"
+          element={
+            <RequireRole roles={["STUDENT", "ADMIN"]}>
+              <EnrollmentPage />
+            </RequireRole>
+          }
+        />
         <Route path="/messages" element={<RequireAuth><Messages /></RequireAuth>} />
-        <Route path="/courses" element={<Navigate to="/enrollment" replace />} />
+        <Route path="/courses" element={<CoursesRedirect />} />
         <Route
           path="/courses/:courseId/manage"
           element={
@@ -67,6 +77,7 @@ export default function App() {
         <Route path="/courses/:courseId" element={<CourseLayout />}>
           <Route index element={<Navigate to="announcements" replace />} />
           <Route path="announcements" element={<CourseAnnouncements />} />
+          <Route path="announcements/:announcementId" element={<CourseAnnouncementDetail />} />
           <Route path="homework" element={<CourseHomework />} />
           <Route path="labs" element={<CourseLabs />} />
           <Route path="grades" element={<CourseGrades />} />
@@ -110,7 +121,7 @@ export default function App() {
           path="/teaching/homework/:homeworkId"
           element={
             <RequireRole roles={["TEACHER", "ADMIN"]}>
-              <HomeworkTeacherReview />
+              <HomeworkReview />
             </RequireRole>
           }
         />
@@ -118,13 +129,17 @@ export default function App() {
           path="/teaching/homework"
           element={
             <RequireRole roles={["TEACHER", "ADMIN"]}>
-              <TeachingHomeworkList />
+              <HomeworkList />
             </RequireRole>
           }
         />
         <Route
           path="/teaching"
-          element={<Navigate to="/teaching/homework" replace />}
+          element={
+            <RequireRole roles={["TEACHER", "ADMIN"]}>
+              <TeachingHub />
+            </RequireRole>
+          }
         />
         <Route
           path="/my-homework"

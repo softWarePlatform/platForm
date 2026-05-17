@@ -1,6 +1,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import CourseScheduleFields, {
+  slotsFromCourse,
+  type ScheduleSlotDraft,
+} from "../components/CourseScheduleFields";
 
 function toLocalInput(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -15,14 +19,14 @@ export default function CourseManage() {
   const [course, setCourse] = useState<any>(null);
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
+  const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlotDraft[]>([]);
   const [kgText, setKgText] = useState("");
   const [materials, setMaterials] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [newClassName, setNewClassName] = useState("");
-  const [uploadTitle, setUploadTitle] = useState("");
-  const [file, setFile] = useState<File | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [saveOk, setSaveOk] = useState(false);
 
   async function reload() {
     if (!courseId) return;
@@ -35,6 +39,7 @@ export default function CourseManage() {
     setCourse(c.course);
     setStartAt(toLocalInput(c.course.startAt));
     setEndAt(toLocalInput(c.course.endAt));
+    setScheduleSlots(slotsFromCourse(c.course));
     setKgText(c.course.knowledgeGraphJson ?? "");
     setMaterials(m.materials ?? []);
     setClasses(cl.classes ?? []);
@@ -48,12 +53,27 @@ export default function CourseManage() {
   async function saveSchedule(e: FormEvent) {
     e.preventDefault();
     setErr(null);
+    setSaveOk(false);
+    for (const s of scheduleSlots) {
+      if (s.periodEnd < s.periodStart) {
+        setErr("结束节次不能早于开始节次");
+        return;
+      }
+    }
     try {
       await api.patch(`/courses/${courseId}`, {
         startAt: startAt ? new Date(startAt).toISOString() : null,
         endAt: endAt ? new Date(endAt).toISOString() : null,
+        scheduleSlots: scheduleSlots.map((s) => ({
+          dayOfWeek: s.dayOfWeek,
+          periodStart: s.periodStart,
+          periodEnd: s.periodEnd,
+          room: s.room.trim(),
+        })),
       });
       await reload();
+      setSaveOk(true);
+      window.setTimeout(() => setSaveOk(false), 3000);
     } catch (e2: unknown) {
       const msg =
         typeof e2 === "object" && e2 !== null && "response" in e2
@@ -89,39 +109,6 @@ export default function CourseManage() {
     }
   }
 
-  async function uploadMaterial(e: FormEvent) {
-    e.preventDefault();
-    if (!file || !courseId) return;
-    setErr(null);
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("title", uploadTitle || file.name);
-    try {
-      await api.post(`/courses/${courseId}/materials`, fd);
-      setFile(null);
-      setUploadTitle("");
-      await reload();
-    } catch (e2: unknown) {
-      const msg =
-        typeof e2 === "object" && e2 !== null && "response" in e2
-          ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
-          : null;
-      setErr(msg ?? "上传失败");
-    }
-  }
-
-  async function downloadMaterial(mid: string, fileName: string) {
-    const res = await api.get(`/courses/${courseId}/materials/${mid}/download`, {
-      responseType: "blob",
-    });
-    const url = URL.createObjectURL(res.data);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   if (!course) {
     return (
       <div className="container">
@@ -135,7 +122,7 @@ export default function CourseManage() {
       <div className="spread" style={{ marginTop: 12 }}>
         <div>
           <div className="muted">
-            <Link to={`/courses/${courseId}`}>← 返回课程</Link>
+            <Link to={`/courses/${courseId}/announcements`}>← 返回课程</Link>
           </div>
           <h2 style={{ margin: "8px 0 0" }}>课程管理 · {course.title}</h2>
         </div>
@@ -146,61 +133,35 @@ export default function CourseManage() {
       <div className="grid" style={{ marginTop: 16, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
         <form className="card grid" onSubmit={saveSchedule}>
           <div style={{ fontWeight: 800 }}>时间安排</div>
+          <p className="muted" style={{ margin: 0, lineHeight: 1.6, fontSize: 13 }}>
+            设置每周上课的星期与节次，将同步到主界面课表；下方为学期起止日期。
+          </p>
+          <CourseScheduleFields slots={scheduleSlots} onChange={setScheduleSlots} />
           <div className="field">
-            <label>开课时间</label>
+            <label>学期开课日（可选）</label>
             <input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
           </div>
           <div className="field">
-            <label>结课时间</label>
+            <label>学期结课日（可选）</label>
             <input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} />
           </div>
-          <button className="btn primary" type="submit">
-            保存时间
-          </button>
+          <div className="row" style={{ alignItems: "center", gap: 12 }}>
+            <button className="btn primary" type="submit">
+              保存时间安排
+            </button>
+            {saveOk ? <span className="save-ok">保存成功</span> : null}
+          </div>
         </form>
 
-        <form className="card grid" onSubmit={uploadMaterial}>
-          <div style={{ fontWeight: 800 }}>课程资料 / 讲义</div>
-          <div className="field">
-            <label>标题（可选）</label>
-            <input value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} placeholder="默认用文件名" />
-          </div>
-          <div className="field">
-            <label>文件（最大 20MB）</label>
-            <input
-              type="file"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-          </div>
-          <button className="btn primary" type="submit" disabled={!file}>
-            上传
-          </button>
-          <div className="grid" style={{ marginTop: 8 }}>
-            {materials.map((m) => (
-              <div key={m.id} className="row spread" style={{ borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-                <span className="muted">
-                  {m.title}（{(m.sizeBytes / 1024).toFixed(1)} KB）
-                </span>
-                <div className="row">
-                  <button type="button" className="btn" onClick={() => downloadMaterial(m.id, m.fileName)}>
-                    下载
-                  </button>
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={async () => {
-                      await api.delete(`/courses/${courseId}/materials/${m.id}`);
-                      await reload();
-                    }}
-                  >
-                    删除
-                  </button>
-                </div>
-              </div>
-            ))}
-            {materials.length === 0 ? <div className="muted">暂无资料</div> : null}
-          </div>
-        </form>
+        <div className="card grid">
+          <div style={{ fontWeight: 800 }}>课程资料</div>
+          <p className="muted" style={{ margin: 0, fontSize: 13, lineHeight: 1.6 }}>
+            在课程资料页管理目录、可见范围、置顶、版本与批量上传；当前共 {materials.length} 个文件。
+          </p>
+          <Link to={`/courses/${courseId}/materials`} className="btn primary" style={{ width: "fit-content" }}>
+            打开资料管理
+          </Link>
+        </div>
       </div>
 
       <div className="card grid" style={{ marginTop: 16 }}>

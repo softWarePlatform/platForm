@@ -4,6 +4,18 @@ import { prisma } from "../lib/prisma.js";
 import { authRequired, optionalAuth } from "../lib/authGuard.js";
 import { buildKnowledgeGraphFromCourse } from "../lib/knowledge-graph.js";
 import { teachingHomeworkOverviewForTeacher } from "../lib/teaching-homework-overview.js";
+import {
+  parseScheduleSlotsJson,
+  scheduleSlotsBodySchema,
+  serializeScheduleSlots,
+} from "../lib/scheduleSlots.js";
+
+function withScheduleSlots<T extends { id: string; scheduleSlotsJson: string | null }>(course: T) {
+  return {
+    ...course,
+    scheduleSlots: parseScheduleSlotsJson(course.scheduleSlotsJson, course.id),
+  };
+}
 
 const coursesRoutes: FastifyPluginAsync = async (app) => {
   /** 已发布课程用到的分类列表（用于筛选） */
@@ -76,7 +88,7 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
         },
       });
       const teachingHomework = await teachingHomeworkOverviewForTeacher(req.auth!.sub, req.auth!.role);
-      return { courses: list, teachingHomework };
+      return { courses: list.map(withScheduleSlots), teachingHomework };
     },
   );
 
@@ -91,6 +103,7 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
         published: z.boolean().optional(),
         startAt: z.coerce.date().optional(),
         endAt: z.coerce.date().optional(),
+        scheduleSlots: scheduleSlotsBodySchema.optional(),
       });
       const body = schema.safeParse(req.body);
       if (!body.success) return reply.code(400).send({ error: "参数无效" });
@@ -104,9 +117,12 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
           teacherId: req.auth!.sub,
           startAt: body.data.startAt,
           endAt: body.data.endAt,
+          scheduleSlotsJson: body.data.scheduleSlots
+            ? serializeScheduleSlots(body.data.scheduleSlots)
+            : undefined,
         },
       });
-      return { course };
+      return { course: withScheduleSlots(course) };
     },
   );
 
@@ -127,7 +143,7 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
       const canSee = req.auth?.role === "ADMIN" || uid === course.teacherId;
       if (!canSee) return reply.code(404).send({ error: "课程不存在" });
     }
-    return { course };
+    return { course: withScheduleSlots(course) };
   });
 
   app.patch(
@@ -148,12 +164,19 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
         startAt: z.coerce.date().nullable().optional(),
         endAt: z.coerce.date().nullable().optional(),
         knowledgeGraphJson: z.string().nullable().optional(),
+        scheduleSlots: scheduleSlotsBodySchema.nullable().optional(),
       });
       const body = schema.safeParse(req.body);
       if (!body.success) return reply.code(400).send({ error: "参数无效" });
 
-      const updated = await prisma.course.update({ where: { id }, data: body.data });
-      return { course: updated };
+      const { scheduleSlots, ...rest } = body.data;
+      const data: Record<string, unknown> = { ...rest };
+      if (scheduleSlots !== undefined) {
+        data.scheduleSlotsJson = scheduleSlots ? serializeScheduleSlots(scheduleSlots) : null;
+      }
+
+      const updated = await prisma.course.update({ where: { id }, data });
+      return { course: withScheduleSlots(updated) };
     },
   );
 

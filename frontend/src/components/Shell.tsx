@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
 const linkStyle = ({ isActive }: { isActive: boolean }) => ({
@@ -11,8 +13,34 @@ const linkStyle = ({ isActive }: { isActive: boolean }) => ({
 });
 
 export default function Shell() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!token) {
+      setUnreadCount(0);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get<{ count: number }>("/notifications/unread-count");
+        if (!cancelled) setUnreadCount(data.count);
+      } catch {
+        if (!cancelled) setUnreadCount(0);
+      }
+    })();
+    const t = window.setInterval(() => {
+      void api.get<{ count: number }>("/notifications/unread-count").then(({ data }) => {
+        if (!cancelled) setUnreadCount(data.count);
+      });
+    }, 60000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [token]);
 
   return (
     <div>
@@ -41,6 +69,11 @@ export default function Shell() {
                     选课系统
                   </NavLink>
                 ) : null}
+                {user.role === "TEACHER" || user.role === "ADMIN" ? (
+                  <NavLink to="/teaching" style={linkStyle}>
+                    教学台
+                  </NavLink>
+                ) : null}
                 {user.role === "STUDENT" || user.role === "ADMIN" ? (
                   <NavLink to="/my-homework" style={linkStyle}>
                     我的作业
@@ -48,11 +81,16 @@ export default function Shell() {
                 ) : null}
                 {user.role === "TEACHER" || user.role === "ADMIN" ? (
                   <NavLink to="/teaching/homework" style={linkStyle}>
-                    我的作业
+                    作业批改
                   </NavLink>
                 ) : null}
-                <NavLink to="/messages" style={linkStyle}>
+                <NavLink to="/messages" style={linkStyle} className="nav-messages">
                   站内消息
+                  {unreadCount > 0 ? (
+                    <span className="nav-badge" aria-label={`${unreadCount} 条未读`}>
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  ) : null}
                 </NavLink>
                 <NavLink to="/profile" style={linkStyle}>
                   个人中心

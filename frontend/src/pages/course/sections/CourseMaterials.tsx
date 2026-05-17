@@ -1,14 +1,17 @@
-import { api } from "../../../api/client";
 import { useCourse } from "../CourseContext";
 import CourseSectionHead from "../CourseSectionHead";
+import MaterialsPanel from "../../../features/materials/MaterialsPanel";
 
 export default function CourseMaterials() {
-  const { courseId, token, materials } = useCourse();
+  const { courseId, token, isTeacher, setErr } = useCourse();
 
   if (!token) {
     return (
       <div>
-        <CourseSectionHead title="课程资料管理" description="登录后可查看与下载讲义、课件等资料。" />
+        <CourseSectionHead
+          title="课程资料管理"
+          description="登录后可浏览、预览、下载讲义与课件，并收藏常用资料。"
+        />
         <p className="muted">请先登录。</p>
       </div>
     );
@@ -18,36 +21,13 @@ export default function CourseMaterials() {
     <div>
       <CourseSectionHead
         title="课程资料管理"
-        description="下载教师上传的讲义与课件；上传请在「课程设置」中操作。"
+        description={
+          isTeacher
+            ? "按目录管理教学大纲与课件：上传、可见范围、置顶、版本与下载统计；学生可预览与批量下载。"
+            : "浏览课程资料，支持在线预览、下载、收藏与按条件搜索。"
+        }
       />
-      {materials.length === 0 ? (
-        <div className="course-section-empty">暂无资料</div>
-      ) : (
-        <div>
-          {materials.map((m: { id: string; title: string; fileName: string }) => (
-            <div key={m.id} className="course-list-item">
-              <span style={{ fontWeight: 600 }}>{m.title}</span>
-              <button
-                type="button"
-                className="btn primary"
-                onClick={async () => {
-                  const res = await api.get(`/courses/${courseId}/materials/${m.id}/download`, {
-                    responseType: "blob",
-                  });
-                  const url = URL.createObjectURL(res.data);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = m.fileName;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-              >
-                下载
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      <MaterialsPanel courseId={courseId} isTeacher={isTeacher} onError={setErr} />
     </div>
   );
 }

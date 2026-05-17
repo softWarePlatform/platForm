@@ -1,5 +1,6 @@
 import { useMemo, useState, type DragEvent } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../auth/AuthContext";
 import { COURSE_GROUP_META, type CourseGroupKey, type DashboardCourse } from "./types";
 import { groupCourses } from "./courseGrouping";
 import { loadCourseOrder, saveCourseOrder } from "./scheduleStorage";
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export default function CourseListPanel({ courses, semesterLabel }: Props) {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [order, setOrder] = useState<string[]>(() => loadCourseOrder());
@@ -84,9 +86,15 @@ export default function CourseListPanel({ courses, semesterLabel }: Props) {
       {groups.length === 0 ? (
         <div className="muted" style={{ padding: 24, textAlign: "center" }}>
           {courses.length === 0 ? (
-            <>
-              暂无课程。学生请前往 <Link to="/enrollment">选课系统</Link> 选课；教师创建课程后可在课程主页管理。
-            </>
+            user?.role === "TEACHER" || user?.role === "ADMIN" ? (
+              <>
+                暂无授课课程。请前往 <Link to="/teaching">教学台</Link> 创建课程并发布。
+              </>
+            ) : (
+              <>
+                暂无课程。请前往 <Link to="/enrollment">选课系统</Link> 选课。
+              </>
+            )
           ) : (
             "没有匹配的课程"
           )}
@@ -141,6 +149,7 @@ function CourseCard({
   onDrop: () => void;
 }) {
   const todo = course.pendingHomework + course.pendingLabs;
+  const unreadAnn = course.announcementCount ?? 0;
   return (
     <div
       className="course-dash-card"
@@ -157,7 +166,10 @@ function CourseCard({
             {course.category ? ` · ${course.category}` : ""}
           </div>
         </div>
-        {todo > 0 ? <span className="badge-warn">{todo} 待办</span> : null}
+        <div className="row" style={{ gap: 6 }}>
+          {unreadAnn > 0 ? <span className="badge-warn">{unreadAnn} 未读公告</span> : null}
+          {todo > 0 ? <span className="badge-warn">{todo} 待办</span> : null}
+        </div>
       </div>
 
       <div style={{ marginTop: 12 }}>

@@ -102,7 +102,7 @@ export default function Courses({ enrollmentMode = false }: { enrollmentMode?: b
 
       <div className="grid" style={{ marginTop: 16, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
         {items.map((c) => (
-          <Link key={c.id} to={`/courses/${c.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+          <Link key={c.id} to={`/courses/${c.id}/announcements`} style={{ textDecoration: "none", color: "inherit" }}>
             <div className="card" style={{ height: "100%" }}>
               <div style={{ fontWeight: 900, fontSize: 18 }}>{c.title}</div>
               <div className="muted" style={{ marginTop: 10, lineHeight: 1.6 }}>

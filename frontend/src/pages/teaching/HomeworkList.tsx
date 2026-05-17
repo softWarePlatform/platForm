@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { api } from "../api/client";
-import { useAuth } from "../auth/AuthContext";
+import { api } from "../../api/client";
+import { useAuth } from "../../auth/AuthContext";
 
 type Row = {
   id: string;

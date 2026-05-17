@@ -1,14 +1,21 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api/client";
+import { api } from "../../api/client";
+import CourseScheduleFields, {
+  emptyScheduleSlot,
+  formatScheduleSummary,
+  type ScheduleSlotDraft,
+} from "../../components/CourseScheduleFields";
 
-export default function Teaching() {
+export default function TeachingHub() {
   const [courses, setCourses] = useState<any[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("程序设计");
   const [published, setPublished] = useState(false);
+  const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlotDraft[]>([emptyScheduleSlot()]);
   const [err, setErr] = useState<string | null>(null);
+  const [createOk, setCreateOk] = useState(false);
 
   async function reload() {
     const { data } = await api.get("/courses/mine");
@@ -22,10 +29,25 @@ export default function Teaching() {
   async function createCourse(e: FormEvent) {
     e.preventDefault();
     setErr(null);
+    setCreateOk(false);
     try {
-      await api.post("/courses", { title, description, category, published });
+      await api.post("/courses", {
+        title,
+        description,
+        category,
+        published,
+        scheduleSlots: scheduleSlots.map((s) => ({
+          dayOfWeek: s.dayOfWeek,
+          periodStart: s.periodStart,
+          periodEnd: s.periodEnd,
+          room: s.room.trim(),
+        })),
+      });
       setTitle("");
       setDescription("");
+      setScheduleSlots([emptyScheduleSlot()]);
+      setCreateOk(true);
+      window.setTimeout(() => setCreateOk(false), 3000);
       await reload();
     } catch (e2: unknown) {
       const msg =
@@ -42,7 +64,7 @@ export default function Teaching() {
         <div>
           <h2 style={{ margin: 0 }}>教学台</h2>
           <div className="muted" style={{ marginTop: 8 }}>
-            创建课程、发布内容；实验测试用例请在课程详情进入实验后由教师接口创建（也可直接用 API 调试）。
+            创建课程、发布内容；进入课程主页可管理公告、作业、实验与成绩。
           </div>
         </div>
         <Link className="btn primary" to="/teaching/homework">
@@ -65,14 +87,19 @@ export default function Teaching() {
             <label>简介</label>
             <textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
+          <div style={{ fontWeight: 700, marginTop: 4 }}>每周上课时间</div>
+          <CourseScheduleFields slots={scheduleSlots} onChange={setScheduleSlots} />
           <label className="row">
             <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
             <span className="muted">发布后对学生可见</span>
           </label>
           {err ? <div className="err">{err}</div> : null}
-          <button className="btn primary" type="submit">
-            创建
-          </button>
+          <div className="row" style={{ alignItems: "center", gap: 12 }}>
+            <button className="btn primary" type="submit">
+              创建
+            </button>
+            {createOk ? <span className="save-ok">创建成功</span> : null}
+          </div>
         </form>
 
         <div className="card">
@@ -86,16 +113,21 @@ export default function Teaching() {
                     {c.published ? "已发布" : "未发布"} · 选课 {c._count?.enrollments ?? 0} · 实验 {c._count?.labs ?? 0}{" "}
                     · 作业 {c._count?.homeworks ?? 0}
                   </div>
+                  {c.scheduleSlots?.length ? (
+                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                      {formatScheduleSummary(c.scheduleSlots)}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
                   <Link className="btn primary" to={`/courses/${c.id}/manage`}>
                     课程管理
                   </Link>
-                  <Link className="btn" to={`/courses/${c.id}`}>
+                  <Link className="btn" to={`/courses/${c.id}/announcements`}>
                     打开课程
                   </Link>
-                  <Link className="btn" to={`/courses/${c.id}#course-homework`}>
-                    作业批改
+                  <Link className="btn" to={`/courses/${c.id}/homework`}>
+                    作业管理
                   </Link>
                   <Link className="btn" to={`/courses/${c.id}/gradebook`}>
                     成绩册

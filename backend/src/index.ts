@@ -16,6 +16,8 @@ import gradesRoutes from "./routes/grades.js";
 import discussionsRoutes from "./routes/discussions.js";
 import aiHelpRoutes from "./routes/ai-help.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import announcementsRoutes from "./routes/announcements.js";
+import notificationsRoutes from "./routes/notifications.js";
 import { resolveHomeworkAi } from "./lib/homework-ai-config.js";
 
 function parseOrigins(): boolean | string | string[] {
@@ -73,6 +75,8 @@ async function main() {
   await app.register(homeworkRoutes);
   await app.register(gradesRoutes);
   await app.register(dashboardRoutes);
+  await app.register(announcementsRoutes);
+  await app.register(notificationsRoutes);
   await app.register(aiHelpRoutes);
 
   const ha = resolveHomeworkAi();

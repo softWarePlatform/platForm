@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import WeeklySchedule from "../features/dashboard/WeeklySchedule";
@@ -34,11 +35,24 @@ export default function Dashboard() {
     <div className="dashboard-layout">
       <div className="container" style={{ paddingTop: 20, paddingBottom: 32 }}>
         <div style={{ marginBottom: 20 }}>
-          <h1 style={{ margin: "0 0 6px", fontSize: 26 }}>主界面</h1>
-          <p className="muted" style={{ margin: 0 }}>
-            {greeting} · {user.name}
-            {data ? ` · ${data.semester.label}` : ""}
-          </p>
+          <div className="spread" style={{ alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <h1 style={{ margin: "0 0 6px", fontSize: 26 }}>主界面</h1>
+              <p className="muted" style={{ margin: 0 }}>
+                {greeting} · {user.name}
+                {data ? ` · ${data.semester.label}` : ""}
+              </p>
+            </div>
+            {user.role === "TEACHER" || user.role === "ADMIN" ? (
+              <Link className="btn primary" to="/teaching">
+                教学台
+              </Link>
+            ) : user.role === "STUDENT" ? (
+              <Link className="btn primary" to="/enrollment">
+                选课系统
+              </Link>
+            ) : null}
+          </div>
         </div>
 
         {err ? <div className="err" style={{ marginBottom: 12 }}>{err}</div> : null}

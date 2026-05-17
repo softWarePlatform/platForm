@@ -1,12 +1,90 @@
-/** 站内消息（占位，后续对接通知系统） */
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../api/client";
+
+type NotificationRow = {
+  id: string;
+  title: string;
+  body: string | null;
+  linkPath: string | null;
+  read: boolean;
+  createdAt: string;
+  announcementDeleted: boolean;
+};
+
 export default function Messages() {
+  const navigate = useNavigate();
+  const [items, setItems] = useState<NotificationRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const { data } = await api.get<{ notifications: NotificationRow[] }>("/notifications");
+      setItems(data.notifications);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  async function open(n: NotificationRow) {
+    await api.patch(`/notifications/${n.id}/read`).catch(() => {});
+    if (n.announcementDeleted) {
+      alert("公告已删除");
+      await load();
+      return;
+    }
+    if (n.linkPath) {
+      navigate(n.linkPath);
+    }
+  }
+
+  async function markAllRead() {
+    await api.post("/notifications/read-all");
+    await load();
+  }
+
   return (
     <div className="container" style={{ paddingTop: 20, paddingBottom: 32 }}>
-      <h1 style={{ margin: "0 0 8px" }}>站内消息</h1>
-      <p className="muted">系统通知、作业提醒与课程公告将集中展示于此，功能开发中。</p>
-      <div className="card" style={{ marginTop: 16, padding: 48, textAlign: "center" }}>
-        <div className="muted">暂无消息</div>
+      <div className="spread" style={{ marginBottom: 16 }}>
+        <div>
+          <h1 style={{ margin: "0 0 6px" }}>站内消息</h1>
+          <p className="muted" style={{ margin: 0 }}>课程公告、资料更新等系统通知将显示在这里。</p>
+        </div>
+        {items.some((n) => !n.read) ? (
+          <button type="button" className="btn" onClick={markAllRead}>
+            全部标为已读
+          </button>
+        ) : null}
       </div>
+
+      {loading ? (
+        <div className="muted">加载中…</div>
+      ) : items.length === 0 ? (
+        <div className="card course-section-empty">暂无消息</div>
+      ) : (
+        <ul className="notification-list card" style={{ padding: 0, overflow: "hidden" }}>
+          {items.map((n) => (
+            <li key={n.id}>
+              <button
+                type="button"
+                className={`notification-list__item${n.read ? "" : " notification-list__item--unread"}`}
+                onClick={() => open(n)}
+              >
+                <div className="notification-list__title">{n.title}</div>
+                <div className="muted notification-list__time">
+                  {new Date(n.createdAt).toLocaleString()}
+                  {n.announcementDeleted ? " · 公告已删除" : ""}
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

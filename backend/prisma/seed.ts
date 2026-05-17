@@ -95,9 +95,17 @@ async function main() {
     },
   });
 
+  const scheduleC1 = JSON.stringify([
+    { dayOfWeek: 1, periodStart: 1, periodEnd: 2, room: "教学楼 A301" },
+    { dayOfWeek: 3, periodStart: 5, periodEnd: 6, room: "实验楼 B102" },
+  ]);
+  const scheduleC2 = JSON.stringify([
+    { dayOfWeek: 2, periodStart: 3, periodEnd: 4, room: "教学楼 C205" },
+  ]);
+
   const course1 = await prisma.course.upsert({
     where: { id: CID1 },
-    update: { title: "程序设计基础（演示）" },
+    update: { title: "程序设计基础（演示）", scheduleSlotsJson: scheduleC1 },
     create: {
       id: CID1,
       title: "程序设计基础（演示）",
@@ -107,12 +115,13 @@ async function main() {
       teacherId: teacher.id,
       labWeight: 0.6,
       homeworkWeight: 0.4,
+      scheduleSlotsJson: scheduleC1,
     },
   });
 
   const course2 = await prisma.course.upsert({
     where: { id: CID2 },
-    update: {},
+    update: { scheduleSlotsJson: scheduleC2 },
     create: {
       id: CID2,
       title: "数据结构导论（演示）",
@@ -122,6 +131,7 @@ async function main() {
       teacherId: teacher.id,
       labWeight: 0.5,
       homeworkWeight: 0.5,
+      scheduleSlotsJson: scheduleC2,
     },
   });
 
@@ -233,9 +243,13 @@ async function main() {
   await ensureFile(`courses/${course1.id}/seed_slides.txt`, "【演示讲义】\n\n1) Hello 输出\n2) A+B 输入输出\n3) 注意标准输入与输出格式\n");
   await ensureFile(`courses/${course2.id}/seed_readme.txt`, "【数据结构导论】\n\n本讲义用于演示课程资料。\n");
 
+  const MAT_C1_SYL = "00000000-0000-4000-8000-000000000050";
+  const MAT_C1_SLIDES = "00000000-0000-4000-8000-000000000051";
+  const MAT_C2_README = "00000000-0000-4000-8000-000000000052";
   await prisma.courseMaterial.createMany({
     data: [
       {
+        id: MAT_C1_SYL,
         courseId: course1.id,
         title: "课程大纲（seed）",
         fileName: "syllabus.txt",
@@ -243,8 +257,14 @@ async function main() {
         mimeType: "text/plain",
         sizeBytes: 100,
         uploadedById: teacher.id,
+        folderPath: "教学大纲",
+        pinned: true,
+        groupId: MAT_C1_SYL,
+        version: 1,
+        isCurrent: true,
       },
       {
+        id: MAT_C1_SLIDES,
         courseId: course1.id,
         title: "第一讲讲义（seed）",
         fileName: "slides.txt",
@@ -252,8 +272,13 @@ async function main() {
         mimeType: "text/plain",
         sizeBytes: 160,
         uploadedById: teacher.id,
+        folderPath: "第1章/课件",
+        groupId: MAT_C1_SLIDES,
+        version: 1,
+        isCurrent: true,
       },
       {
+        id: MAT_C2_README,
         courseId: course2.id,
         title: "课程说明（seed）",
         fileName: "readme.txt",
@@ -261,6 +286,10 @@ async function main() {
         mimeType: "text/plain",
         sizeBytes: 80,
         uploadedById: teacher.id,
+        folderPath: "",
+        groupId: MAT_C2_README,
+        version: 1,
+        isCurrent: true,
       },
     ],
   });
@@ -405,6 +434,48 @@ async function main() {
       body: "本演示课仅含一个简单 Python 实验，可与课一对比页面与流程。",
     },
   });
+
+  const ANN_C1 = "00000000-0000-4000-8000-000000000040";
+  const ANN_C2 = "00000000-0000-4000-8000-000000000041";
+  await prisma.courseAnnouncement.deleteMany({
+    where: { id: { in: [ANN_C1, ANN_C2] } },
+  });
+  await prisma.courseAnnouncement.create({
+    data: {
+      id: ANN_C1,
+      courseId: course1.id,
+      authorId: teacher.id,
+      title: "第 1 周实验与作业安排",
+      content:
+        "## 本周任务\n\n1. 完成「Hello 输出」实验\n2. 提交作业 A1\n\n如有疑问请在课程问答区发帖。",
+      pinned: true,
+    },
+  });
+  await prisma.courseAnnouncement.create({
+    data: {
+      id: ANN_C2,
+      courseId: course2.id,
+      authorId: teacher.id,
+      title: "数据结构课程说明",
+      content: "本演示课含 Python 实验，请按实验集截止时间提交代码。",
+      pinned: false,
+    },
+  });
+  await prisma.siteNotification.deleteMany({
+    where: { announcementId: { in: [ANN_C1, ANN_C2] } },
+  });
+  for (const sid of [s1.id, s2.id, s3.id]) {
+    await prisma.siteNotification.create({
+      data: {
+        userId: sid,
+        type: "ANNOUNCEMENT",
+        title: "【课程公告】第 1 周实验与作业安排",
+        body: "第 1 周实验与作业安排",
+        linkPath: `/courses/${course1.id}/announcements/${ANN_C1}`,
+        announcementId: ANN_C1,
+      },
+    });
+  }
 
   /** 重置本种子涉及的提交记录，避免重复跑脚本时翻倍 */
   await prisma.submission.deleteMany({

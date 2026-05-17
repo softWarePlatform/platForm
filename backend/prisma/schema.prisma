@@ -42,6 +42,10 @@ model User {
   homeworkSubmissions   HomeworkSubmission[]
   homeworkQuestions     HomeworkQuestion[]
   discussionPosts       DiscussionPost[]
+  announcementsAuthored CourseAnnouncement[]
+  announcementReads     AnnouncementRead[]
+  siteNotifications     SiteNotification[]
+  materialFavorites       MaterialFavorite[]
   materialsUploaded     CourseMaterial[]       @relation("MaterialUploader")
   labFilesUploaded      LabFile[]
   answeredHomeworkQuestions HomeworkQuestion[] @relation("HomeworkQuestionAnsweredBy")
@@ -63,6 +67,8 @@ model Course {
   endAt                DateTime?
   /** 知识图谱 JSON：{ nodes:[{id,label}], edges:[{from,to,label?}] } */
   knowledgeGraphJson String?   @db.Text
+  /** 周课表 JSON：[{ dayOfWeek, periodStart, periodEnd, room }] */
+  scheduleSlotsJson  String?   @db.Text
 
   teacher           User             @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Cascade)
   labs              Lab[]
@@ -72,23 +78,109 @@ model Course {
   classes           Class[]
   discussionPosts   DiscussionPost[]
   materials         CourseMaterial[]
+  announcements     CourseAnnouncement[]
+}
+
+model CourseAnnouncement {
+  id              String   @id @default(uuid())
+  courseId        String
+  authorId        String
+  title           String
+  content         String   @db.Text
+  pinned          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  editHistoryJson String?  @db.Text
+
+  course        Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  author        User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  reads         AnnouncementRead[]
+  notifications SiteNotification[]
+
+  @@index([courseId])
+  @@index([courseId, pinned, createdAt])
+}
+
+model AnnouncementRead {
+  id             String   @id @default(uuid())
+  announcementId String
+  userId         String
+  readAt         DateTime @default(now())
+
+  announcement CourseAnnouncement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+}
+
+model SiteNotification {
+  id             String    @id @default(uuid())
+  userId         String
+  type           String    @default("ANNOUNCEMENT")
+  title          String
+  body           String?
+  linkPath       String?
+  announcementId String?
+  materialId     String?
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  announcement CourseAnnouncement? @relation(fields: [announcementId], references: [id], onDelete: SetNull)
+  material     CourseMaterial?     @relation(fields: [materialId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
 }
 
 model CourseMaterial {
-  id           String   @id @default(uuid())
-  courseId     String
-  title        String
-  fileName     String
-  storedPath   String
-  mimeType     String?
-  sizeBytes    Int
-  uploadedById String
-  createdAt    DateTime @default(now())
+  id             String    @id @default(uuid())
+  courseId       String
+  title          String
+  fileName       String
+  storedPath     String
+  mimeType       String?
+  sizeBytes      Int
+  uploadedById   String
+  /** 目录路径，如「第1章/课件」，不含首尾斜杠 */
+  folderPath     String    @default("")
+  /** ALL | CLASS | TEACHER_ONLY */
+  visibility     String    @default("ALL")
+  targetClassId  String?
+  pinned         Boolean   @default(false)
+  /** 版本组：同组多版本 */
+  groupId        String
+  version        Int       @default(1)
+  isCurrent      Boolean   @default(true)
+  downloadCount  Int       @default(0)
+  lastDownloadAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  uploadedBy User   @relation("MaterialUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  course        Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploadedBy    User               @relation("MaterialUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  targetClass   Class?             @relation(fields: [targetClassId], references: [id], onDelete: SetNull)
+  favorites     MaterialFavorite[]
+  notifications SiteNotification[]
 
-  @@index([courseId])
+  @@index([courseId, isCurrent])
+  @@index([courseId, folderPath])
+  @@index([courseId, pinned, createdAt])
+  @@index([groupId])
+}
+
+model MaterialFavorite {
+  id         String   @id @default(uuid())
+  userId     String
+  materialId String
+  createdAt  DateTime @default(now())
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material CourseMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, materialId])
+  @@index([userId])
 }
 
 model Class {
@@ -96,9 +188,10 @@ model Class {
   name     String
   courseId String
 
-  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
   enrollments Enrollment[]
   homeworks   Homework[]
+  materials   CourseMaterial[]
 }
 
 model Enrollment {
