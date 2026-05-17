@@ -3,7 +3,7 @@ import { CourseProvider, useCourse } from "./CourseContext";
 import { courseModulesForNav } from "../../modules/courseNav";
 
 function CourseLayoutInner() {
-  const { course, err, user, courseId, enroll, isTeacher } = useCourse();
+  const { course, err, user, courseId, enroll, isTeacher, isEnrolled } = useCourse();
   const modules = courseModulesForNav();
 
   if (!course && !err) {
@@ -51,9 +51,15 @@ function CourseLayoutInner() {
             </div>
             <div className="course-hero__actions">
               {showEnroll ? (
-                <button className="btn course-hero__btn" type="button" onClick={enroll}>
-                  选课
-                </button>
+                isEnrolled ? (
+                  <span className="btn course-hero__btn course-hero__btn--joined" aria-disabled>
+                    已加入课程
+                  </span>
+                ) : (
+                  <button className="btn course-hero__btn" type="button" onClick={() => void enroll()}>
+                    选课
+                  </button>
+                )
               ) : null}
               {isTeacher ? (
                 <Link className="btn course-hero__btn course-hero__btn--ghost" to={`/courses/${courseId}/manage`}>

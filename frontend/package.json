@@ -15,7 +15,8 @@
     "react-dom": "^19.1.0",
     "react-markdown": "^9.1.0",
     "react-router-dom": "^7.5.0",
-    "teaching-platform": "file:.."
+    "teaching-platform": "file:..",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^22.19.17",

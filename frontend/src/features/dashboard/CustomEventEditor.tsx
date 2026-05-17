@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import { PERIOD_OPTIONS } from "../../lib/schedulePeriods";
 import { CUSTOM_EVENT_COLORS, type CustomEventDraft } from "./customEventForm";
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
@@ -83,7 +84,7 @@ export default function CustomEventEditor({
               className="dash-select"
               style={{ width: "100%" }}
             >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((p) => (
+              {PERIOD_OPTIONS.map((p) => (
                 <option key={p} value={p}>
                   第 {p} 节
                 </option>
@@ -98,8 +99,7 @@ export default function CustomEventEditor({
               className="dash-select"
               style={{ width: "100%" }}
             >
-              {[1, 2, 3, 4, 5, 6, 7, 8]
-                .filter((p) => p >= draft.periodStart)
+              {PERIOD_OPTIONS.filter((p) => p >= draft.periodStart)
                 .map((p) => (
                   <option key={p} value={p}>
                     第 {p} 节

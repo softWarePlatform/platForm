@@ -163,7 +163,7 @@ a.card.home-feature-tile:hover {
 }
 
 .schedule-cell {
-  min-height: 44px;
+  min-height: 36px;
   border: 1px dashed var(--border);
   border-radius: 8px;
   background: #fafbfc;
@@ -180,25 +180,25 @@ a.card.home-feature-tile:hover {
   border-bottom-left-radius: 2px;
   border-bottom-right-radius: 2px;
   margin-bottom: -2px;
-  min-height: 48px;
+  min-height: 40px;
 }
 
 .schedule-cell--span-mid {
   border-radius: 2px;
   margin-top: -2px;
   margin-bottom: -2px;
-  min-height: 40px;
+  min-height: 32px;
 }
 
 .schedule-cell--span-end {
   border-top-left-radius: 2px;
   border-top-right-radius: 2px;
   margin-top: -2px;
-  min-height: 40px;
+  min-height: 32px;
 }
 
 .schedule-cell--span-single {
-  min-height: 44px;
+  min-height: 36px;
 }
 
 .schedule-event {
@@ -498,6 +498,14 @@ a.card.home-feature-tile:hover {
   box-shadow: none;
 }
 
+.course-hero__btn--joined {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  cursor: default;
+  box-shadow: none;
+  opacity: 1;
+}
+
 .course-body {
   padding-top: 0;
   margin-top: -14px;
@@ -666,9 +674,19 @@ a.card.home-feature-tile:hover {
   color: #b45309;
 }
 
-.ann-badge--new {
-  background: #fee2e2;
-  color: #b91c1c;
+.ann-badge--read {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.ann-badge--unread {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.ann-badge--marked {
+  background: #fef3c7;
+  color: #b45309;
 }
 
 .ann-badge--edit {

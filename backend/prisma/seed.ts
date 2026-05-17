@@ -103,9 +103,25 @@ async function main() {
     { dayOfWeek: 2, periodStart: 3, periodEnd: 4, room: "教学楼 C205" },
   ]);
 
+  const semesterKey = "2026-spring";
+  const semesterLabel = "2026-2027 春季学期";
+  const enrollmentFields = {
+    semesterKey,
+    credits: 3,
+    capacity: 80,
+    courseNature: "REQUIRED" as const,
+    subjectCategory: "CORE_MAJOR" as const,
+    offeringCollegeCode: "21",
+  };
+
   const course1 = await prisma.course.upsert({
     where: { id: CID1 },
-    update: { title: "程序设计基础（演示）", scheduleSlotsJson: scheduleC1 },
+    update: {
+      title: "程序设计基础（演示）",
+      scheduleSlotsJson: scheduleC1,
+      courseCode: "CS101",
+      ...enrollmentFields,
+    },
     create: {
       id: CID1,
       title: "程序设计基础（演示）",
@@ -116,12 +132,23 @@ async function main() {
       labWeight: 0.6,
       homeworkWeight: 0.4,
       scheduleSlotsJson: scheduleC1,
+      courseCode: "CS101",
+      ...enrollmentFields,
     },
   });
 
   const course2 = await prisma.course.upsert({
     where: { id: CID2 },
-    update: { scheduleSlotsJson: scheduleC2 },
+    update: {
+      scheduleSlotsJson: scheduleC2,
+      courseCode: "CS201",
+      semesterKey,
+      credits: 2,
+      capacity: 50,
+      courseNature: "RENXIU",
+      subjectCategory: "CORE_MAJOR",
+      offeringCollegeCode: "6",
+    },
     create: {
       id: CID2,
       title: "数据结构导论（演示）",
@@ -132,6 +159,33 @@ async function main() {
       labWeight: 0.5,
       homeworkWeight: 0.5,
       scheduleSlotsJson: scheduleC2,
+      courseCode: "CS201",
+      semesterKey,
+      credits: 2,
+      capacity: 50,
+      courseNature: "RENXIU",
+      subjectCategory: "CORE_MAJOR",
+      offeringCollegeCode: "6",
+    },
+  });
+
+  const now = Date.now();
+  await prisma.enrollmentPeriod.upsert({
+    where: { semesterKey },
+    update: {
+      label: semesterLabel,
+      phase: "FORMAL",
+      openAt: new Date(now - 7 * 24 * 3600 * 1000),
+      closeAt: new Date(now + 60 * 24 * 3600 * 1000),
+      confirmDeadline: new Date(now + 90 * 24 * 3600 * 1000),
+    },
+    create: {
+      semesterKey,
+      label: semesterLabel,
+      phase: "FORMAL",
+      openAt: new Date(now - 7 * 24 * 3600 * 1000),
+      closeAt: new Date(now + 60 * 24 * 3600 * 1000),
+      confirmDeadline: new Date(now + 90 * 24 * 3600 * 1000),
     },
   });
 

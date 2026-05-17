@@ -22,6 +22,43 @@ enum SubmissionStatus {
   TIMEOUT
 }
 
+enum CourseNature {
+  REQUIRED
+  RENXIU
+  ELECTIVE
+}
+
+enum SubjectCategory {
+  MATH_BASIC
+  ENGINEERING_BASIC
+  FOREIGN_LANGUAGE
+  PE
+  QUALITY_EDU_THEORY
+  QUALITY_EDU_PRACTICE
+  CORE_MAJOR
+  IDEOLOGY
+  GENERAL_MAJOR
+  CORE_GENERAL
+}
+
+enum EnrollmentPhase {
+  PRESELECT
+  FORMAL
+  ADD_DROP
+  CLOSED
+}
+
+enum EnrollmentLogAction {
+  ENROLL
+  DROP
+  WAITLIST_JOIN
+  WAITLIST_LEAVE
+  WAITLIST_PROMOTED
+  ADMIN_ENROLL
+  ADMIN_DROP
+  TIMETABLE_CONFIRM
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -44,11 +81,16 @@ model User {
   discussionPosts       DiscussionPost[]
   announcementsAuthored CourseAnnouncement[]
   announcementReads     AnnouncementRead[]
+  announcementMarks     AnnouncementMark[]
   siteNotifications     SiteNotification[]
   materialFavorites       MaterialFavorite[]
   materialsUploaded     CourseMaterial[]       @relation("MaterialUploader")
   labFilesUploaded      LabFile[]
   answeredHomeworkQuestions HomeworkQuestion[] @relation("HomeworkQuestionAnsweredBy")
+  enrollmentWaitlists     EnrollmentWaitlist[]
+  enrollmentLogs          EnrollmentLog[]
+  enrollmentLogsOperated  EnrollmentLog[]      @relation("EnrollmentLogOperator")
+  timetableConfirmations  TimetableConfirmation[]
 }
 
 model Course {
@@ -69,6 +111,14 @@ model Course {
   knowledgeGraphJson String?   @db.Text
   /** 周课表 JSON：[{ dayOfWeek, periodStart, periodEnd, room }] */
   scheduleSlotsJson  String?   @db.Text
+  /** 选课系统：课程代码、学分、容量、性质与学科分类、学期 */
+  courseCode         String?   @unique
+  credits            Int       @default(2)
+  capacity           Int       @default(60)
+  courseNature         CourseNature    @default(ELECTIVE)
+  subjectCategory      SubjectCategory @default(GENERAL_MAJOR)
+  offeringCollegeCode  String?
+  semesterKey          String          @default("2026-spring")
 
   teacher           User             @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Cascade)
   labs              Lab[]
@@ -79,6 +129,8 @@ model Course {
   discussionPosts   DiscussionPost[]
   materials         CourseMaterial[]
   announcements     CourseAnnouncement[]
+  waitlists         EnrollmentWaitlist[]
+  enrollmentLogs    EnrollmentLog[]
 }
 
 model CourseAnnouncement {
@@ -95,10 +147,24 @@ model CourseAnnouncement {
   course        Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
   author        User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
   reads         AnnouncementRead[]
+  marks         AnnouncementMark[]
   notifications SiteNotification[]
 
   @@index([courseId])
   @@index([courseId, pinned, createdAt])
+}
+
+model AnnouncementMark {
+  id             String   @id @default(uuid())
+  announcementId String
+  userId         String
+  createdAt      DateTime @default(now())
+
+  announcement CourseAnnouncement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId])
 }
 
 model AnnouncementRead {
@@ -205,6 +271,59 @@ model Enrollment {
   class  Class?  @relation(fields: [classId], references: [id], onDelete: SetNull)
 
   @@unique([userId, courseId])
+}
+
+model EnrollmentWaitlist {
+  id         String    @id @default(uuid())
+  userId     String
+  courseId   String
+  createdAt  DateTime  @default(now())
+  notifiedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([courseId, createdAt])
+}
+
+model EnrollmentLog {
+  id         String              @id @default(uuid())
+  userId     String
+  courseId   String
+  action     EnrollmentLogAction
+  operatorId String?
+  note       String?
+  createdAt  DateTime            @default(now())
+
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  operator User?   @relation("EnrollmentLogOperator", fields: [operatorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([courseId, createdAt])
+}
+
+model EnrollmentPeriod {
+  id              String          @id @default(uuid())
+  semesterKey     String          @unique
+  label           String?
+  phase           EnrollmentPhase @default(FORMAL)
+  openAt          DateTime
+  closeAt         DateTime
+  confirmDeadline DateTime?
+  updatedAt       DateTime        @updatedAt
+}
+
+model TimetableConfirmation {
+  id          String   @id @default(uuid())
+  userId      String
+  semesterKey String
+  confirmedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, semesterKey])
 }
 
 /** 实验集（综合实验）：一门课下可包含多道 Lab 题目 */

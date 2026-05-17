@@ -6,7 +6,6 @@ import { getCourseAccess } from "../lib/courseAccess.js";
 import {
   appendEditHistory,
   isEdited,
-  isNewAnnouncement,
   notifyStudentsOfAnnouncement,
 } from "../lib/announcements.js";
 
@@ -24,7 +23,7 @@ function serializeAnnouncement(
     editHistoryJson: string | null;
     author: { id: string; name: string };
   },
-  opts: { read: boolean },
+  opts: { read: boolean; marked: boolean },
 ) {
   return {
     id: row.id,
@@ -35,8 +34,8 @@ function serializeAnnouncement(
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     edited: isEdited(row.createdAt, row.updatedAt, row.editHistoryJson),
-    isNew: isNewAnnouncement(row.createdAt),
     read: opts.read,
+    marked: opts.marked,
     author: row.author,
   };
 }
@@ -79,18 +78,29 @@ const announcementsRoutes: FastifyPluginAsync = async (app) => {
     ]);
 
     const ids = rows.map((r) => r.id);
-    const reads =
+    const [reads, marks] =
       ids.length > 0
-        ? await prisma.announcementRead.findMany({
-            where: { userId: req.auth!.sub, announcementId: { in: ids } },
-            select: { announcementId: true },
-          })
-        : [];
+        ? await Promise.all([
+            prisma.announcementRead.findMany({
+              where: { userId: req.auth!.sub, announcementId: { in: ids } },
+              select: { announcementId: true },
+            }),
+            prisma.announcementMark.findMany({
+              where: { userId: req.auth!.sub, announcementId: { in: ids } },
+              select: { announcementId: true },
+            }),
+          ])
+        : [[], []];
     const readSet = new Set(reads.map((r) => r.announcementId));
+    const markSet = new Set(marks.map((m) => m.announcementId));
+    const isTeacherView = access.isTeacher;
 
     return {
       announcements: rows.map((r) =>
-        serializeAnnouncement(r, { read: readSet.has(r.id) }),
+        serializeAnnouncement(r, {
+          read: isTeacherView || readSet.has(r.id),
+          marked: markSet.has(r.id),
+        }),
       ),
       page,
       pageSize,
@@ -122,9 +132,15 @@ const announcementsRoutes: FastifyPluginAsync = async (app) => {
 
       await markAnnouncementRead(announcementId, req.auth!.sub);
 
+      const marked = await prisma.announcementMark.findUnique({
+        where: {
+          announcementId_userId: { announcementId, userId: req.auth!.sub },
+        },
+      });
+
       return {
         announcement: {
-          ...serializeAnnouncement(row, { read: true }),
+          ...serializeAnnouncement(row, { read: true, marked: !!marked }),
           editHistory: row.editHistoryJson
             ? (() => {
                 try {
@@ -168,9 +184,104 @@ const announcementsRoutes: FastifyPluginAsync = async (app) => {
     await notifyStudentsOfAnnouncement(courseId, row.id, row.title);
 
     return {
-      announcement: serializeAnnouncement(row, { read: true }),
+      announcement: serializeAnnouncement(row, { read: true, marked: false }),
     };
   });
+
+  app.post(
+    "/courses/:courseId/announcements/read-all",
+    { preHandler: authRequired() },
+    async (req, reply) => {
+      const { courseId } = req.params as { courseId: string };
+      const access = await getCourseAccess(req.auth!.sub, req.auth!.role, courseId);
+      if (!access.course) return reply.code(404).send({ error: "课程不存在" });
+      if (!access.canView) return reply.code(403).send({ error: "未选课或无权查看" });
+      if (access.isTeacher) return reply.code(403).send({ error: "仅学生可使用" });
+
+      const announcements = await prisma.courseAnnouncement.findMany({
+        where: { courseId },
+        select: { id: true },
+      });
+      if (announcements.length === 0) return { ok: true, marked: 0 };
+
+      const userId = req.auth!.sub;
+      await prisma.$transaction(
+        announcements.map((a) =>
+          prisma.announcementRead.upsert({
+            where: { announcementId_userId: { announcementId: a.id, userId } },
+            create: { announcementId: a.id, userId },
+            update: { readAt: new Date() },
+          }),
+        ),
+      );
+
+      return { ok: true, marked: announcements.length };
+    },
+  );
+
+  app.post(
+    "/announcements/:announcementId/read-status",
+    { preHandler: authRequired() },
+    async (req, reply) => {
+      const { announcementId } = req.params as { announcementId: string };
+      const body = z.object({ read: z.boolean() }).safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: "参数无效" });
+
+      const existing = await prisma.courseAnnouncement.findUnique({
+        where: { id: announcementId },
+      });
+      if (!existing) return reply.code(404).send({ error: "公告不存在" });
+
+      const access = await getCourseAccess(req.auth!.sub, req.auth!.role, existing.courseId);
+      if (!access.canView) return reply.code(403).send({ error: "未选课或无权查看" });
+      if (access.isTeacher) return reply.code(403).send({ error: "仅学生可使用" });
+
+      const userId = req.auth!.sub;
+      if (body.data.read) {
+        await markAnnouncementRead(announcementId, userId);
+      } else {
+        await prisma.announcementRead.deleteMany({
+          where: { announcementId, userId },
+        });
+      }
+
+      return { ok: true, read: body.data.read };
+    },
+  );
+
+  app.post(
+    "/announcements/:announcementId/mark",
+    { preHandler: authRequired() },
+    async (req, reply) => {
+      const { announcementId } = req.params as { announcementId: string };
+      const body = z.object({ marked: z.boolean() }).safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: "参数无效" });
+
+      const existing = await prisma.courseAnnouncement.findUnique({
+        where: { id: announcementId },
+      });
+      if (!existing) return reply.code(404).send({ error: "公告不存在" });
+
+      const access = await getCourseAccess(req.auth!.sub, req.auth!.role, existing.courseId);
+      if (!access.canView) return reply.code(403).send({ error: "未选课或无权查看" });
+      if (access.isTeacher) return reply.code(403).send({ error: "仅学生可使用" });
+
+      const userId = req.auth!.sub;
+      if (body.data.marked) {
+        await prisma.announcementMark.upsert({
+          where: { announcementId_userId: { announcementId, userId } },
+          create: { announcementId, userId },
+          update: {},
+        });
+      } else {
+        await prisma.announcementMark.deleteMany({
+          where: { announcementId, userId },
+        });
+      }
+
+      return { ok: true, marked: body.data.marked };
+    },
+  );
 
   app.patch("/announcements/:announcementId", { preHandler: authRequired() }, async (req, reply) => {
     const { announcementId } = req.params as { announcementId: string };
@@ -227,8 +338,14 @@ const announcementsRoutes: FastifyPluginAsync = async (app) => {
       await notifyStudentsOfAnnouncement(existing.courseId, row.id, row.title);
     }
 
+    const marked = await prisma.announcementMark.findUnique({
+      where: {
+        announcementId_userId: { announcementId, userId: req.auth!.sub },
+      },
+    });
+
     return {
-      announcement: serializeAnnouncement(row, { read: true }),
+      announcement: serializeAnnouncement(row, { read: true, marked: !!marked }),
     };
   });
 
@@ -281,7 +398,13 @@ const announcementsRoutes: FastifyPluginAsync = async (app) => {
         include: { author: { select: authorSelect } },
       });
 
-      return { announcement: serializeAnnouncement(row, { read: true }) };
+      const marked = await prisma.announcementMark.findUnique({
+        where: {
+          announcementId_userId: { announcementId, userId: req.auth!.sub },
+        },
+      });
+
+      return { announcement: serializeAnnouncement(row, { read: true, marked: !!marked }) };
     },
   );
 };

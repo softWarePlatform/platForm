@@ -1,0 +1,61 @@
+/** 开课学院（代码 → 名称，与教务选课系统口径一致） */
+export const OFFERING_COLLEGES: { code: string; name: string }[] = [
+  { code: "1", name: "材料科学与工程学院" },
+  { code: "2", name: "电子信息工程学院" },
+  { code: "3", name: "自动化科学与电气工程学院" },
+  { code: "4", name: "能源与动力工程学院" },
+  { code: "5", name: "航空科学与工程学院" },
+  { code: "6", name: "计算机学院" },
+  { code: "7", name: "机械工程及自动化学院" },
+  { code: "8", name: "经济管理学院" },
+  { code: "9", name: "数学科学学院" },
+  { code: "10", name: "生物与医学工程学院" },
+  { code: "11", name: "人文社会科学学院（公共管理学院）" },
+  { code: "12", name: "外国语学院" },
+  { code: "13", name: "交通科学与工程学院" },
+  { code: "14", name: "可靠性与系统工程学院" },
+  { code: "15", name: "宇航学院" },
+  { code: "16", name: "飞行学院" },
+  { code: "17", name: "仪器科学与光电工程学院" },
+  { code: "18", name: "北京学院" },
+  { code: "19", name: "物理学院" },
+  { code: "20", name: "法学院" },
+  { code: "21", name: "软件学院" },
+  { code: "22", name: "继续教育学院" },
+  { code: "23", name: "沈元学院（高等理工学院/未来空天技术学院/国家卓越工程师学院）" },
+  { code: "24", name: "中法工程师学院/国际通用工程学院" },
+  { code: "25", name: "国际学院" },
+  { code: "26", name: "新媒体艺术与设计学院" },
+  { code: "27", name: "化学学院" },
+  { code: "28", name: "马克思主义学院" },
+  { code: "29", name: "人文与社会科学高等研究院" },
+  { code: "30", name: "空间与环境学院" },
+  { code: "31", name: "无人系统研究院" },
+  { code: "32", name: "航空发动机研究院" },
+  { code: "33", name: "体育部" },
+  { code: "36", name: "国际前沿交叉科学研究院" },
+  { code: "37", name: "北航学院" },
+  { code: "38", name: "医学科学与工程学院/医工交叉创新研究院" },
+  { code: "39", name: "网络空间安全学院" },
+  { code: "41", name: "集成电路科学与工程学院" },
+  { code: "42", name: "人工智能研究院" },
+  { code: "43", name: "前沿科学技术创新研究院" },
+  { code: "54", name: "大科学装置研究院" },
+  { code: "57", name: "中法航空学院（北航杭州国际校园）" },
+  { code: "71", name: "传源书院（信息类）" },
+  { code: "73", name: "士谔书院（信息类）" },
+  { code: "74", name: "冯如书院（航空航天类）" },
+  { code: "75", name: "士嘉书院（航空航天类）" },
+  { code: "76", name: "守锷书院（航空航天类）" },
+  { code: "77", name: "致真书院（理科试验班类）" },
+  { code: "79", name: "知行书院（社会科学试验班）" },
+];
+
+export const OFFERING_COLLEGE_LABELS: Record<string, string> = Object.fromEntries(
+  OFFERING_COLLEGES.map((c) => [c.code, c.name]),
+);
+
+export function offeringCollegeLabel(code: string | null | undefined): string {
+  if (!code) return "待定开课单位";
+  return OFFERING_COLLEGE_LABELS[code] ?? code;
+}

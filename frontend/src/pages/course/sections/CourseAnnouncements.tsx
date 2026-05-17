@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../api/client";
 import { useCourse } from "../CourseContext";
@@ -11,8 +11,8 @@ export type AnnouncementRow = {
   createdAt: string;
   updatedAt: string;
   edited: boolean;
-  isNew: boolean;
   read: boolean;
+  marked: boolean;
   author: { id: string; name: string };
 };
 
@@ -53,6 +53,11 @@ export default function CourseAnnouncements() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const unreadCount = useMemo(
+    () => (isTeacher ? 0 : list.filter((row) => !row.read).length),
+    [isTeacher, list],
+  );
 
   function openCreate() {
     setEditing(null);
@@ -103,7 +108,7 @@ export default function CourseAnnouncements() {
   }
 
   async function togglePin(row: AnnouncementRow) {
-    if (!isTeacher || row.author.id !== user?.id && user?.role !== "ADMIN") return;
+    if (!isTeacher || (row.author.id !== user?.id && user?.role !== "ADMIN")) return;
     await api.post(`/announcements/${row.id}/pin`, { pinned: !row.pinned });
     await load();
   }
@@ -112,6 +117,46 @@ export default function CourseAnnouncements() {
     if (!confirm("删除后不可恢复，确定删除吗？")) return;
     await api.delete(`/announcements/${row.id}`);
     await load();
+  }
+
+  async function markAllRead() {
+    if (!courseId || isTeacher) return;
+    try {
+      await api.post(`/courses/${courseId}/announcements/read-all`);
+      await load();
+    } catch (e2: unknown) {
+      const msg =
+        typeof e2 === "object" && e2 !== null && "response" in e2
+          ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
+          : null;
+      setErr(msg ?? "操作失败");
+    }
+  }
+
+  async function setReadStatus(row: AnnouncementRow, read: boolean) {
+    try {
+      await api.post(`/announcements/${row.id}/read-status`, { read });
+      await load();
+    } catch (e2: unknown) {
+      const msg =
+        typeof e2 === "object" && e2 !== null && "response" in e2
+          ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
+          : null;
+      setErr(msg ?? "操作失败");
+    }
+  }
+
+  async function toggleMark(row: AnnouncementRow) {
+    try {
+      await api.post(`/announcements/${row.id}/mark`, { marked: !row.marked });
+      await load();
+    } catch (e2: unknown) {
+      const msg =
+        typeof e2 === "object" && e2 !== null && "response" in e2
+          ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
+          : null;
+      setErr(msg ?? "操作失败");
+    }
   }
 
   const canManage = isTeacher;
@@ -124,14 +169,22 @@ export default function CourseAnnouncements() {
           description={
             isTeacher
               ? "发布、置顶与编辑公告；发布后选课学生会收到站内通知。"
-              : "查看课程通知；未读公告在列表中加粗显示。"
+              : "查看课程通知；未读公告在列表中加粗显示，可标记重要公告便于查找。"
           }
         />
-        {canManage ? (
-          <button type="button" className="btn primary" onClick={openCreate}>
-            发布公告
-          </button>
-        ) : null}
+        <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+          {!isTeacher && unreadCount > 0 ? (
+            <button type="button" className="btn" onClick={() => void markAllRead()}>
+              全部标为已读
+              {unreadCount > 0 ? `（${unreadCount}）` : ""}
+            </button>
+          ) : null}
+          {canManage ? (
+            <button type="button" className="btn primary" onClick={openCreate}>
+              发布公告
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {showForm ? (
@@ -185,7 +238,9 @@ export default function CourseAnnouncements() {
       ) : null}
 
       {loading ? (
-        <div className="muted" style={{ padding: 24 }}>加载中…</div>
+        <div className="muted" style={{ padding: 24 }}>
+          加载中…
+        </div>
       ) : list.length === 0 ? (
         <div className="course-section-empty">暂无公告</div>
       ) : (
@@ -200,7 +255,16 @@ export default function CourseAnnouncements() {
                 <div className="announcement-list__main">
                   <div className="announcement-list__tags">
                     {row.pinned ? <span className="ann-badge ann-badge--pin">置顶</span> : null}
-                    {row.isNew ? <span className="ann-badge ann-badge--new">NEW</span> : null}
+                    {!isTeacher ? (
+                      <span
+                        className={`ann-badge ${row.read ? "ann-badge--read" : "ann-badge--unread"}`}
+                      >
+                        {row.read ? "已读" : "未读"}
+                      </span>
+                    ) : null}
+                    {!isTeacher && row.marked ? (
+                      <span className="ann-badge ann-badge--marked">已标记</span>
+                    ) : null}
                     {row.edited ? <span className="ann-badge ann-badge--edit">已编辑</span> : null}
                   </div>
                   <Link
@@ -213,7 +277,34 @@ export default function CourseAnnouncements() {
                     {row.author.name} · {new Date(row.createdAt).toLocaleString()}
                   </div>
                 </div>
-                {canManage && isOwner ? (
+                {!isTeacher ? (
+                  <div className="row announcement-list__actions">
+                    <button
+                      type="button"
+                      className={`btn${row.marked ? " primary" : ""}`}
+                      onClick={() => void toggleMark(row)}
+                    >
+                      {row.marked ? "取消标记" : "标记公告"}
+                    </button>
+                    {row.read ? (
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => void setReadStatus(row, false)}
+                      >
+                        标为未读
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => void setReadStatus(row, true)}
+                      >
+                        标为已读
+                      </button>
+                    )}
+                  </div>
+                ) : canManage && isOwner ? (
                   <div className="row announcement-list__actions">
                     <button type="button" className="btn" onClick={() => togglePin(row)}>
                       {row.pinned ? "取消置顶" : "置顶"}

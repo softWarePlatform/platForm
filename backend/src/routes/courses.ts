@@ -9,6 +9,10 @@ import {
   scheduleSlotsBodySchema,
   serializeScheduleSlots,
 } from "../lib/scheduleSlots.js";
+import { courseEnrollmentFieldsSchema } from "../lib/course-enrollment-schema.js";
+import { getEnrollmentFilterOptions } from "../lib/enrollment-labels.js";
+import { currentSemester } from "../lib/semester.js";
+import { enrollStudent } from "../lib/enrollment-service.js";
 
 function withScheduleSlots<T extends { id: string; scheduleSlotsJson: string | null }>(course: T) {
   return {
@@ -75,6 +79,19 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
     };
   });
 
+  /** 教师创建课程：选课系统字段选项（性质、类别、开课学院） */
+  app.get(
+    "/courses/enrollment-field-options",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async () => {
+      const sem = currentSemester();
+      return {
+        semester: sem,
+        ...getEnrollmentFilterOptions(),
+      };
+    },
+  );
+
   /** 教师：我的课程（含未发布）；管理员返回全部课程。同时附带作业测评列表 */
   app.get(
     "/courses/mine",
@@ -96,33 +113,51 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
     "/courses",
     { preHandler: authRequired("TEACHER", "ADMIN") },
     async (req, reply) => {
-      const schema = z.object({
-        title: z.string().min(1),
-        description: z.string().optional(),
-        category: z.string().optional(),
-        published: z.boolean().optional(),
-        startAt: z.coerce.date().optional(),
-        endAt: z.coerce.date().optional(),
-        scheduleSlots: scheduleSlotsBodySchema.optional(),
-      });
+      const schema = z
+        .object({
+          title: z.string().min(1),
+          description: z.string().optional(),
+          category: z.string().optional(),
+          published: z.boolean().optional(),
+          startAt: z.coerce.date().optional(),
+          endAt: z.coerce.date().optional(),
+          scheduleSlots: scheduleSlotsBodySchema.optional(),
+        })
+        .merge(courseEnrollmentFieldsSchema);
       const body = schema.safeParse(req.body);
       if (!body.success) return reply.code(400).send({ error: "参数无效" });
 
-      const course = await prisma.course.create({
-        data: {
-          title: body.data.title,
-          description: body.data.description,
-          category: body.data.category,
-          published: body.data.published ?? false,
-          teacherId: req.auth!.sub,
-          startAt: body.data.startAt,
-          endAt: body.data.endAt,
-          scheduleSlotsJson: body.data.scheduleSlots
-            ? serializeScheduleSlots(body.data.scheduleSlots)
-            : undefined,
-        },
-      });
-      return { course: withScheduleSlots(course) };
+      const sem = currentSemester();
+      try {
+        const course = await prisma.course.create({
+          data: {
+            title: body.data.title,
+            description: body.data.description,
+            category: body.data.category,
+            published: body.data.published ?? false,
+            teacherId: req.auth!.sub,
+            startAt: body.data.startAt,
+            endAt: body.data.endAt,
+            scheduleSlotsJson: body.data.scheduleSlots
+              ? serializeScheduleSlots(body.data.scheduleSlots)
+              : undefined,
+            courseCode: body.data.courseCode,
+            credits: body.data.credits,
+            capacity: body.data.capacity,
+            courseNature: body.data.courseNature,
+            subjectCategory: body.data.subjectCategory,
+            offeringCollegeCode: body.data.offeringCollegeCode ?? undefined,
+            semesterKey: body.data.semesterKey ?? sem.key,
+          },
+        });
+        return { course: withScheduleSlots(course) };
+      } catch (e: unknown) {
+        const code = (e as { code?: string })?.code;
+        if (code === "P2002") {
+          return reply.code(409).send({ error: "课程代码已存在，请更换" });
+        }
+        throw e;
+      }
     },
   );
 
@@ -143,7 +178,18 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
       const canSee = req.auth?.role === "ADMIN" || uid === course.teacherId;
       if (!canSee) return reply.code(404).send({ error: "课程不存在" });
     }
-    return { course: withScheduleSlots(course) };
+
+    let isEnrolled = false;
+    const uid = req.auth?.sub;
+    if (uid) {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: { userId_courseId: { userId: uid, courseId: id } },
+        select: { id: true },
+      });
+      isEnrolled = Boolean(enrollment);
+    }
+
+    return { course: { ...withScheduleSlots(course), isEnrolled } };
   });
 
   app.patch(
@@ -156,16 +202,18 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(403).send({ error: "无权修改该课程" });
       }
 
-      const schema = z.object({
-        title: z.string().min(1).optional(),
-        description: z.string().nullable().optional(),
-        category: z.string().nullable().optional(),
-        published: z.boolean().optional(),
-        startAt: z.coerce.date().nullable().optional(),
-        endAt: z.coerce.date().nullable().optional(),
-        knowledgeGraphJson: z.string().nullable().optional(),
-        scheduleSlots: scheduleSlotsBodySchema.nullable().optional(),
-      });
+      const schema = z
+        .object({
+          title: z.string().min(1).optional(),
+          description: z.string().nullable().optional(),
+          category: z.string().nullable().optional(),
+          published: z.boolean().optional(),
+          startAt: z.coerce.date().nullable().optional(),
+          endAt: z.coerce.date().nullable().optional(),
+          knowledgeGraphJson: z.string().nullable().optional(),
+          scheduleSlots: scheduleSlotsBodySchema.nullable().optional(),
+        })
+        .merge(courseEnrollmentFieldsSchema);
       const body = schema.safeParse(req.body);
       if (!body.success) return reply.code(400).send({ error: "参数无效" });
 
@@ -174,9 +222,20 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
       if (scheduleSlots !== undefined) {
         data.scheduleSlotsJson = scheduleSlots ? serializeScheduleSlots(scheduleSlots) : null;
       }
+      if (rest.offeringCollegeCode === null) {
+        data.offeringCollegeCode = null;
+      }
 
-      const updated = await prisma.course.update({ where: { id }, data });
-      return { course: withScheduleSlots(updated) };
+      try {
+        const updated = await prisma.course.update({ where: { id }, data });
+        return { course: withScheduleSlots(updated) };
+      } catch (e: unknown) {
+        const code = (e as { code?: string })?.code;
+        if (code === "P2002") {
+          return reply.code(409).send({ error: "课程代码已存在，请更换" });
+        }
+        throw e;
+      }
     },
   );
 
@@ -299,30 +358,24 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  /** 学生选课 */
+  /** 学生选课（与 /enrollment/courses/:id/enroll 共用逻辑） */
   app.post(
     "/courses/:id/enroll",
     { preHandler: authRequired("STUDENT", "ADMIN") },
     async (req, reply) => {
       const { id } = req.params as { id: string };
-      const course = await prisma.course.findUnique({ where: { id } });
-      if (!course?.published) return reply.code(404).send({ error: "课程不可选" });
-
       const schema = z.object({ classId: z.string().uuid().optional() });
       const body = schema.safeParse(req.body);
       if (!body.success) return reply.code(400).send({ error: "参数无效" });
 
       try {
-        const enrollment = await prisma.enrollment.create({
-          data: {
-            userId: req.auth!.sub,
-            courseId: id,
-            classId: body.data.classId,
-          },
+        const enrollment = await enrollStudent(req.auth!.sub, id, {
+          classId: body.data.classId,
         });
         return { enrollment };
-      } catch {
-        return reply.code(409).send({ error: "已选过该课程" });
+      } catch (e) {
+        const err = e as Error & { statusCode?: number };
+        return reply.code(err.statusCode ?? 500).send({ error: err.message || "选课失败" });
       }
     },
   );
@@ -382,6 +435,39 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
         include: { user: { select: { id: true, name: true, email: true } }, class: true },
       });
       return { students: enrollments };
+    },
+  );
+
+  /** 选课学生名单 CSV 导出（教师/管理员） */
+  app.get(
+    "/courses/:id/students/export.csv",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const course = await prisma.course.findUnique({ where: { id } });
+      if (!course || (req.auth!.role !== "ADMIN" && course.teacherId !== req.auth!.sub)) {
+        return reply.code(403).send({ error: "无权导出" });
+      }
+      const enrollments = await prisma.enrollment.findMany({
+        where: { courseId: id },
+        include: { user: { select: { name: true, email: true } }, class: true },
+        orderBy: { user: { name: "asc" } },
+      });
+      const esc = (s: string) => (/[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+      const lines = ["姓名,邮箱,班级"];
+      for (const e of enrollments) {
+        lines.push(
+          [esc(e.user.name), esc(e.user.email), esc(e.class?.name ?? "未分班")].join(","),
+        );
+      }
+      const safeTitle = course.title.replace(/[\\/:*?"<>|]/g, "_").slice(0, 60);
+      return reply
+        .header("Content-Type", "text/csv; charset=utf-8")
+        .header(
+          "Content-Disposition",
+          `attachment; filename*=UTF-8''${encodeURIComponent(`选课名单_${safeTitle}.csv`)}`,
+        )
+        .send(`\ufeff${lines.join("\n")}\n`);
     },
   );
 };

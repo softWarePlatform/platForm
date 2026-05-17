@@ -1,6 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import CourseEnrollmentFields, {
+  enrollmentFromCourse,
+  enrollmentToPayload,
+  useEnrollmentFieldOptions,
+  type CourseEnrollmentDraft,
+} from "../components/CourseEnrollmentFields";
 import CourseScheduleFields, {
   slotsFromCourse,
   type ScheduleSlotDraft,
@@ -20,6 +26,8 @@ export default function CourseManage() {
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
   const [scheduleSlots, setScheduleSlots] = useState<ScheduleSlotDraft[]>([]);
+  const [enrollment, setEnrollment] = useState<CourseEnrollmentDraft | null>(null);
+  const enrollmentOptions = useEnrollmentFieldOptions();
   const [kgText, setKgText] = useState("");
   const [materials, setMaterials] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
@@ -40,6 +48,7 @@ export default function CourseManage() {
     setStartAt(toLocalInput(c.course.startAt));
     setEndAt(toLocalInput(c.course.endAt));
     setScheduleSlots(slotsFromCourse(c.course));
+    setEnrollment(enrollmentFromCourse(c.course));
     setKgText(c.course.knowledgeGraphJson ?? "");
     setMaterials(m.materials ?? []);
     setClasses(cl.classes ?? []);
@@ -50,10 +59,11 @@ export default function CourseManage() {
     reload().catch((e) => setErr(String(e)));
   }, [courseId]);
 
-  async function saveSchedule(e: FormEvent) {
+  async function saveScheduleAndEnrollment(e: FormEvent) {
     e.preventDefault();
     setErr(null);
     setSaveOk(false);
+    if (!enrollment) return;
     for (const s of scheduleSlots) {
       if (s.periodEnd < s.periodStart) {
         setErr("结束节次不能早于开始节次");
@@ -64,6 +74,7 @@ export default function CourseManage() {
       await api.patch(`/courses/${courseId}`, {
         startAt: startAt ? new Date(startAt).toISOString() : null,
         endAt: endAt ? new Date(endAt).toISOString() : null,
+        ...enrollmentToPayload(enrollment, { clearEmptyCode: true }),
         scheduleSlots: scheduleSlots.map((s) => ({
           dayOfWeek: s.dayOfWeek,
           periodStart: s.periodStart,
@@ -131,11 +142,19 @@ export default function CourseManage() {
       {err ? <div className="err" style={{ marginTop: 10 }}>{err}</div> : null}
 
       <div className="grid" style={{ marginTop: 16, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-        <form className="card grid" onSubmit={saveSchedule}>
-          <div style={{ fontWeight: 800 }}>时间安排</div>
+        <form className="card grid" onSubmit={saveScheduleAndEnrollment}>
+          <div style={{ fontWeight: 800 }}>选课系统 · 时间与地点</div>
           <p className="muted" style={{ margin: 0, lineHeight: 1.6, fontSize: 13 }}>
-            设置每周上课的星期与节次，将同步到主界面课表；下方为学期起止日期。
+            以下信息将展示在选课系统，并同步到主界面课表。
           </p>
+          {enrollment ? (
+            <CourseEnrollmentFields
+              value={enrollment}
+              onChange={setEnrollment}
+              options={enrollmentOptions}
+            />
+          ) : null}
+          <div style={{ fontWeight: 700, marginTop: 4 }}>每周上课时间 · 教室</div>
           <CourseScheduleFields slots={scheduleSlots} onChange={setScheduleSlots} />
           <div className="field">
             <label>学期开课日（可选）</label>
@@ -147,7 +166,7 @@ export default function CourseManage() {
           </div>
           <div className="row" style={{ alignItems: "center", gap: 12 }}>
             <button className="btn primary" type="submit">
-              保存时间安排
+              保存选课与时间安排
             </button>
             {saveOk ? <span className="save-ok">保存成功</span> : null}
           </div>

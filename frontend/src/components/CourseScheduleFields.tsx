@@ -1,3 +1,5 @@
+import { PERIOD_OPTIONS } from "../lib/schedulePeriods";
+
 export type ScheduleSlotDraft = {
   dayOfWeek: number;
   periodStart: number;
@@ -15,7 +17,7 @@ export const WEEKDAY_OPTIONS = [
   { value: 7, label: "周日" },
 ];
 
-export const PERIOD_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+export { PERIOD_OPTIONS };
 
 export function emptyScheduleSlot(): ScheduleSlotDraft {
   return { dayOfWeek: 1, periodStart: 1, periodEnd: 2, room: "" };

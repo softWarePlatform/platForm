@@ -61,6 +61,7 @@ export type CourseContextValue = {
   setNewPost: React.Dispatch<React.SetStateAction<{ title: string; body: string }>>;
   refreshSideData: () => Promise<void>;
   enroll: () => Promise<void>;
+  isEnrolled: boolean;
 };
 
 const CourseCtx = createContext<CourseContextValue | null>(null);
@@ -228,11 +229,14 @@ export function CourseProvider({ children }: { children: ReactNode }) {
     };
   }, [isTeacher, token, courseId, displayHomework]);
 
+  const isEnrolled = Boolean(course?.isEnrolled);
+
   async function enroll() {
     setErr(null);
     try {
       await api.post(`/courses/${courseId}/enroll`, {});
-      window.location.reload();
+      const { data } = await api.get(`/courses/${courseId}`);
+      setCourse(data.course);
     } catch (e: unknown) {
       const msg =
         typeof e === "object" && e !== null && "response" in e
@@ -274,6 +278,7 @@ export function CourseProvider({ children }: { children: ReactNode }) {
     setNewPost,
     refreshSideData,
     enroll,
+    isEnrolled,
   };
 
   return <CourseCtx.Provider value={value}>{children}</CourseCtx.Provider>;

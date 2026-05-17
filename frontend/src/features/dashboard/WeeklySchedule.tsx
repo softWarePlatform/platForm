@@ -8,10 +8,12 @@ import {
   type CustomEventDraft,
 } from "./customEventForm";
 import type { CustomScheduleEvent, DashboardCourse, DashboardDeadline } from "./types";
+import { PERIOD_OPTIONS } from "../../lib/schedulePeriods";
+import { exportTimetableExcel } from "./exportTimetableExcel";
 import { loadCustomEvents, saveCustomEvents } from "./scheduleStorage";
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
-const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
+const PERIODS = PERIOD_OPTIONS;
 
 const COURSE_COLORS = ["#dbeafe", "#dcfce7", "#fef3c7", "#fce7f3", "#e0e7ff", "#ffedd5"];
 
@@ -39,6 +41,10 @@ type Cell = {
 type Props = {
   courses: DashboardCourse[];
   deadlines: DashboardDeadline[];
+  /** 嵌入选课系统等页面时使用 */
+  embedded?: boolean;
+  semesterLabel?: string;
+  userName?: string;
 };
 
 function startOfWeek(d: Date) {
@@ -60,7 +66,13 @@ function weekParity(d: Date): "odd" | "even" {
   return w % 2 === 0 ? "even" : "odd";
 }
 
-export default function WeeklySchedule({ courses, deadlines }: Props) {
+export default function WeeklySchedule({
+  courses,
+  deadlines,
+  embedded = false,
+  semesterLabel = "",
+  userName = "",
+}: Props) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [parity, setParity] = useState<"all" | "odd" | "even">("all");
   const [custom, setCustom] = useState<CustomScheduleEvent[]>(() => loadCustomEvents());
@@ -183,8 +195,19 @@ export default function WeeklySchedule({ courses, deadlines }: Props) {
     closeEditor();
   }
 
+  const panelClass = embedded ? "enroll-timetable-panel" : "dash-panel";
+
+  function handleExport() {
+    exportTimetableExcel({
+      courses,
+      customEvents: custom,
+      semesterLabel: semesterLabel || "当前学期",
+      userName: userName || "用户",
+    });
+  }
+
   return (
-    <section className="dash-panel">
+    <section className={panelClass}>
       <PanelHeader title="个人课表">
         <div className="row" style={{ flexWrap: "wrap" }}>
           <button type="button" className="btn" onClick={() => setWeekOffset((w) => w - 1)}>
@@ -215,8 +238,8 @@ export default function WeeklySchedule({ courses, deadlines }: Props) {
           >
             {editorMode === "add" ? "取消添加" : "添加事项"}
           </button>
-          <button type="button" className="btn muted-btn" disabled title="导出功能规划中">
-            导出课表
+          <button type="button" className="btn primary" onClick={handleExport}>
+            导出 Excel
           </button>
         </div>
       </PanelHeader>

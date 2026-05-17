@@ -61,7 +61,12 @@ export default function Dashboard() {
           <div className="muted" style={{ marginTop: 16 }}>加载课表与课程…</div>
         ) : (
           <>
-            <WeeklySchedule courses={data.courses} deadlines={data.deadlines} />
+            <WeeklySchedule
+              courses={data.courses}
+              deadlines={data.deadlines}
+              semesterLabel={data.semester.label}
+              userName={user.name}
+            />
             <CourseListPanel courses={data.courses} semesterLabel={data.semester.label} />
           </>
         )}

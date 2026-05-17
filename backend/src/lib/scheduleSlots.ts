@@ -7,11 +7,13 @@ export type ScheduleSlot = {
   room: string;
 };
 
+export const MAX_SCHEDULE_PERIODS = 14;
+
 const slotSchema = z
   .object({
     dayOfWeek: z.number().int().min(1).max(7),
-    periodStart: z.number().int().min(1).max(12),
-    periodEnd: z.number().int().min(1).max(12),
+    periodStart: z.number().int().min(1).max(MAX_SCHEDULE_PERIODS),
+    periodEnd: z.number().int().min(1).max(MAX_SCHEDULE_PERIODS),
     room: z.string().max(64).optional().default(""),
   })
   .refine((s) => s.periodEnd >= s.periodStart, { message: "结束节次不能早于开始节次" });
@@ -60,4 +62,20 @@ export function parseScheduleSlotsJson(
 export function serializeScheduleSlots(slots: ScheduleSlot[]): string | null {
   if (slots.length === 0) return null;
   return JSON.stringify(slots);
+}
+
+/** 判断两段课表时间是否冲突 */
+export function slotsConflict(a: ScheduleSlot[], b: ScheduleSlot[]): boolean {
+  for (const x of a) {
+    for (const y of b) {
+      if (
+        x.dayOfWeek === y.dayOfWeek &&
+        x.periodStart <= y.periodEnd &&
+        y.periodStart <= x.periodEnd
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
