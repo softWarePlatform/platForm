@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useAuth } from "./auth/AuthContext";
 import Shell from "./components/Shell";
 import CoursesRedirect from "./components/CoursesRedirect";
 import CourseLayout from "./pages/course/CourseLayout";
@@ -13,6 +14,7 @@ import {
   CourseMaterials,
   CoursePractice,
 } from "./pages/course/sections";
+import CourseHomeworkDetail from "./pages/course/sections/CourseHomeworkDetail";
 import EnrollmentPage from "./pages/enrollment/EnrollmentPage";
 import TeachingHub from "./pages/teaching/TeachingHub";
 import HomeworkList from "./pages/teaching/HomeworkList";
@@ -28,7 +30,6 @@ import MyHomework from "./pages/MyHomework";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import AdminUsers from "./pages/AdminUsers";
-import { useAuth } from "./auth/AuthContext";
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { token } = useAuth();
@@ -79,6 +80,7 @@ export default function App() {
           <Route path="announcements" element={<CourseAnnouncements />} />
           <Route path="announcements/:announcementId" element={<CourseAnnouncementDetail />} />
           <Route path="homework" element={<CourseHomework />} />
+          <Route path="homework/:homeworkId" element={<CourseHomeworkDetail />} />
           <Route path="labs" element={<CourseLabs />} />
           <Route path="grades" element={<CourseGrades />} />
           <Route path="practice" element={<CoursePractice />} />

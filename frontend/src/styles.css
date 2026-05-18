@@ -63,11 +63,28 @@ a.card.home-feature-tile:hover {
   padding: 10px 14px;
   cursor: pointer;
   font-weight: 600;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+a.btn:visited {
+  color: var(--text);
 }
 
 .btn.primary {
   border-color: transparent;
   background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: white;
+}
+
+a.btn.primary:visited {
   color: white;
 }
 
@@ -920,4 +937,64 @@ a.card.home-feature-tile:hover {
 
 .materials-preview {
   width: min(900px, 100%);
+}
+
+.hw-status {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.hw-status--in_progress,
+.hw-status--progress {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.hw-status--submitted,
+.hw-status--locked {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.hw-status--returned {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.hw-status--overdue {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.hw-status--redo_pending,
+.hw-status--pending {
+  background: #faf5ff;
+  color: #7e22ce;
+}
+
+.hw-kp {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.hw-kp--weak {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.hw-kp--fair {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.hw-kp--good {
+  background: #ecfdf5;
+  color: #047857;
 }

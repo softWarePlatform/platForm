@@ -23,6 +23,36 @@ export async function saveCourseMaterialFile(
   return { storedPath, fileName: originalName };
 }
 
+export async function saveHomeworkFile(
+  homeworkId: string,
+  originalName: string,
+  data: Buffer,
+): Promise<{ storedPath: string; fileName: string }> {
+  const dir = join(UPLOAD_ROOT, "homework", homeworkId);
+  await mkdir(dir, { recursive: true });
+  const safe = sanitizeFilename(originalName);
+  const id = randomUUID();
+  const diskName = `${id}_${safe}`;
+  await writeFile(join(dir, diskName), data);
+  const storedPath = `homework/${homeworkId}/${diskName}`;
+  return { storedPath, fileName: originalName };
+}
+
+export async function saveStudentHomeworkFile(
+  submissionId: string,
+  originalName: string,
+  data: Buffer,
+): Promise<{ storedPath: string; fileName: string }> {
+  const dir = join(UPLOAD_ROOT, "homework-submissions", submissionId);
+  await mkdir(dir, { recursive: true });
+  const safe = sanitizeFilename(originalName);
+  const id = randomUUID();
+  const diskName = `${id}_${safe}`;
+  await writeFile(join(dir, diskName), data);
+  const storedPath = `homework-submissions/${submissionId}/${diskName}`;
+  return { storedPath, fileName: originalName };
+}
+
 export async function saveLabFile(
   labId: string,
   originalName: string,

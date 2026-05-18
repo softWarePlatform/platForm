@@ -88,7 +88,7 @@ export function CourseProvider({ children }: { children: ReactNode }) {
     description: "",
     dueAt: "",
     targetClassId: "",
-    published: true,
+    published: false,
   });
   const [hwDrafts, setHwDrafts] = useState<Record<string, string>>({});
   const [hwSubmissions, setHwSubmissions] = useState<Record<string, any[]>>({});

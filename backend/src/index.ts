@@ -19,6 +19,7 @@ import dashboardRoutes from "./routes/dashboard.js";
 import enrollmentRoutes from "./routes/enrollment.js";
 import announcementsRoutes from "./routes/announcements.js";
 import notificationsRoutes from "./routes/notifications.js";
+import homeworkStudentRoutes from "./routes/homework-student.js";
 import { resolveHomeworkAi } from "./lib/homework-ai-config.js";
 
 function parseOrigins(): boolean | string | string[] {
@@ -74,6 +75,7 @@ async function main() {
   await app.register(labsRoutes);
   await app.register(labFilesRoutes);
   await app.register(homeworkRoutes);
+  await app.register(homeworkStudentRoutes);
   await app.register(gradesRoutes);
   await app.register(dashboardRoutes);
   await app.register(enrollmentRoutes);

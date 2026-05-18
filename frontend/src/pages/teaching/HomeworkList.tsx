@@ -158,7 +158,7 @@ export default function TeachingHomeworkList() {
                   {r.submissionCount} / {r.gradedCount} / {r.releasedCount}
                 </td>
                 <td style={{ padding: 10, borderBottom: "1px solid var(--border)", textAlign: "right" }}>
-                  <Link className="btn primary" to={`/teaching/homework/${r.id}`}>
+                  <Link className="btn" to={`/teaching/homework/${r.id}`}>
                     批改与导出
                   </Link>
                 </td>
