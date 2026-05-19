@@ -40,7 +40,21 @@
 
    cd backend
    npx prisma migrate deploy
+   npx prisma generate
    npm run db:seed
+
+   docker compose up -d db redis
+   cd backend
+   npx prisma migrate deploy
+   npx prisma generate
+   npm run db:seed
+   cd ..
+   npm run dev
+   若 db:seed 报 Unknown argument `courseCode` 等：说明 Prisma Client 与 schema 不同步，先执行
+   npx prisma generate（改 schema 或拉代码后都应执行一次），再 npm run db:seed。
+
+   练习模块：迁移 20260520120000_practice_module 会创建题库/练习会话等表；seed 为「程序设计基础」
+   课程注入演示题。登录学生后进入课程 → 练习，可智能组卷/按标签/错题/自定义练习。
 
    演示账号见终端输出；管理员 admin@demo.local，教师 teacher@demo.local，学生 student@demo.local、
    li@demo.local、wang@demo.local，密码均为 Demo123456。

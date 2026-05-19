@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../auth/AuthContext";
 import CustomEventEditor from "./CustomEventEditor";
 import {
   draftFromEvent,
@@ -73,13 +74,21 @@ export default function WeeklySchedule({
   semesterLabel = "",
   userName = "",
 }: Props) {
+  const { user } = useAuth();
+  const userId = user?.id;
   const [weekOffset, setWeekOffset] = useState(0);
   const [parity, setParity] = useState<"all" | "odd" | "even">("all");
-  const [custom, setCustom] = useState<CustomScheduleEvent[]>(() => loadCustomEvents());
+  const [custom, setCustom] = useState<CustomScheduleEvent[]>(() => loadCustomEvents(userId));
   const [editorMode, setEditorMode] = useState<"add" | "edit" | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editorDraft, setEditorDraft] = useState<CustomEventDraft>(() => emptyCustomEventDraft());
   const [saveOk, setSaveOk] = useState(false);
+
+  useEffect(() => {
+    setCustom(loadCustomEvents(userId));
+    setEditorMode(null);
+    setEditingId(null);
+  }, [userId]);
 
   const anchor = useMemo(() => addDays(startOfWeek(new Date()), weekOffset * 7), [weekOffset]);
   const weekLabel = useMemo(() => {
@@ -143,7 +152,7 @@ export default function WeeklySchedule({
 
   function persistCustom(next: CustomScheduleEvent[]) {
     setCustom(next);
-    saveCustomEvents(next);
+    saveCustomEvents(userId, next);
   }
 
   function closeEditor() {

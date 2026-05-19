@@ -1,5 +1,4 @@
 import * as XLSX from "xlsx";
-import { loadCustomEvents } from "./scheduleStorage";
 import type { CustomScheduleEvent, DashboardCourse } from "./types";
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
@@ -65,7 +64,7 @@ export function exportTimetableExcel(opts: {
   userName: string;
   customEvents?: CustomScheduleEvent[];
 }) {
-  const custom = opts.customEvents ?? loadCustomEvents();
+  const custom = opts.customEvents ?? [];
   const grid = buildGrid(opts.courses, custom);
 
   const sheetRows: string[][] = [["节次", ...WEEKDAYS]];

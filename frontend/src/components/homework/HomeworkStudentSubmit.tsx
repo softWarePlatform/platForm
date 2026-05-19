@@ -88,6 +88,7 @@ export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }
     try {
       const res = await submitHomework(h.id, {
         content: showText ? content : undefined,
+        requirementsRead: true,
       });
       setSuccess(
         res.lateHint ? `${res.message ?? "提交成功"}（${res.lateHint}）` : (res.message ?? "提交成功"),

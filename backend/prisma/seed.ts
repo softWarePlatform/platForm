@@ -733,6 +733,600 @@ async function main() {
     ],
   });
 
+  /** 练习模块演示数据（题库、练习记录、错题本、反馈） */
+  const PQ1 = "00000000-0000-4000-8000-000000000040";
+  const PQ2 = "00000000-0000-4000-8000-000000000041";
+  const PQ3 = "00000000-0000-4000-8000-000000000042";
+  const PQ4 = "00000000-0000-4000-8000-000000000043";
+  const PQ5 = "00000000-0000-4000-8000-000000000044";
+  const PQ6 = "00000000-0000-4000-8000-000000000045";
+  const PQ7 = "00000000-0000-4000-8000-000000000046";
+  const PQ8 = "00000000-0000-4000-8000-000000000047";
+  const PQ9 = "00000000-0000-4000-8000-000000000048";
+  const PQ10 = "00000000-0000-4000-8000-000000000049";
+  const PQ11 = "00000000-0000-4000-8000-00000000004a";
+  const PQ12 = "00000000-0000-4000-8000-00000000004b";
+  const PQ13 = "00000000-0000-4000-8000-00000000004c";
+  const PQ14 = "00000000-0000-4000-8000-00000000004d";
+  const PQ15 = "00000000-0000-4000-8000-00000000004e";
+  const PQ16 = "00000000-0000-4000-8000-00000000004f";
+  const PQ2C1 = "00000000-0000-4000-8000-000000000060";
+  const PQ2C2 = "00000000-0000-4000-8000-000000000061";
+  const PQ2C3 = "00000000-0000-4000-8000-000000000062";
+  const PQ2C4 = "00000000-0000-4000-8000-000000000063";
+  const PS_GRADED = "00000000-0000-4000-8000-000000000050";
+  const PS_IN_PROGRESS = "00000000-0000-4000-8000-000000000051";
+  const PF_PENDING = "00000000-0000-4000-8000-000000000070";
+  const PF_PENDING2 = "00000000-0000-4000-8000-000000000071";
+  const PF_CLOSED = "00000000-0000-4000-8000-000000000072";
+
+  const practiceCourseIds = [course1.id, course2.id];
+  await prisma.practiceQuestionFeedback.deleteMany({ where: { courseId: { in: practiceCourseIds } } });
+  await prisma.practiceSession.deleteMany({ where: { courseId: { in: practiceCourseIds } } });
+  await prisma.wrongBookEntry.deleteMany({
+    where: { userId: { in: [s1.id, s2.id, s3.id] }, practiceQuestionId: { not: null } },
+  });
+  await prisma.practiceQuestion.deleteMany({ where: { courseId: { in: practiceCourseIds } } });
+
+  const pySumCode = "a, b = map(int, input().split())\nprint(a + b)";
+  const pyMaxCode = "a, b = map(int, input().split())\nprint(a if a >= b else b)";
+  const pyHelloCode = 'print("Hello")';
+
+  await prisma.practiceQuestion.createMany({
+    data: [
+      {
+        id: PQ1,
+        courseId: course1.id,
+        type: "CHOICE",
+        stem: "下列时间复杂度中，通常快于 O(n²) 的是？",
+        optionsJson: JSON.stringify([
+          { id: "a", text: "O(1)" },
+          { id: "b", text: "O(n log n)" },
+          { id: "c", text: "O(n²)" },
+          { id: "d", text: "O(2^n)" },
+        ]),
+        answerJson: JSON.stringify({ choiceId: "b" }),
+        explanation: "O(n log n) 常见于高效排序算法的平均情况，一般优于 O(n²)。",
+        tagPath: "数据结构 > 算法分析 > 复杂度",
+        difficulty: "EASY",
+        attemptCount: 48,
+        correctCount: 36,
+        totalTimeMs: 480_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ2,
+        courseId: course1.id,
+        type: "FILL",
+        stem: "数组按下标访问元素的时间复杂度为 O(____)。",
+        optionsJson: null,
+        answerJson: JSON.stringify({ blanks: ["1"] }),
+        explanation: "数组随机访问为常数时间 O(1)。",
+        tagPath: "数据结构 > 线性表 > 数组",
+        difficulty: "EASY",
+        attemptCount: 42,
+        correctCount: 38,
+        totalTimeMs: 210_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ3,
+        courseId: course1.id,
+        type: "SHORT_ANSWER",
+        stem: "简述栈的 LIFO 特性，并举一个应用场景。",
+        optionsJson: null,
+        answerJson: JSON.stringify({ text: "后进先出" }),
+        explanation: "栈只允许在一端插入删除；如函数调用栈、括号匹配、撤销操作等。",
+        tagPath: "数据结构 > 栈",
+        difficulty: "MEDIUM",
+        attemptCount: 31,
+        correctCount: 22,
+        totalTimeMs: 620_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ4,
+        courseId: course1.id,
+        type: "CODE",
+        stem: "编写程序：从标准输入读入两个整数，输出它们的和。",
+        optionsJson: null,
+        answerJson: JSON.stringify({
+          language: "python",
+          cases: [
+            { input: "3 5\n", expected: "8" },
+            { input: "10 20\n", expected: "30" },
+          ],
+        }),
+        explanation: "Python 可用 input().split() 读入并 int 转换后相加。",
+        tagPath: "程序设计 > 输入输出",
+        difficulty: "MEDIUM",
+        language: "python",
+        attemptCount: 55,
+        correctCount: 41,
+        totalTimeMs: 1_100_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ5,
+        courseId: course1.id,
+        type: "CHOICE",
+        stem: "Python 中用于在控制台输出一行文本的函数是？",
+        optionsJson: JSON.stringify([
+          { id: "a", text: "input()" },
+          { id: "b", text: "print()" },
+          { id: "c", text: "scanf()" },
+          { id: "d", text: "cout" },
+        ]),
+        answerJson: JSON.stringify({ choiceId: "b" }),
+        explanation: "print() 用于输出；input() 用于读入。",
+        tagPath: "程序设计 > 基础 > 语法",
+        difficulty: "EASY",
+        attemptCount: 60,
+        correctCount: 57,
+        totalTimeMs: 180_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ6,
+        courseId: course1.id,
+        type: "CHOICE",
+        stem: "二叉树的前序遍历访问顺序是？",
+        optionsJson: JSON.stringify([
+          { id: "a", text: "左 → 根 → 右" },
+          { id: "b", text: "根 → 左 → 右" },
+          { id: "c", text: "左 → 右 → 根" },
+          { id: "d", text: "右 → 根 → 左" },
+        ]),
+        answerJson: JSON.stringify({ choiceId: "b" }),
+        explanation: "前序：先访问根，再左子树，后右子树。",
+        tagPath: "数据结构 > 树 > 二叉树 > 遍历",
+        difficulty: "MEDIUM",
+        attemptCount: 28,
+        correctCount: 15,
+        totalTimeMs: 420_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ7,
+        courseId: course1.id,
+        type: "FILL",
+        stem: "在单链表表头插入一个已知节点的时间复杂度为 O(____)。",
+        optionsJson: null,
+        answerJson: JSON.stringify({ blanks: ["1"] }),
+        explanation: "表头插入只需改指针，为 O(1)。",
+        tagPath: "数据结构 > 线性表 > 链表",
+        difficulty: "MEDIUM",
+        attemptCount: 22,
+        correctCount: 17,
+        totalTimeMs: 260_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ8,
+        courseId: course1.id,
+        type: "CHOICE",
+        stem: "快速排序在最坏情况下的时间复杂度是？",
+        optionsJson: JSON.stringify([
+          { id: "a", text: "O(n)" },
+          { id: "b", text: "O(n log n)" },
+          { id: "c", text: "O(n²)" },
+          { id: "d", text: "O(log n)" },
+        ]),
+        answerJson: JSON.stringify({ choiceId: "c" }),
+        explanation: "当划分极不平衡时，快排退化为 O(n²)。",
+        tagPath: "数据结构 > 算法分析 > 排序",
+        difficulty: "HARD",
+        attemptCount: 19,
+        correctCount: 8,
+        totalTimeMs: 380_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ9,
+        courseId: course1.id,
+        type: "SHORT_ANSWER",
+        stem: "什么是程序中的「变量」？",
+        optionsJson: null,
+        answerJson: JSON.stringify({ text: "存储数据" }),
+        explanation: "变量是具名的存储单元，可在程序运行中保存和更新数据。",
+        tagPath: "程序设计 > 基础 > 变量",
+        difficulty: "EASY",
+        attemptCount: 35,
+        correctCount: 30,
+        totalTimeMs: 290_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ10,
+        courseId: course1.id,
+        type: "CODE",
+        stem: "编写程序：输出一行 Hello（不含引号）。",
+        optionsJson: null,
+        answerJson: JSON.stringify({
+          language: "python",
+          cases: [{ input: "", expected: "Hello" }],
+        }),
+        explanation: '使用 print("Hello") 即可。',
+        tagPath: "程序设计 > 基础 > 输出",
+        difficulty: "EASY",
+        language: "python",
+        attemptCount: 40,
+        correctCount: 35,
+        totalTimeMs: 320_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ11,
+        courseId: course1.id,
+        type: "CHOICE",
+        stem: "队列（Queue）的典型特性是？",
+        optionsJson: JSON.stringify([
+          { id: "a", text: "后进先出（LIFO）" },
+          { id: "b", text: "先进先出（FIFO）" },
+          { id: "c", text: "随机访问" },
+          { id: "d", text: "只能存储整数" },
+        ]),
+        answerJson: JSON.stringify({ choiceId: "b" }),
+        explanation: "队列从队尾入队、队头出队，符合 FIFO。",
+        tagPath: "数据结构 > 队列",
+        difficulty: "EASY",
+        attemptCount: 26,
+        correctCount: 24,
+        totalTimeMs: 150_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ12,
+        courseId: course1.id,
+        type: "FILL",
+        stem: "二叉树中每个节点最多有 ____ 个子节点。",
+        optionsJson: null,
+        answerJson: JSON.stringify({ blanks: ["2"] }),
+        explanation: "二叉树定义：每个节点度不超过 2。",
+        tagPath: "数据结构 > 树 > 二叉树",
+        difficulty: "EASY",
+        attemptCount: 33,
+        correctCount: 28,
+        totalTimeMs: 200_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ13,
+        courseId: course1.id,
+        type: "SHORT_ANSWER",
+        stem: "递归算法通常需要哪两个要素？",
+        optionsJson: null,
+        answerJson: JSON.stringify({ text: "基准情况" }),
+        explanation: "递归需要基准情况（终止）与递归关系（缩小规模）。",
+        tagPath: "程序设计 > 函数 > 递归",
+        difficulty: "MEDIUM",
+        attemptCount: 18,
+        correctCount: 11,
+        totalTimeMs: 350_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ14,
+        courseId: course1.id,
+        type: "CODE",
+        stem: "编写程序：读入两个整数，输出较大者。",
+        optionsJson: null,
+        answerJson: JSON.stringify({
+          language: "python",
+          cases: [
+            { input: "3 7\n", expected: "7" },
+            { input: "-1 -5\n", expected: "-1" },
+          ],
+        }),
+        explanation: "可用 if 比较或内置 max。",
+        tagPath: "程序设计 > 分支",
+        difficulty: "MEDIUM",
+        language: "python",
+        attemptCount: 24,
+        correctCount: 16,
+        totalTimeMs: 540_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ15,
+        courseId: course1.id,
+        type: "CHOICE",
+        stem: "下列哪种循环适合「先判断条件再执行」？",
+        optionsJson: JSON.stringify([
+          { id: "a", text: "while" },
+          { id: "b", text: "do-while（Python 无此语法）" },
+          { id: "c", text: "for 只能遍历列表" },
+          { id: "d", text: "以上都不对" },
+        ]),
+        answerJson: JSON.stringify({ choiceId: "a" }),
+        explanation: "while 先判断条件；Python 的 for 也可配合 range 使用。",
+        tagPath: "程序设计 > 循环",
+        difficulty: "EASY",
+        attemptCount: 21,
+        correctCount: 19,
+        totalTimeMs: 170_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ16,
+        courseId: course1.id,
+        type: "FILL",
+        stem: "有序数组二分查找的平均时间复杂度为 O(____)。",
+        optionsJson: null,
+        answerJson: JSON.stringify({ blanks: ["log n"] }),
+        explanation: "二分每次将搜索区间减半，为 O(log n)。",
+        tagPath: "数据结构 > 算法分析 > 查找",
+        difficulty: "HARD",
+        attemptCount: 14,
+        correctCount: 6,
+        totalTimeMs: 310_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ2C1,
+        courseId: course2.id,
+        type: "CHOICE",
+        stem: "栈与队列相比，更适合解决哪类问题？",
+        optionsJson: JSON.stringify([
+          { id: "a", text: "括号匹配、表达式求值" },
+          { id: "b", text: "广度优先搜索层序遍历" },
+          { id: "c", text: "磁盘顺序读写" },
+          { id: "d", text: "哈希冲突处理" },
+        ]),
+        answerJson: JSON.stringify({ choiceId: "a" }),
+        explanation: "栈适合 LIFO 场景；BFS 常用队列。",
+        tagPath: "数据结构 > 栈",
+        difficulty: "EASY",
+        attemptCount: 12,
+        correctCount: 10,
+        totalTimeMs: 90_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ2C2,
+        courseId: course2.id,
+        type: "FILL",
+        stem: "完全二叉树第 i 层（从 0 起）最多有 ____ 个节点。",
+        optionsJson: null,
+        answerJson: JSON.stringify({ blanks: ["2^i"] }),
+        explanation: "第 i 层最多 2^i 个节点。",
+        tagPath: "数据结构 > 树 > 二叉树",
+        difficulty: "MEDIUM",
+        attemptCount: 9,
+        correctCount: 5,
+        totalTimeMs: 120_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ2C3,
+        courseId: course2.id,
+        type: "SHORT_ANSWER",
+        stem: "简述「链表」相对「数组」的一个优点。",
+        optionsJson: null,
+        answerJson: JSON.stringify({ text: "插入" }),
+        explanation: "链表插入删除不需整体移动元素（在已知位置时）。",
+        tagPath: "数据结构 > 线性表 > 链表",
+        difficulty: "MEDIUM",
+        attemptCount: 8,
+        correctCount: 6,
+        totalTimeMs: 200_000,
+        createdById: teacher.id,
+      },
+      {
+        id: PQ2C4,
+        courseId: course2.id,
+        type: "CODE",
+        stem: "读入一个整数 n，输出 1 到 n 的和（n≥1）。",
+        optionsJson: null,
+        answerJson: JSON.stringify({
+          language: "python",
+          cases: [
+            { input: "5\n", expected: "15" },
+            { input: "1\n", expected: "1" },
+          ],
+        }),
+        explanation: "可用循环累加或 sum(range(1, n+1))。",
+        tagPath: "程序设计 > 循环",
+        difficulty: "MEDIUM",
+        language: "python",
+        attemptCount: 11,
+        correctCount: 7,
+        totalTimeMs: 280_000,
+        createdById: teacher.id,
+      },
+    ],
+  });
+
+  const gradedAt = new Date(now - 2 * 24 * 3600 * 1000);
+  const submittedAt = new Date(gradedAt.getTime() - 15 * 60 * 1000);
+
+  await prisma.practiceSession.create({
+    data: {
+      id: PS_GRADED,
+      userId: s1.id,
+      courseId: course1.id,
+      mode: "SMART",
+      status: "GRADED",
+      score: 4,
+      maxScore: 5,
+      submittedAt,
+      gradedAt,
+      items: {
+        create: [
+          {
+            questionId: PQ1,
+            orderIndex: 0,
+            answerJson: JSON.stringify("b"),
+            correct: true,
+            score: 1,
+            maxScore: 1,
+            timeSpentMs: 45_000,
+            resultJson: JSON.stringify({ expected: "b", yours: "b" }),
+          },
+          {
+            questionId: PQ2,
+            orderIndex: 1,
+            answerJson: JSON.stringify("1"),
+            correct: true,
+            score: 1,
+            maxScore: 1,
+            timeSpentMs: 30_000,
+          },
+          {
+            questionId: PQ6,
+            orderIndex: 2,
+            answerJson: JSON.stringify("a"),
+            correct: false,
+            score: 0,
+            maxScore: 1,
+            timeSpentMs: 90_000,
+            resultJson: JSON.stringify({ expected: "b", yours: "a" }),
+          },
+          {
+            questionId: PQ8,
+            orderIndex: 3,
+            answerJson: JSON.stringify("b"),
+            correct: false,
+            score: 0,
+            maxScore: 1,
+            timeSpentMs: 120_000,
+            resultJson: JSON.stringify({ expected: "c", yours: "b" }),
+          },
+          {
+            questionId: PQ4,
+            orderIndex: 4,
+            answerJson: JSON.stringify(pySumCode),
+            correct: true,
+            score: 1,
+            maxScore: 1,
+            timeSpentMs: 180_000,
+            resultJson: JSON.stringify({
+              cases: [
+                { input: "3 5\n", expected: "8", got: "8", pass: true },
+                { input: "10 20\n", expected: "30", got: "30", pass: true },
+              ],
+            }),
+          },
+        ],
+      },
+    },
+  });
+
+  await prisma.practiceSession.create({
+    data: {
+      id: PS_IN_PROGRESS,
+      userId: s2.id,
+      courseId: course1.id,
+      mode: "BY_TAG",
+      tagFilter: "数据结构 > 树",
+      status: "IN_PROGRESS",
+      maxScore: 3,
+      items: {
+        create: [
+          {
+            questionId: PQ6,
+            orderIndex: 0,
+            answerJson: JSON.stringify("b"),
+            timeSpentMs: 60_000,
+          },
+          {
+            questionId: PQ12,
+            orderIndex: 1,
+            timeSpentMs: 20_000,
+          },
+          {
+            questionId: PQ16,
+            orderIndex: 2,
+            timeSpentMs: 10_000,
+          },
+        ],
+      },
+    },
+  });
+
+  await prisma.wrongBookEntry.createMany({
+    data: [
+      {
+        userId: s1.id,
+        courseId: course1.id,
+        practiceQuestionId: PQ6,
+        title: "二叉树前序遍历",
+        content: "误选「左-根-右」，正确为根-左-右。",
+        mastered: false,
+      },
+      {
+        userId: s1.id,
+        courseId: course1.id,
+        practiceQuestionId: PQ8,
+        title: "快排最坏复杂度",
+        content: "误选 O(n log n)，最坏为 O(n²)。",
+        mastered: false,
+      },
+      {
+        userId: s1.id,
+        courseId: course1.id,
+        practiceQuestionId: PQ13,
+        title: "递归两要素",
+        content: "上次练习未完整写出基准情况与递归关系。",
+        mastered: false,
+      },
+      {
+        userId: s2.id,
+        courseId: course1.id,
+        practiceQuestionId: PQ3,
+        title: "栈 LIFO",
+        content: "简答题未写清应用场景。",
+        mastered: true,
+      },
+    ],
+  });
+
+  await prisma.practiceQuestionFeedback.createMany({
+    data: [
+      {
+        id: PF_PENDING,
+        questionId: PQ6,
+        courseId: course1.id,
+        userId: s2.id,
+        type: "UNCLEAR",
+        description: "题干里的「前序」能否补充一个小图示？初学者容易和中序混淆。",
+        status: "PENDING",
+      },
+      {
+        id: PF_PENDING2,
+        questionId: PQ8,
+        courseId: course1.id,
+        userId: s1.id,
+        type: "TOO_HARD",
+        description: "快排最坏情况课堂还没讲，建议标为选做或降低难度。",
+        status: "PENDING",
+      },
+      {
+        id: PF_CLOSED,
+        questionId: PQ2,
+        courseId: course1.id,
+        userId: s3.id,
+        type: "ANSWER_ERROR",
+        description: "填空是否应写 O(1) 而不是 1？",
+        status: "CLOSED",
+        teacherReply: "评分支持写 1 或 O(1)；解析中已说明为 O(1)。",
+        resolvedById: teacher.id,
+        resolvedAt: new Date(now - 1 * 24 * 3600 * 1000),
+      },
+    ],
+  });
+
+  await prisma.practiceQuestion.updateMany({
+    where: {
+      courseId: { in: practiceCourseIds },
+      OR: [{ explanation: null }, { explanation: "" }],
+    },
+    data: {
+      explanation:
+        "本题暂无详细解析。请结合课堂讲义复习相关知识点；若仍有疑问，可在题目下方提交反馈。",
+    },
+  });
+
   console.log("Seed OK — 演示数据已写入（可重复执行）。");
   console.log(`  管理员: admin@demo.local / ${DEMO_PASSWORD}`);
   console.log(`  教师: teacher@demo.local / ${DEMO_PASSWORD}`);
@@ -740,6 +1334,7 @@ async function main() {
   console.log("  课程一:", course1.title, course1.id);
   console.log("  课程二:", course2.title, course2.id);
   console.log("  班级:", cls.name);
+  console.log("  练习: 课程一 16 题 + 课程二 4 题；张三已批改练习、错题本；教师端 2 条待处理反馈");
   console.log("  已生成课程资料与实验附件文件：backend/uploads 下");
 }
 

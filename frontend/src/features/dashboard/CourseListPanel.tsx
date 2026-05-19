@@ -1,4 +1,4 @@
-import { useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useState, type DragEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { COURSE_GROUP_META, type CourseGroupKey, type DashboardCourse } from "./types";
@@ -14,7 +14,12 @@ export default function CourseListPanel({ courses, semesterLabel }: Props) {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [order, setOrder] = useState<string[]>(() => loadCourseOrder());
+  const userId = user?.id;
+  const [order, setOrder] = useState<string[]>(() => loadCourseOrder(user?.id));
+
+  useEffect(() => {
+    setOrder(loadCourseOrder(userId));
+  }, [userId]);
   const [dragId, setDragId] = useState<string | null>(null);
 
   const sorted = useMemo(() => {
@@ -56,7 +61,7 @@ export default function CourseListPanel({ courses, semesterLabel }: Props) {
     ids.splice(from, 1);
     ids.splice(to, 0, dragId);
     setOrder(ids);
-    saveCourseOrder(ids);
+    saveCourseOrder(userId, ids);
     setDragId(null);
   }
 

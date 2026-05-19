@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../../api/client";
 import { useCourse } from "../CourseContext";
 import CourseSectionHead from "../CourseSectionHead";
+import { refreshAfterAnnouncementRead } from "../../../lib/appEvents";
 
 export type AnnouncementRow = {
   id: string;
@@ -122,8 +123,11 @@ export default function CourseAnnouncements() {
   async function markAllRead() {
     if (!courseId || isTeacher) return;
     try {
+      setList((prev) => prev.map((row) => ({ ...row, read: true })));
+      refreshAfterAnnouncementRead();
       await api.post(`/courses/${courseId}/announcements/read-all`);
       await load();
+      refreshAfterAnnouncementRead();
     } catch (e2: unknown) {
       const msg =
         typeof e2 === "object" && e2 !== null && "response" in e2
@@ -135,8 +139,11 @@ export default function CourseAnnouncements() {
 
   async function setReadStatus(row: AnnouncementRow, read: boolean) {
     try {
+      setList((prev) => prev.map((r) => (r.id === row.id ? { ...r, read } : r)));
+      if (read) refreshAfterAnnouncementRead();
       await api.post(`/announcements/${row.id}/read-status`, { read });
       await load();
+      if (read) refreshAfterAnnouncementRead();
     } catch (e2: unknown) {
       const msg =
         typeof e2 === "object" && e2 !== null && "response" in e2

@@ -14,6 +14,7 @@ import {
   CourseMaterials,
   CoursePractice,
 } from "./pages/course/sections";
+import PracticeSession from "./pages/course/PracticeSession";
 import CourseHomeworkDetail from "./pages/course/sections/CourseHomeworkDetail";
 import EnrollmentPage from "./pages/enrollment/EnrollmentPage";
 import TeachingHub from "./pages/teaching/TeachingHub";
@@ -84,6 +85,14 @@ export default function App() {
           <Route path="labs" element={<CourseLabs />} />
           <Route path="grades" element={<CourseGrades />} />
           <Route path="practice" element={<CoursePractice />} />
+          <Route
+            path="practice/session/:sessionId"
+            element={
+              <RequireAuth>
+                <PracticeSession />
+              </RequireAuth>
+            }
+          />
           <Route path="materials" element={<CourseMaterials />} />
           <Route path="*" element={<Navigate to="announcements" replace />} />
         </Route>

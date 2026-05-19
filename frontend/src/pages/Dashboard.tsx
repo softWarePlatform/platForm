@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthContext";
 import WeeklySchedule from "../features/dashboard/WeeklySchedule";
 import CourseListPanel from "../features/dashboard/CourseListPanel";
 import type { DashboardPayload } from "../features/dashboard/types";
+import { DASHBOARD_REFRESH } from "../lib/appEvents";
 
 export default function Dashboard() {
   const { user, token } = useAuth();
@@ -14,16 +15,23 @@ export default function Dashboard() {
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-    (async () => {
+
+    async function loadDashboard() {
       try {
         const { data: d } = await api.get<DashboardPayload>("/dashboard/me");
         if (!cancelled) setData(d);
       } catch {
         if (!cancelled) setErr("无法加载主界面数据");
       }
-    })();
+    }
+
+    void loadDashboard();
+
+    const onRefresh = () => void loadDashboard();
+    window.addEventListener(DASHBOARD_REFRESH, onRefresh);
     return () => {
       cancelled = true;
+      window.removeEventListener(DASHBOARD_REFRESH, onRefresh);
     };
   }, [token]);
 

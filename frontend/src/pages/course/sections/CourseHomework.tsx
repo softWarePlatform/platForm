@@ -1,11 +1,7 @@
-﻿import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../../../api/client";
 import HomeworkPublishForm from "../../../components/homework/HomeworkPublishForm";
 import { useCourse } from "../CourseContext";
 import CourseSectionHead from "../CourseSectionHead";
-
-type ClassRow = { id: string; name: string };
 
 export default function CourseHomework() {
   const {
@@ -16,24 +12,6 @@ export default function CourseHomework() {
     setErr,
     refreshSideData,
   } = useCourse();
-
-  const [classes, setClasses] = useState<ClassRow[]>([]);
-
-  useEffect(() => {
-    if (!isTeacher || !courseId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await api.get(`/courses/${courseId}/classes`);
-        if (!cancelled) setClasses(data.classes ?? []);
-      } catch {
-        if (!cancelled) setClasses([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [courseId, isTeacher]);
 
   return (
     <div>

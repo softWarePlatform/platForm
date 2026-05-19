@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { NOTIFICATIONS_REFRESH } from "../lib/appEvents";
 
 const linkStyle = ({ isActive }: { isActive: boolean }) => ({
   textDecoration: "none",
@@ -23,21 +24,25 @@ export default function Shell() {
       return;
     }
     let cancelled = false;
-    (async () => {
+
+    async function fetchUnread() {
       try {
         const { data } = await api.get<{ count: number }>("/notifications/unread-count");
         if (!cancelled) setUnreadCount(data.count);
       } catch {
         if (!cancelled) setUnreadCount(0);
       }
-    })();
-    const t = window.setInterval(() => {
-      void api.get<{ count: number }>("/notifications/unread-count").then(({ data }) => {
-        if (!cancelled) setUnreadCount(data.count);
-      });
-    }, 60000);
+    }
+
+    void fetchUnread();
+
+    const onRefresh = () => void fetchUnread();
+    window.addEventListener(NOTIFICATIONS_REFRESH, onRefresh);
+    const t = window.setInterval(() => void fetchUnread(), 60000);
+
     return () => {
       cancelled = true;
+      window.removeEventListener(NOTIFICATIONS_REFRESH, onRefresh);
       clearInterval(t);
     };
   }, [token]);

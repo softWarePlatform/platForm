@@ -41,10 +41,15 @@ function serializeAnnouncement(
 }
 
 async function markAnnouncementRead(announcementId: string, userId: string) {
+  const readAt = new Date();
   await prisma.announcementRead.upsert({
     where: { announcementId_userId: { announcementId, userId } },
-    create: { announcementId, userId },
-    update: { readAt: new Date() },
+    create: { announcementId, userId, readAt },
+    update: { readAt },
+  });
+  await prisma.siteNotification.updateMany({
+    where: { userId, announcementId, readAt: null },
+    data: { readAt },
   });
 }
 
@@ -205,15 +210,21 @@ const announcementsRoutes: FastifyPluginAsync = async (app) => {
       if (announcements.length === 0) return { ok: true, marked: 0 };
 
       const userId = req.auth!.sub;
-      await prisma.$transaction(
-        announcements.map((a) =>
+      const readAt = new Date();
+      const annIds = announcements.map((a) => a.id);
+      await prisma.$transaction([
+        ...announcements.map((a) =>
           prisma.announcementRead.upsert({
             where: { announcementId_userId: { announcementId: a.id, userId } },
-            create: { announcementId: a.id, userId },
-            update: { readAt: new Date() },
+            create: { announcementId: a.id, userId, readAt },
+            update: { readAt },
           }),
         ),
-      );
+        prisma.siteNotification.updateMany({
+          where: { userId, announcementId: { in: annIds }, readAt: null },
+          data: { readAt },
+        }),
+      ]);
 
       return { ok: true, marked: announcements.length };
     },

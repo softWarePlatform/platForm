@@ -14,7 +14,7 @@ export const COURSE_MODULES: CourseModule[] = [
   { id: "homework", label: "作业管理", segment: "homework", status: "implemented" },
   { id: "labs", label: "实验管理", segment: "labs", status: "implemented" },
   { id: "grades", label: "成绩统计", segment: "grades", status: "implemented" },
-  { id: "practice", label: "练习", segment: "practice", status: "planned" },
+  { id: "practice", label: "练习", segment: "practice", status: "implemented" },
   { id: "materials", label: "课程资料管理", segment: "materials", status: "implemented" },
 ];
 

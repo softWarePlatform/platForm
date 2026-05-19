@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
+import { refreshAfterAnnouncementRead, refreshNotificationBadge } from "../lib/appEvents";
 
 type NotificationRow = {
   id: string;
@@ -32,20 +33,31 @@ export default function Messages() {
   }, []);
 
   async function open(n: NotificationRow) {
-    await api.patch(`/notifications/${n.id}/read`).catch(() => {});
+    if (!n.read) {
+      setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+      refreshNotificationBadge();
+      await api.patch(`/notifications/${n.id}/read`).catch(() => {});
+    }
     if (n.announcementDeleted) {
       alert("公告已删除");
       await load();
+      refreshNotificationBadge();
       return;
     }
     if (n.linkPath) {
+      if (n.linkPath.includes("/announcements/")) {
+        refreshAfterAnnouncementRead();
+      }
       navigate(n.linkPath);
     }
   }
 
   async function markAllRead() {
+    setItems((prev) => prev.map((x) => ({ ...x, read: true })));
+    refreshNotificationBadge();
     await api.post("/notifications/read-all");
     await load();
+    refreshNotificationBadge();
   }
 
   return (

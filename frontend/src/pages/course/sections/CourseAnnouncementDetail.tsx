@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { api } from "../../../api/client";
 import { useCourse } from "../CourseContext";
+import { refreshAfterAnnouncementRead } from "../../../lib/appEvents";
 
 type AnnouncementDetail = {
   id: string;
@@ -34,6 +35,7 @@ export default function CourseAnnouncementDetail() {
         if (!cancelled) {
           setItem(data.announcement);
           setDeleted(false);
+          refreshAfterAnnouncementRead();
         }
       } catch (e: unknown) {
         if (!cancelled) {

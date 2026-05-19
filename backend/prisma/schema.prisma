@@ -91,6 +91,10 @@ model User {
   homeworkRedoRequests    HomeworkRedoRequest[]
   reviewedHomeworkRedos   HomeworkRedoRequest[] @relation("HomeworkRedoReviewer")
   wrongBookEntries        WrongBookEntry[]
+  practiceQuestionsCreated PracticeQuestion[] @relation("PracticeQuestionAuthor")
+  practiceSessions        PracticeSession[]
+  practiceFeedbacks       PracticeQuestionFeedback[]
+  practiceFeedbacksResolved PracticeQuestionFeedback[] @relation("PracticeFeedbackResolver")
   enrollmentWaitlists     EnrollmentWaitlist[]
   enrollmentLogs          EnrollmentLog[]
   enrollmentLogsOperated  EnrollmentLog[]      @relation("EnrollmentLogOperator")
@@ -135,6 +139,9 @@ model Course {
   announcements     CourseAnnouncement[]
   waitlists         EnrollmentWaitlist[]
   enrollmentLogs    EnrollmentLog[]
+  practiceQuestions PracticeQuestion[]
+  practiceSessions  PracticeSession[]
+  practiceFeedbacks PracticeQuestionFeedback[]
 }
 
 model CourseAnnouncement {
@@ -610,17 +617,162 @@ model HomeworkKnowledgeAnalysis {
   submission HomeworkSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 }
 
-model WrongBookEntry {
-  id         String   @id @default(uuid())
-  userId     String
-  courseId   String?
-  homeworkId String?
-  title      String
-  content    String   @db.Text
-  mastered   Boolean  @default(false)
-  createdAt  DateTime @default(now())
+enum PracticeQuestionType {
+  CHOICE
+  FILL
+  SHORT_ANSWER
+  CODE
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+enum PracticeDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum PracticeSessionMode {
+  SMART
+  BY_TAG
+  WRONG_BOOK
+  CUSTOM
+}
+
+enum PracticeSessionStatus {
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+}
+
+enum PracticeFeedbackType {
+  STEM_ERROR
+  ANSWER_ERROR
+  EXPLANATION_ERROR
+  TOO_HARD
+  TOO_EASY
+  UNCLEAR
+  SUGGEST_KNOWLEDGE
+}
+
+enum PracticeFeedbackStatus {
+  PENDING
+  FIXED
+  REJECTED
+  CLOSED
+}
+
+enum PracticeQuestionAuditStatus {
+  APPROVED
+  PENDING_REVIEW
+}
+
+model PracticeQuestion {
+  id            String                    @id @default(uuid())
+  courseId      String
+  type          PracticeQuestionType
+  stem          String                    @db.Text
+  optionsJson   String?                   @db.Text
+  answerJson    String                    @db.Text
+  explanation   String?                   @db.Text
+  tagPath       String
+  difficulty    PracticeDifficulty        @default(MEDIUM)
+  language      String?
+  attemptCount  Int                       @default(0)
+  correctCount  Int                       @default(0)
+  totalTimeMs   Int                       @default(0)
+  auditStatus   PracticeQuestionAuditStatus @default(APPROVED)
+  createdById   String?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+
+  course         Course                    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy      User?                     @relation("PracticeQuestionAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  sessionItems   PracticeSessionItem[]
+  feedbacks      PracticeQuestionFeedback[]
+  wrongBookLinks WrongBookEntry[]
+
+  @@index([courseId, tagPath])
+  @@index([courseId, difficulty])
+}
+
+model PracticeSession {
+  id          String                @id @default(uuid())
+  userId      String
+  courseId    String
+  mode        PracticeSessionMode
+  tagFilter   String?
+  configJson  String?               @db.Text
+  status      PracticeSessionStatus @default(IN_PROGRESS)
+  score       Float?
+  maxScore    Int                   @default(0)
+  submittedAt DateTime?
+  gradedAt    DateTime?
+  createdAt   DateTime              @default(now())
+
+  user   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  items  PracticeSessionItem[]
+
+  @@index([userId, courseId])
+}
+
+model PracticeSessionItem {
+  id           String   @id @default(uuid())
+  sessionId    String
+  questionId   String
+  orderIndex   Int
+  answerJson   String?  @db.Text
+  correct      Boolean?
+  score        Float?
+  maxScore     Float    @default(1)
+  resultJson   String?  @db.Text
+  timeSpentMs  Int?
+  aiHintCount  Int      @default(0)
+  aiHintsJson  String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  session  PracticeSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question PracticeQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, questionId])
+  @@index([sessionId])
+}
+
+model PracticeQuestionFeedback {
+  id             String                 @id @default(uuid())
+  questionId     String
+  courseId       String
+  userId         String
+  type           PracticeFeedbackType
+  description    String                 @db.Text
+  screenshotPath String?
+  status         PracticeFeedbackStatus @default(PENDING)
+  teacherReply   String?                @db.Text
+  resolvedById   String?
+  resolvedAt     DateTime?
+  createdAt      DateTime               @default(now())
+
+  question   PracticeQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  course     Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resolvedBy User?            @relation("PracticeFeedbackResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([courseId, status])
+  @@index([questionId])
+}
+
+model WrongBookEntry {
+  id                 String   @id @default(uuid())
+  userId             String
+  courseId           String?
+  homeworkId         String?
+  practiceQuestionId String?
+  title              String
+  content            String   @db.Text
+  mastered           Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  practiceQuestion PracticeQuestion? @relation(fields: [practiceQuestionId], references: [id], onDelete: SetNull)
 
   @@index([userId, mastered])
 }
