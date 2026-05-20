@@ -13,6 +13,8 @@ export type ChatMessage = { role: "system" | "user" | "assistant"; content: stri
 export async function openaiChatCompletion(opts: {
   baseUrl: string;
   apiKey: string;
+  /** 本机 Ollama 等可不携带 Bearer */
+  omitBearerAuth?: boolean;
   model: string;
   messages: ChatMessage[];
   timeoutMs: number;
@@ -23,12 +25,16 @@ export async function openaiChatCompletion(opts: {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), opts.timeoutMs);
   try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (opts.apiKey?.trim()) {
+      headers.Authorization = `Bearer ${opts.apiKey.trim()}`;
+    } else if (!opts.omitBearerAuth) {
+      throw new Error("缺少 API 密钥");
+    }
+
     const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${opts.apiKey}`,
-      },
+      headers,
       body: JSON.stringify({
         model: opts.model,
         messages: opts.messages,

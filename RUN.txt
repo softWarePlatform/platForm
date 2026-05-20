@@ -36,6 +36,8 @@
 
    说明：后端已使用 dotenv，npm run dev 时会自动读取 backend/.env。
 
+   练习「文档 AI 识题」与作业批改使用同一套 backend/.env 大模型配置，无需单独设置。
+
 3）数据库迁移与演示数据
 
    cd backend

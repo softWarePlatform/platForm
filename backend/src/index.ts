@@ -88,8 +88,8 @@ async function main() {
   const ha = resolveHomeworkAi();
   app.log.info(
     ha.apiKey || ha.omitBearerAuth
-      ? `作业批改 AI：${ha.hint} → ${ha.baseUrl} / ${ha.model}${ha.omitBearerAuth ? "（无 Bearer）" : ""}`
-      : "作业批改 AI：未配置云端密钥且未指向本机 Ollama（见 .env.example），将仅用本地启发式",
+      ? `大模型（作业批改 / 练习识题）：${ha.hint} → ${ha.baseUrl} / ${ha.model}${ha.omitBearerAuth ? "（无 Bearer）" : ""}`
+      : "大模型：未配置云端密钥；练习识题将尝试本机 Ollama 或规则降级（见 backend/.env.example）",
   );
 
   await app.listen({ port: config.port, host: "0.0.0.0" });

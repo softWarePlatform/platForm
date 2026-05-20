@@ -10,6 +10,7 @@ import {
   PRACTICE_TYPE_LABEL,
   FEEDBACK_TYPE_LABEL,
 } from "./practice/practiceLabels";
+import PracticeTutorChat, { type TutorTurn } from "./practice/PracticeTutorChat";
 import "./practice/practice.css";
 
 type SessionItem = {
@@ -22,6 +23,7 @@ type SessionItem = {
   resultJson?: unknown;
   explanation?: string;
   answer?: unknown;
+  tutorMessages?: TutorTurn[];
   question: {
     id: string;
     type: string;
@@ -50,7 +52,6 @@ export default function PracticeSession() {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [similar, setSimilar] = useState<{ id: string; stem: string; tagPath: string }[]>([]);
-  const [hints, setHints] = useState<string[]>([]);
   const [fbType, setFbType] = useState("UNCLEAR");
   const [fbDesc, setFbDesc] = useState("");
   const [submitTip, setSubmitTip] = useState<string | null>(null);
@@ -126,12 +127,6 @@ export default function PracticeSession() {
     }
   }
 
-  async function requestHint(level: "initial" | "more" | "example") {
-    if (!item) return;
-    const { data } = await api.post(`/practice/sessions/${sessionId}/items/${item.id}/hint`, { level });
-    setHints(data.hints ?? [data.hint]);
-  }
-
   async function loadSimilar() {
     if (!item) return;
     const { data } = await api.get(`/practice/questions/${item.question.id}/similar`);
@@ -150,7 +145,6 @@ export default function PracticeSession() {
 
   function goToQuestion(i: number) {
     setIdx(i);
-    setHints([]);
     setSimilar([]);
   }
 
@@ -316,28 +310,28 @@ export default function PracticeSession() {
 
               {!graded ? (
                 <div className="practice-subsection">
-                  <p className="practice-subsection__title">AI 辅导（不直接给出答案）</p>
-                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                    <button type="button" className="btn" onClick={() => requestHint("initial")}>
-                      不会做
-                    </button>
-                    <button type="button" className="btn" onClick={() => requestHint("more")}>
-                      再详细一点
-                    </button>
-                    <button type="button" className="btn" onClick={() => requestHint("example")}>
-                      类似例题
-                    </button>
-                    <button type="button" className="btn" onClick={loadSimilar}>
-                      相似题推荐
-                    </button>
-                  </div>
-                  {hints.length ? (
-                    <ul className="practice-hint-list" style={{ marginTop: 12 }}>
-                      {hints.map((h, i) => (
-                        <li key={i}>{h}</li>
-                      ))}
-                    </ul>
-                  ) : null}
+                  <p className="practice-subsection__title">AI 辅导（多轮对话，不直接给出答案）</p>
+                  <PracticeTutorChat
+                    sessionId={sessionId}
+                    itemId={item.id}
+                    initialMessages={item.tutorMessages ?? []}
+                    onMessagesChange={(messages) => {
+                      setSession((s) => {
+                        if (!s) return s;
+                        const items = [...s.items];
+                        items[idx] = { ...items[idx]!, tutorMessages: messages };
+                        return { ...s, items };
+                      });
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ marginTop: 12 }}
+                    onClick={() => void loadSimilar()}
+                  >
+                    相似题推荐
+                  </button>
                 </div>
               ) : null}
 

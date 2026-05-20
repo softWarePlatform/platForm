@@ -139,9 +139,22 @@ model Course {
   announcements     CourseAnnouncement[]
   waitlists         EnrollmentWaitlist[]
   enrollmentLogs    EnrollmentLog[]
-  practiceQuestions PracticeQuestion[]
-  practiceSessions  PracticeSession[]
-  practiceFeedbacks PracticeQuestionFeedback[]
+  practiceQuestions      PracticeQuestion[]
+  practiceSessions       PracticeSession[]
+  practiceFeedbacks      PracticeQuestionFeedback[]
+  practiceKnowledgeTags  PracticeKnowledgeTag[]
+}
+
+model PracticeKnowledgeTag {
+  id        String   @id @default(uuid())
+  courseId  String
+  tagPath   String
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, tagPath])
+  @@index([courseId])
 }
 
 model CourseAnnouncement {
@@ -665,6 +678,11 @@ enum PracticeQuestionAuditStatus {
   PENDING_REVIEW
 }
 
+enum PracticeAnswerSource {
+  TEACHER
+  AI
+}
+
 model PracticeQuestion {
   id            String                    @id @default(uuid())
   courseId      String
@@ -673,6 +691,8 @@ model PracticeQuestion {
   optionsJson   String?                   @db.Text
   answerJson    String                    @db.Text
   explanation   String?                   @db.Text
+  answerSource  PracticeAnswerSource      @default(TEACHER)
+  answerConfirmed Boolean                 @default(true)
   tagPath       String
   difficulty    PracticeDifficulty        @default(MEDIUM)
   language      String?

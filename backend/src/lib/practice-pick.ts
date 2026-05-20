@@ -1,5 +1,20 @@
 import type { PracticeDifficulty, PracticeQuestion, PracticeSessionMode } from "@prisma/client";
 import { prisma } from "./prisma.js";
+import { serializeAnswerMeta } from "./practice-answer-meta.js";
+import {
+  filterByTagRules,
+  type PracticeTagMatchMode,
+} from "./practice-tag-filter.js";
+
+export type PracticeTagFilterInput = {
+  tags: string[];
+  mode: PracticeTagMatchMode;
+};
+
+function applyTagFilter(pool: PracticeQuestion[], tagFilter?: PracticeTagFilterInput) {
+  if (!tagFilter?.tags.length) return pool;
+  return filterByTagRules(pool, tagFilter.tags, tagFilter.mode);
+}
 
 export async function pickQuestionsForSession(opts: {
   courseId: string;
@@ -9,10 +24,12 @@ export async function pickQuestionsForSession(opts: {
   tagPath?: string;
   difficulty?: PracticeDifficulty;
   tagPrefix?: string;
+  tagFilter?: PracticeTagFilterInput;
 }): Promise<PracticeQuestion[]> {
   const baseWhere = {
     courseId: opts.courseId,
     auditStatus: "APPROVED" as const,
+    answerConfirmed: true,
   };
 
   if (opts.mode === "WRONG_BOOK") {
@@ -30,15 +47,23 @@ export async function pickQuestionsForSession(opts: {
     const qs = await prisma.practiceQuestion.findMany({
       where: { id: { in: ids }, ...baseWhere },
     });
-    return shuffle(qs).slice(0, opts.count);
+    return shuffle(applyTagFilter(qs, opts.tagFilter)).slice(0, opts.count);
   }
 
-  if (opts.mode === "BY_TAG" && opts.tagPath) {
-    return prisma.practiceQuestion.findMany({
-      where: { ...baseWhere, tagPath: { startsWith: opts.tagPath } },
-      take: opts.count * 5,
+  if (opts.mode === "BY_TAG") {
+    const pool = await prisma.practiceQuestion.findMany({
+      where: baseWhere,
       orderBy: { attemptCount: "asc" },
-    }).then((rows) => shuffle(rows).slice(0, opts.count));
+    });
+    const filtered = applyTagFilter(
+      opts.tagFilter?.tags.length
+        ? pool
+        : opts.tagPath
+          ? pool.filter((q) => q.tagPath === opts.tagPath || q.tagPath.startsWith(`${opts.tagPath} >`))
+          : pool,
+      opts.tagFilter,
+    );
+    return shuffle(filtered).slice(0, opts.count);
   }
 
   const where: Record<string, unknown> = { ...baseWhere };
@@ -84,14 +109,11 @@ export async function pickQuestionsForSession(opts: {
         if (!picked.some((p) => p.id === q.id)) picked.push(q);
       }
     }
-    return picked.slice(0, opts.count);
+    return applyTagFilter(picked, opts.tagFilter).slice(0, opts.count);
   }
 
-  const pool = await prisma.practiceQuestion.findMany({
-    where,
-    take: opts.count * 5,
-  });
-  return shuffle(pool).slice(0, opts.count);
+  const pool = await prisma.practiceQuestion.findMany({ where });
+  return shuffle(applyTagFilter(pool, opts.tagFilter)).slice(0, opts.count);
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -104,6 +126,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export function serializeQuestionForStudent(q: PracticeQuestion, hideAnswer: boolean) {
+  const meta = serializeAnswerMeta(q);
   return {
     id: q.id,
     type: q.type,
@@ -115,7 +138,8 @@ export function serializeQuestionForStudent(q: PracticeQuestion, hideAnswer: boo
     attemptCount: q.attemptCount,
     correctRate: q.attemptCount > 0 ? q.correctCount / q.attemptCount : null,
     explanation: hideAnswer ? undefined : q.explanation,
-    answer: hideAnswer ? undefined : undefined,
+    answer: hideAnswer ? undefined : JSON.parse(q.answerJson),
+    ...(hideAnswer ? {} : meta),
   };
 }
 
@@ -135,6 +159,7 @@ export function serializeQuestionForTeacher(q: PracticeQuestion) {
     correctRate: q.attemptCount > 0 ? q.correctCount / q.attemptCount : null,
     avgTimeMs: q.attemptCount > 0 ? Math.round(q.totalTimeMs / q.attemptCount) : null,
     auditStatus: q.auditStatus,
+    ...serializeAnswerMeta(q),
     createdAt: q.createdAt.toISOString(),
     updatedAt: q.updatedAt.toISOString(),
   };

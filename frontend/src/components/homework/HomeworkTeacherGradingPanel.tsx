@@ -100,7 +100,7 @@ export default function HomeworkTeacherGradingPanel({
         <div>
           <div style={{ fontWeight: 700 }}>批改台</div>
           <div className="muted" style={{ marginTop: 4, fontSize: 12, lineHeight: 1.5 }}>
-            AI 建议可在 backend/.env 配置 Ollama 或 OpenAI；分数需教师确认后保存。
+            AI 可在 backend/.env 配置（与练习识题相同：Ollama 或 OpenAI / DeepSeek 等）；分数需教师确认后保存。
           </div>
         </div>
         <button className="btn" type="button" disabled={loading} onClick={() => void loadSubmissions()}>
