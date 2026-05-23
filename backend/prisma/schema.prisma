@@ -20,6 +20,17 @@ enum SubmissionStatus {
   WRONG_ANSWER
   ERROR
   TIMEOUT
+  PENDING_REVIEW
+}
+
+enum SubmissionKind {
+  CODE
+  FILE
+}
+
+enum JudgeMode {
+  AUTO
+  MANUAL
 }
 
 enum CourseNature {
@@ -79,6 +90,9 @@ model User {
   homeworkSubmissions   HomeworkSubmission[]
   homeworkQuestions     HomeworkQuestion[]
   discussionPosts       DiscussionPost[]
+  discussionComments    DiscussionComment[]
+  discussionAttachments DiscussionAttachment[]
+  submissionsGraded     Submission[]           @relation("SubmissionGradedBy")
   announcementsAuthored CourseAnnouncement[]
   announcementReads     AnnouncementRead[]
   announcementMarks     AnnouncementMark[]
@@ -86,6 +100,7 @@ model User {
   materialFavorites       MaterialFavorite[]
   materialsUploaded     CourseMaterial[]       @relation("MaterialUploader")
   labFilesUploaded      LabFile[]
+  labReminderSents      LabReminderSent[]
   answeredHomeworkQuestions HomeworkQuestion[] @relation("HomeworkQuestionAnsweredBy")
   homeworkRevisions       HomeworkRevision[]
   homeworkRedoRequests    HomeworkRedoRequest[]
@@ -214,6 +229,7 @@ model SiteNotification {
   announcementId String?
   materialId     String?
   homeworkId     String?
+  labSetId       String?
   readAt         DateTime?
   createdAt      DateTime  @default(now())
 
@@ -221,6 +237,7 @@ model SiteNotification {
   announcement CourseAnnouncement? @relation(fields: [announcementId], references: [id], onDelete: SetNull)
   material     CourseMaterial?     @relation(fields: [materialId], references: [id], onDelete: SetNull)
   homework     Homework?           @relation(fields: [homeworkId], references: [id], onDelete: SetNull)
+  labSet       LabSet?             @relation(fields: [labSetId], references: [id], onDelete: Cascade)
 
   @@index([userId, readAt])
   @@index([userId, createdAt])
@@ -358,14 +375,45 @@ model LabSet {
   courseId    String
   title       String
   description String?
+  /** 开始时间；未设置则从创建时起算正式窗口 */
+  startAt     DateTime?
   dueAt       DateTime?
+  allowMakeup Boolean   @default(false)
+  makeupDueAt DateTime?
+  /** BLOCK：窗口外不可进入；VIEW_ONLY：可浏览不可提交 */
+  outsideAccessMode String @default("BLOCK")
   sortOrder   Int       @default(0)
+  /** 允许提交的文件扩展名，如 .py .cpp */
+  allowedFileExtensions String[] @default([".py", ".js", ".ts", ".java", ".cpp", ".c", ".txt"])
+  judgeMode           JudgeMode  @default(AUTO)
+  /** 学生提交前可选语言列表 */
+  allowedLanguages    String[]   @default(["python", "javascript"])
   createdAt   DateTime  @default(now())
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   labs   Lab[]
+  discussionPosts DiscussionPost[]
+  reminderSents   LabReminderSent[]
+  notifications   SiteNotification[]
 
   @@index([courseId])
+}
+
+/** 实验开始前/结束前 2h 提醒去重（每用户每实验集每类型仅发一次） */
+model LabReminderSent {
+  id       String   @id @default(uuid())
+  labSetId String
+  userId   String
+  /** BEFORE_START | BEFORE_END */
+  kind     String
+  sentAt   DateTime @default(now())
+
+  labSet LabSet @relation(fields: [labSetId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([labSetId, userId, kind])
+  @@index([labSetId])
+  @@index([userId])
 }
 
 model Lab {
@@ -378,6 +426,10 @@ model Lab {
   descriptionMd  String? @db.Text
   language       String
   starterCode    String?
+  /** 空则继承实验集 judgeMode */
+  judgeMode      JudgeMode?
+  allowedLanguages    String[] @default([])
+  allowedFileExtensions String[] @default([])
 
   course           Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
   labSet           LabSet           @relation(fields: [labSetId], references: [id], onDelete: Cascade)
@@ -418,17 +470,26 @@ model TestCase {
 }
 
 model Submission {
-  id         String             @id @default(uuid())
-  labId      String
-  userId     String
-  code       String
-  status     SubmissionStatus   @default(PENDING)
-  score      Float?
-  resultJson String?
-  createdAt  DateTime           @default(now())
+  id              String           @id @default(uuid())
+  labId           String
+  userId          String
+  submissionKind  SubmissionKind   @default(CODE)
+  /** 评测语言（文件提交时由学生选择） */
+  language        String?
+  code            String           @default("")
+  fileName        String?
+  fileStoredPath  String?
+  status          SubmissionStatus @default(PENDING)
+  score           Float?
+  resultJson      String?
+  teacherComment  String?
+  gradedById      String?
+  gradedAt        DateTime?
+  createdAt       DateTime         @default(now())
 
-  lab  Lab  @relation(fields: [labId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lab      Lab   @relation(fields: [labId], references: [id], onDelete: Cascade)
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gradedBy User? @relation("SubmissionGradedBy", fields: [gradedById], references: [id], onDelete: SetNull)
 
   @@index([labId])
   @@index([userId])
@@ -817,17 +878,66 @@ model HomeworkQuestion {
 model DiscussionPost {
   id        String   @id @default(uuid())
   courseId  String
+  labSetId  String?
   /** 非空表示本题讨论帖；空表示课程级讨论 */
   labId     String?
   userId    String
   title     String
   body      String
+  pinned    Boolean  @default(false)
+  resolved  Boolean  @default(false)
+  anonymous Boolean  @default(false)
+  viewCount Int      @default(0)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lab    Lab?   @relation(fields: [labId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  labSet   LabSet?             @relation(fields: [labSetId], references: [id], onDelete: Cascade)
+  lab      Lab?                @relation(fields: [labId], references: [id], onDelete: Cascade)
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments DiscussionComment[]
+  attachments DiscussionAttachment[]
 
   @@index([courseId])
   @@index([labId])
+  @@index([labSetId])
+}
+
+model DiscussionComment {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  parentId  String?
+  body      String
+  anonymous Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post     DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   DiscussionComment?  @relation("CommentThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  DiscussionComment[] @relation("CommentThread")
+  attachments DiscussionAttachment[]
+
+  @@index([postId])
+  @@index([parentId])
+}
+
+model DiscussionAttachment {
+  id           String   @id @default(uuid())
+  postId       String?
+  commentId    String?
+  fileName     String
+  storedPath   String
+  mimeType     String?
+  sizeBytes    Int
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  post       DiscussionPost?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment    DiscussionComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  uploadedBy User               @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([commentId])
 }

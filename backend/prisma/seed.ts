@@ -1,5 +1,6 @@
 /**
  * 演示数据（可重复执行）：多用户、两门课程、班级、实验与评测用例、作业与批改、讨论区、示例提交。
+ * 实验管理改动：多状态实验集（进行中/补交/未开始/提醒/手动批改）、FILE 提交、单题讨论、实验提醒通知。
  * 运行：cd backend && npm run db:seed
  */
 import { PrismaClient } from "@prisma/client";
@@ -16,9 +17,16 @@ const CID1 = "00000000-0000-4000-8000-000000000001";
 const CID2 = "00000000-0000-4000-8000-000000000002";
 const LS_C1 = "00000000-0000-4000-8000-000000000013";
 const LS_C2 = "00000000-0000-4000-8000-000000000014";
+const LS_C3 = "00000000-0000-4000-8000-000000000015";
+const LS_C4 = "00000000-0000-4000-8000-000000000016";
+const LS_MANUAL = "00000000-0000-4000-8000-000000000017";
 const LAB_HELLO = "00000000-0000-4000-8000-000000000010";
 const LAB_APB = "00000000-0000-4000-8000-000000000011";
 const LAB_P42 = "00000000-0000-4000-8000-000000000012";
+const LAB_MANUAL = "00000000-0000-4000-8000-000000000018";
+const DISC_HELLO = "00000000-0000-4000-8000-000000000090";
+const DISC_APB = "00000000-0000-4000-8000-000000000091";
+const DISC_COMMENT = "00000000-0000-4000-8000-000000000092";
 const HW_A1 = "00000000-0000-4000-8000-000000000020";
 const HW_A2 = "00000000-0000-4000-8000-000000000021";
 const HW_B1 = "00000000-0000-4000-8000-000000000022";
@@ -170,6 +178,68 @@ async function main() {
   });
 
   const now = Date.now();
+  const H = 3600 * 1000;
+  const D = 24 * H;
+
+  /** 实验集时间窗（相对 seed 执行时刻，便于联调列表/提醒/补交） */
+  const labSetTime = {
+    /** 课一主集：进行中 + AUTO 文件提交 */
+    c1Main: {
+      startAt: new Date(now - D),
+      dueAt: new Date(now + 7 * D),
+      allowMakeup: false,
+      makeupDueAt: null as Date | null,
+      outsideAccessMode: "BLOCK",
+      judgeMode: "AUTO" as const,
+      allowedLanguages: ["python", "javascript"],
+      allowedFileExtensions: [".py", ".js"],
+    },
+    /** 课二：已过截止、开放补交（李四/王五未完成） */
+    c2Makeup: {
+      startAt: new Date(now - 14 * D),
+      dueAt: new Date(now - 2 * D),
+      allowMakeup: true,
+      makeupDueAt: new Date(now + 5 * D),
+      outsideAccessMode: "BLOCK",
+      judgeMode: "AUTO" as const,
+      allowedLanguages: ["python"],
+      allowedFileExtensions: [".py"],
+    },
+    /** 课一：未开始 + BLOCK */
+    c1NotStarted: {
+      startAt: new Date(now + 3 * D),
+      dueAt: new Date(now + 14 * D),
+      allowMakeup: false,
+      makeupDueAt: null as Date | null,
+      outsideAccessMode: "BLOCK",
+      judgeMode: "AUTO" as const,
+      allowedLanguages: ["python", "javascript"],
+      allowedFileExtensions: [".py", ".js"],
+    },
+    /** 课一：截止约 90 分钟后，用于实验提醒横幅/站内信 */
+    c1Reminder: {
+      startAt: new Date(now - D),
+      dueAt: new Date(now + 90 * 60 * 1000),
+      allowMakeup: false,
+      makeupDueAt: null as Date | null,
+      outsideAccessMode: "BLOCK",
+      judgeMode: "AUTO" as const,
+      allowedLanguages: ["python"],
+      allowedFileExtensions: [".py"],
+    },
+    /** 课一：手动批改演示 */
+    c1Manual: {
+      startAt: new Date(now - D),
+      dueAt: new Date(now + 10 * D),
+      allowMakeup: false,
+      makeupDueAt: null as Date | null,
+      outsideAccessMode: "BLOCK",
+      judgeMode: "MANUAL" as const,
+      allowedLanguages: ["python"],
+      allowedFileExtensions: [".py", ".txt"],
+    },
+  };
+
   await prisma.enrollmentPeriod.upsert({
     where: { semesterKey },
     update: {
@@ -191,25 +261,91 @@ async function main() {
 
   const labSet1 = await prisma.labSet.upsert({
     where: { id: LS_C1 },
-    update: { title: "程序设计综合实验（演示）" },
+    update: {
+      title: "程序设计综合实验（演示）",
+      description: "含 Hello 与 A+B 两道题目；状态：进行中，AUTO 文件提交。",
+      sortOrder: 0,
+      ...labSetTime.c1Main,
+    },
     create: {
       id: LS_C1,
       courseId: course1.id,
       title: "程序设计综合实验（演示）",
-      description: "含 Hello 与 A+B 两道题目，用于演示实验集 → 多题结构。",
+      description: "含 Hello 与 A+B 两道题目；状态：进行中，AUTO 文件提交。",
       sortOrder: 0,
+      ...labSetTime.c1Main,
     },
   });
 
   const labSet2 = await prisma.labSet.upsert({
     where: { id: LS_C2 },
-    update: { title: "入门实验（演示）" },
+    update: {
+      title: "入门实验（演示）",
+      description: "单题整数输出；状态：补交中（部分学生未完成）。",
+      sortOrder: 0,
+      ...labSetTime.c2Makeup,
+    },
     create: {
       id: LS_C2,
       courseId: course2.id,
       title: "入门实验（演示）",
-      description: "单题演示：整数输出。",
+      description: "单题整数输出；状态：补交中（部分学生未完成）。",
       sortOrder: 0,
+      ...labSetTime.c2Makeup,
+    },
+  });
+
+  const labSet3 = await prisma.labSet.upsert({
+    where: { id: LS_C3 },
+    update: {
+      title: "未开始实验（演示）",
+      description: "开始时间在 3 天后；用于测试「未开始」分组与 BLOCK 门禁。",
+      sortOrder: 1,
+      ...labSetTime.c1NotStarted,
+    },
+    create: {
+      id: LS_C3,
+      courseId: course1.id,
+      title: "未开始实验（演示）",
+      description: "开始时间在 3 天后；用于测试「未开始」分组与 BLOCK 门禁。",
+      sortOrder: 1,
+      ...labSetTime.c1NotStarted,
+    },
+  });
+
+  const labSet4 = await prisma.labSet.upsert({
+    where: { id: LS_C4 },
+    update: {
+      title: "截止提醒实验（演示）",
+      description: "截止约在 seed 后 90 分钟；用于主界面实验提醒横幅与站内信。",
+      sortOrder: 2,
+      ...labSetTime.c1Reminder,
+    },
+    create: {
+      id: LS_C4,
+      courseId: course1.id,
+      title: "截止提醒实验（演示）",
+      description: "截止约在 seed 后 90 分钟；用于主界面实验提醒横幅与站内信。",
+      sortOrder: 2,
+      ...labSetTime.c1Reminder,
+    },
+  });
+
+  const labSetManual = await prisma.labSet.upsert({
+    where: { id: LS_MANUAL },
+    update: {
+      title: "手动批改实验（演示）",
+      description: "MANUAL 模式；王五有一条 PENDING_REVIEW 提交供教师弹窗批改。",
+      sortOrder: 3,
+      ...labSetTime.c1Manual,
+    },
+    create: {
+      id: LS_MANUAL,
+      courseId: course1.id,
+      title: "手动批改实验（演示）",
+      description: "MANUAL 模式；王五有一条 PENDING_REVIEW 提交供教师弹窗批改。",
+      sortOrder: 3,
+      ...labSetTime.c1Manual,
     },
   });
 
@@ -267,7 +403,43 @@ async function main() {
     },
   });
 
-  await prisma.testCase.deleteMany({ where: { labId: { in: [labHello.id, labApb.id, labP42.id] } } });
+  const labManual = await prisma.lab.upsert({
+    where: { id: LAB_MANUAL },
+    update: {
+      labSetId: labSetManual.id,
+      descriptionMd: "## 简述变量（手动批改）\n\n用 Python 写一段不少于 20 字的程序说明「变量」的作用，输出到标准输出。\n",
+    },
+    create: {
+      id: LAB_MANUAL,
+      courseId: course1.id,
+      labSetId: labSetManual.id,
+      title: "实验：变量说明（手动批改）",
+      description: "提交 .py 或 .txt，教师手动评分。",
+      descriptionMd: "## 简述变量（手动批改）\n\n用 Python 写一段不少于 20 字的程序说明「变量」的作用，输出到标准输出。\n",
+      language: "python",
+      starterCode: '# 示例：print("变量用于存储数据")\n',
+    },
+  });
+
+  /** 提醒集占位题（无测试用例，仅用于列表/提醒联调） */
+  const labReminderPlaceholder = await prisma.lab.upsert({
+    where: { id: "00000000-0000-4000-8000-000000000019" },
+    update: { labSetId: labSet4.id },
+    create: {
+      id: "00000000-0000-4000-8000-000000000019",
+      courseId: course1.id,
+      labSetId: labSet4.id,
+      title: "提醒演示占位题",
+      description: "本集主要用于实验截止提醒联调，可无实际提交。",
+      descriptionMd: "本实验集用于演示**截止前 2 小时**提醒，题目本身无评测要求。",
+      language: "python",
+      starterCode: "",
+    },
+  });
+
+  await prisma.testCase.deleteMany({
+    where: { labId: { in: [labHello.id, labApb.id, labP42.id, labManual.id] } },
+  });
 
   await prisma.testCase.createMany({
     data: [
@@ -532,81 +704,152 @@ async function main() {
   }
 
   /** 重置本种子涉及的提交记录，避免重复跑脚本时翻倍 */
-  await prisma.submission.deleteMany({
-    where: { labId: { in: [labHello.id, labApb.id, labP42.id] } },
-  });
+  const seedLabIds = [labHello.id, labApb.id, labP42.id, labManual.id];
+  await prisma.submission.deleteMany({ where: { labId: { in: seedLabIds } } });
+
+  const subHelloAc = "00000000-0000-4000-8000-000000000201";
+  const subHelloWa = "00000000-0000-4000-8000-000000000202";
+  const subHelloAcS3 = "00000000-0000-4000-8000-000000000203";
+  const subApbAc = "00000000-0000-4000-8000-000000000211";
+  const subApbAcS2 = "00000000-0000-4000-8000-000000000212";
+  const subApbWa = "00000000-0000-4000-8000-000000000213";
+  const subP42Ac = "00000000-0000-4000-8000-000000000221";
+  const subP42Wa = "00000000-0000-4000-8000-000000000222";
+  const subManualPending = "00000000-0000-4000-8000-000000000223";
+
+  await ensureFile(`submissions/${subHelloAc}/hello.js`, 'console.log("Hello")\n');
+  await ensureFile(`submissions/${subHelloWa}/hello_wrong.js`, 'console.log("Hell")\n');
+  await ensureFile(`submissions/${subApbAc}/apb.py`, "a,b=map(int,input().split())\nprint(a+b)\n");
+  await ensureFile(`submissions/${subApbAcS2}/apb.py`, "a,b=map(int,input().split())\nprint(a+b)\n");
+  await ensureFile(`submissions/${subApbWa}/apb_wrong.py`, "print(0)\n");
+  await ensureFile(`submissions/${subP42Ac}/p42.py`, "print(42)\n");
+  await ensureFile(`submissions/${subP42Wa}/p42_wrong.py`, "print(41)\n");
+  await ensureFile(
+    `submissions/${subManualPending}/variable.txt`,
+    "变量是程序中用来保存数据的命名存储单元，可以在运行时被读取和修改。\n",
+  );
 
   const demoSubs: Array<{
     id: string;
     labId: string;
     userId: string;
+    submissionKind: "CODE" | "FILE";
+    language: string | null;
     code: string;
-    status: "ACCEPTED" | "WRONG_ANSWER";
-    score: number;
+    fileName: string | null;
+    fileStoredPath: string | null;
+    status: "ACCEPTED" | "WRONG_ANSWER" | "PENDING_REVIEW";
+    score: number | null;
+    teacherComment?: string | null;
   }> = [
     {
-      id: "00000000-0000-4000-8000-000000000201",
+      id: subHelloAc,
       labId: labHello.id,
       userId: s1.id,
-      code: 'console.log("Hello")\n',
+      submissionKind: "FILE",
+      language: "javascript",
+      code: "",
+      fileName: "hello.js",
+      fileStoredPath: `submissions/${subHelloAc}/hello.js`,
       status: "ACCEPTED",
       score: 100,
     },
     {
-      id: "00000000-0000-4000-8000-000000000202",
+      id: subHelloWa,
       labId: labHello.id,
       userId: s2.id,
-      code: 'console.log("Hell")\n',
+      submissionKind: "FILE",
+      language: "javascript",
+      code: "",
+      fileName: "hello_wrong.js",
+      fileStoredPath: `submissions/${subHelloWa}/hello_wrong.js`,
       status: "WRONG_ANSWER",
       score: 0,
     },
     {
-      id: "00000000-0000-4000-8000-000000000203",
+      id: subHelloAcS3,
       labId: labHello.id,
       userId: s3.id,
+      submissionKind: "CODE",
+      language: "javascript",
       code: 'console.log("Hello")\n',
+      fileName: null,
+      fileStoredPath: null,
       status: "ACCEPTED",
       score: 100,
     },
     {
-      id: "00000000-0000-4000-8000-000000000211",
+      id: subApbAc,
       labId: labApb.id,
       userId: s1.id,
-      code: "a,b=map(int,input().split())\nprint(a+b)\n",
+      submissionKind: "FILE",
+      language: "python",
+      code: "",
+      fileName: "apb.py",
+      fileStoredPath: `submissions/${subApbAc}/apb.py`,
       status: "ACCEPTED",
       score: 100,
     },
     {
-      id: "00000000-0000-4000-8000-000000000212",
+      id: subApbAcS2,
       labId: labApb.id,
       userId: s2.id,
-      code: "a,b=map(int,input().split())\nprint(a+b)\n",
+      submissionKind: "FILE",
+      language: "python",
+      code: "",
+      fileName: "apb.py",
+      fileStoredPath: `submissions/${subApbAcS2}/apb.py`,
       status: "ACCEPTED",
       score: 100,
     },
     {
-      id: "00000000-0000-4000-8000-000000000213",
+      id: subApbWa,
       labId: labApb.id,
       userId: s3.id,
-      code: "print(0)\n",
+      submissionKind: "FILE",
+      language: "python",
+      code: "",
+      fileName: "apb_wrong.py",
+      fileStoredPath: `submissions/${subApbWa}/apb_wrong.py`,
       status: "WRONG_ANSWER",
-      score: 50,
+      score: 0,
     },
     {
-      id: "00000000-0000-4000-8000-000000000221",
+      id: subP42Ac,
       labId: labP42.id,
       userId: s1.id,
-      code: "print(42)\n",
+      submissionKind: "FILE",
+      language: "python",
+      code: "",
+      fileName: "p42.py",
+      fileStoredPath: `submissions/${subP42Ac}/p42.py`,
       status: "ACCEPTED",
       score: 100,
     },
     {
-      id: "00000000-0000-4000-8000-000000000222",
+      id: subP42Wa,
       labId: labP42.id,
       userId: s2.id,
-      code: "print(41)\n",
+      submissionKind: "FILE",
+      language: "python",
+      code: "",
+      fileName: "p42_wrong.py",
+      fileStoredPath: `submissions/${subP42Wa}/p42_wrong.py`,
       status: "WRONG_ANSWER",
       score: 0,
+    },
+    {
+      id: subManualPending,
+      labId: labManual.id,
+      userId: s3.id,
+      submissionKind: "FILE",
+      language: "python",
+      code: "",
+      fileName: "variable.txt",
+      fileStoredPath: `submissions/${subManualPending}/variable.txt`,
+      status: "PENDING_REVIEW",
+      score: null,
+      teacherComment: null,
     },
   ];
 
@@ -616,10 +859,78 @@ async function main() {
         id: r.id,
         labId: r.labId,
         userId: r.userId,
+        submissionKind: r.submissionKind,
+        language: r.language,
         code: r.code,
+        fileName: r.fileName,
+        fileStoredPath: r.fileStoredPath,
         status: r.status,
         score: r.score,
-        resultJson: JSON.stringify({ seeded: true, note: "演示数据，非真实评测结果" }),
+        teacherComment: r.teacherComment ?? undefined,
+        resultJson: JSON.stringify({
+          seeded: true,
+          note: "演示数据；FILE 提交已写入 backend/uploads",
+        }),
+      },
+    });
+  }
+
+  /** 单题讨论区示例（Hello / A+B） */
+  await prisma.discussionComment.deleteMany({
+    where: { postId: { in: [DISC_HELLO, DISC_APB] } },
+  });
+  await prisma.discussionPost.deleteMany({
+    where: { id: { in: [DISC_HELLO, DISC_APB] } },
+  });
+  await prisma.discussionPost.create({
+    data: {
+      id: DISC_HELLO,
+      courseId: course1.id,
+      labSetId: labSet1.id,
+      labId: labHello.id,
+      userId: s2.id,
+      title: "Hello 题输出格式疑问",
+      body: "请问是否需要严格匹配大小写？我提交 `Hell` 被判 WA。\n\n```javascript\nconsole.log('Hell')\n```",
+      viewCount: 12,
+    },
+  });
+  await prisma.discussionComment.create({
+    data: {
+      id: DISC_COMMENT,
+      postId: DISC_HELLO,
+      userId: teacher.id,
+      body: "需要输出 exactly `Hello`（H 大写，其余小写），不要多余空格或换行。",
+    },
+  });
+  await prisma.discussionPost.create({
+    data: {
+      id: DISC_APB,
+      courseId: course1.id,
+      labSetId: labSet1.id,
+      labId: labApb.id,
+      userId: teacher.id,
+      title: "【置顶】A+B 读入格式说明",
+      body: "一行两个整数，空格分隔，例如输入 `3 5` 应输出 `8`。Windows 换行不影响评测。",
+      pinned: true,
+      viewCount: 28,
+    },
+  });
+
+  /** 实验截止提醒：预写站内信（backend 扫描也会按窗去重补发） */
+  const reminderDueAt = labSetTime.c1Reminder.dueAt!;
+  const reminderBody = `课程「${course1.title}」的实验集「${labSet4.title}」将于 ${reminderDueAt.toLocaleString("zh-CN")} 截止，请尽快完成提交。`;
+  await prisma.siteNotification.deleteMany({
+    where: { labSetId: { in: [labSet4.id] }, type: "LAB_REMINDER" },
+  });
+  for (const sid of [s1.id, s2.id, s3.id]) {
+    await prisma.siteNotification.create({
+      data: {
+        userId: sid,
+        type: "LAB_REMINDER",
+        title: `实验即将截止：${labSet4.title}`,
+        body: reminderBody,
+        linkPath: `/courses/${course1.id}/lab-sets/${labSet4.id}`,
+        labSetId: labSet4.id,
       },
     });
   }
@@ -1334,6 +1645,14 @@ async function main() {
   console.log("  课程一:", course1.title, course1.id);
   console.log("  课程二:", course2.title, course2.id);
   console.log("  班级:", cls.name);
+  console.log("  实验集（课一）:");
+  console.log("    进行中 AUTO:", labSet1.id, labSet1.title);
+  console.log("    未开始 BLOCK:", labSet3.id, labSet3.title);
+  console.log("    提醒演示 (~90min):", labSet4.id, labSet4.title);
+  console.log("    手动批改 MANUAL:", labSetManual.id, labSetManual.title);
+  console.log("  实验集（课二）补交中:", labSet2.id, labSet2.title);
+  console.log("  提交: 含 FILE 上传文件（backend/uploads/submissions/）；王五手动批改待审");
+  console.log("  讨论: Hello 题问答 + A+B 置顶帖；实验提醒站内信已写入");
   console.log("  练习: 课程一 16 题 + 课程二 4 题；张三已批改练习、错题本；教师端 2 条待处理反馈");
   console.log("  已生成课程资料与实验附件文件：backend/uploads 下");
 }

@@ -1,7 +1,7 @@
 /**
  * 实验集罚时规则（与《拓展.md》ICPC 思路对齐，便于前后端一致展示）
  *
- * - 计时起点 penaltyStartAt：当前使用 LabSet.createdAt（实验集创建时刻）。
+ * - 计时起点 penaltyStartAt：LabSet.startAt ?? LabSet.createdAt（见 lib/lab-set-status.ts）。
  * - 对「某学生 × 某题」：按提交时间升序，找到首次 AC；在其之前每次 WRONG_ANSWER / ERROR / TIMEOUT 记一次罚分。
  * - 单题罚时分 = max(0, floor((firstAC - penaltyStartAt) / 60000)) + wrongSubmissionPenaltyMinutes × wrongBeforeFirstAC
  * - 总罚时 = 所有「已 AC 题目」的单题罚时分之和。

@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/authGuard.js";
 import { parseScheduleSlotsJson, type ScheduleSlot } from "../lib/scheduleSlots.js";
+import { getActiveLabRemindersForUser } from "../lib/lab-reminders.js";
 
 function currentSemesterLabel() {
   const now = new Date();
@@ -187,11 +188,15 @@ const dashboardRoutes: FastifyPluginAsync = async (app) => {
 
     deadlines.sort((a, b) => a.dueAt.localeCompare(b.dueAt));
 
+    const activeLabReminders =
+      role === "STUDENT" ? await getActiveLabRemindersForUser(uid, now) : [];
+
     return {
       role,
       semester: currentSemesterLabel(),
       courses,
       deadlines: deadlines.slice(0, 30),
+      activeLabReminders,
     };
   });
 };

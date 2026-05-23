@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import WeeklySchedule from "../features/dashboard/WeeklySchedule";
 import CourseListPanel from "../features/dashboard/CourseListPanel";
+import LabReminderBanner from "../features/dashboard/LabReminderBanner";
 import type { DashboardPayload } from "../features/dashboard/types";
 import { DASHBOARD_REFRESH } from "../lib/appEvents";
 
@@ -64,6 +65,10 @@ export default function Dashboard() {
         </div>
 
         {err ? <div className="err" style={{ marginBottom: 12 }}>{err}</div> : null}
+
+        {data && user.role === "STUDENT" && (data.activeLabReminders?.length ?? 0) > 0 ? (
+          <LabReminderBanner reminders={data.activeLabReminders ?? []} />
+        ) : null}
 
         {!data ? (
           <div className="muted" style={{ marginTop: 16 }}>加载课表与课程…</div>

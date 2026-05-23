@@ -23,11 +23,14 @@ import HomeworkReview from "./pages/teaching/HomeworkReview";
 import Gradebook from "./pages/Gradebook";
 import Home from "./pages/Home";
 import Lab from "./pages/Lab";
+import LabDiscussionThread from "./pages/LabDiscussionThread";
 import LabSetHub from "./pages/LabSetHub";
 import LabSetManage from "./pages/LabSetManage";
 import Login from "./pages/Login";
 import Messages from "./pages/Messages";
 import MyHomework from "./pages/MyHomework";
+import MyLabs from "./pages/MyLabs";
+import TeachingLabs from "./pages/teaching/TeachingLabs";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import AdminUsers from "./pages/AdminUsers";
@@ -121,6 +124,14 @@ export default function App() {
           }
         />
         <Route
+          path="/courses/:courseId/labs/:labId/discussions/:postId"
+          element={
+            <RequireAuth>
+              <LabDiscussionThread />
+            </RequireAuth>
+          }
+        />
+        <Route
           path="/courses/:courseId/gradebook"
           element={
             <RequireRole roles={["TEACHER", "ADMIN"]}>
@@ -145,6 +156,14 @@ export default function App() {
           }
         />
         <Route
+          path="/teaching/labs"
+          element={
+            <RequireRole roles={["TEACHER", "ADMIN"]}>
+              <TeachingLabs />
+            </RequireRole>
+          }
+        />
+        <Route
           path="/teaching"
           element={
             <RequireRole roles={["TEACHER", "ADMIN"]}>
@@ -157,6 +176,14 @@ export default function App() {
           element={
             <RequireRole roles={["STUDENT", "ADMIN"]}>
               <MyHomework />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/my-labs"
+          element={
+            <RequireRole roles={["STUDENT", "ADMIN"]}>
+              <MyLabs />
             </RequireRole>
           }
         />

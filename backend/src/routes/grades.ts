@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/authGuard.js";
+import { bestScoreForLab, computeLabSetSetAverage } from "../lib/lab-grades.js";
 
 type LabScoreCell = { labId: string; title: string; bestScore: number | null };
 
@@ -33,20 +34,6 @@ type GradebookStudent = {
   };
   rank?: number;
 };
-
-/** 每题取该学生最高分；无提交为 null，得分为 0 时保留 0（勿用 `x || null`）。 */
-function bestScoreForLab(
-  submissions: Array<{ labId: string; userId: string; score: number | null }>,
-  userId: string,
-  labId: string,
-): number | null {
-  const nums = submissions
-    .filter((s) => s.labId === labId && s.userId === userId)
-    .map((s) => s.score)
-    .filter((x): x is number => x != null);
-  if (nums.length === 0) return null;
-  return Math.max(...nums);
-}
 
 async function loadGradebook(courseId: string): Promise<{
   courseTitle: string;
@@ -123,8 +110,11 @@ async function loadGradebook(courseId: string): Promise<{
         title: lab.title,
         bestScore: bestScoreForLab(submissions, sid, lab.id),
       }));
-      const inSet = labs.map((x) => x.bestScore).filter((x): x is number => x != null);
-      const setAverage = inSet.length ? inSet.reduce((a, b) => a + b, 0) / inSet.length : null;
+      const setAverage = computeLabSetSetAverage(
+        ls.labs.map((l) => l.id),
+        submissions,
+        sid,
+      );
       return {
         labSetId: ls.id,
         labSetTitle: ls.title,

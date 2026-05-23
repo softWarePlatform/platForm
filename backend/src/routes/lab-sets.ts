@@ -6,6 +6,64 @@ import {
   WRONG_SUBMISSION_PENALTY_MINUTES,
   analyzeSubmissionsForLabSet,
 } from "../lib/lab-set-penalty.js";
+import {
+  computeLabSetAccess,
+  getPenaltyStartMs,
+  isLabSetCompleted,
+  labSetDetailSelect,
+  labSetListSelect,
+  labSetTimeSelect,
+  labSetJudgeSelect,
+  labSetWithLabsSelect,
+  penaltyRulePayload,
+  serializeLabSetTimes,
+  toLabSetTimeRow,
+  type LabSetListRow,
+} from "../lib/lab-set-status.js";
+
+const labSetTimePatchSchema = z
+  .object({
+    title: z.string().min(1).optional(),
+    description: z.string().optional().nullable(),
+    startAt: z.coerce.date().optional().nullable(),
+    dueAt: z.coerce.date().optional().nullable(),
+    allowMakeup: z.boolean().optional(),
+    makeupDueAt: z.coerce.date().optional().nullable(),
+    outsideAccessMode: z.enum(["BLOCK", "VIEW_ONLY"]).optional(),
+    sortOrder: z.number().int().optional(),
+    judgeMode: z.enum(["AUTO", "MANUAL"]).optional(),
+    allowedLanguages: z.array(z.enum(["javascript", "python"])).optional(),
+    allowedFileExtensions: z.array(z.string().min(1).max(16)).optional(),
+  })
+  .refine(
+    (d) => {
+      if (d.startAt && d.dueAt && d.startAt.getTime() > d.dueAt.getTime()) return false;
+      return true;
+    },
+    { message: "开始时间不能晚于截止时间" },
+  )
+  .refine(
+    (d) => {
+      if (d.allowMakeup && d.dueAt && d.makeupDueAt && d.makeupDueAt.getTime() <= d.dueAt.getTime()) {
+        return false;
+      }
+      return true;
+    },
+    { message: "补交截止时间须晚于正式截止时间" },
+  );
+
+function mapLabSetListItem(r: LabSetListRow) {
+  return {
+    id: r.id,
+    courseId: r.courseId,
+    title: r.title,
+    description: r.description,
+    ...serializeLabSetTimes(r),
+    sortOrder: r.sortOrder,
+    createdAt: r.createdAt,
+    problemCount: r._count.labs,
+  };
+}
 
 async function canAccessCourse(
   userId: string,
@@ -40,22 +98,11 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
       const rows = await prisma.labSet.findMany({
         where: { courseId },
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-        include: {
-          _count: { select: { labs: true } },
-        },
+        select: labSetListSelect,
       });
 
       return {
-        labSets: rows.map((r) => ({
-          id: r.id,
-          courseId: r.courseId,
-          title: r.title,
-          description: r.description,
-          dueAt: r.dueAt,
-          sortOrder: r.sortOrder,
-          createdAt: r.createdAt,
-          problemCount: r._count.labs,
-        })),
+        labSets: rows.map(mapLabSetListItem),
       };
     },
   );
@@ -76,12 +123,11 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
 
       const row = await prisma.labSet.findFirst({
         where: { id: labSetId, courseId },
-        include: {
-          labs: { select: { id: true, title: true }, orderBy: { title: "asc" } },
-        },
+        select: labSetWithLabsSelect,
       });
       if (!row) return reply.code(404).send({ error: "实验集不存在" });
 
+      const timeRow = toLabSetTimeRow(row);
       const labIds = row.labs.map((l) => l.id);
       const enrollments = await prisma.enrollment.findMany({
         where: { courseId },
@@ -89,15 +135,14 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
       });
       const enrolledIds = enrollments.map((e) => e.userId);
 
+      const penaltyRule = {
+        ...penaltyRulePayload(timeRow),
+        wrongSubmissionPenaltyMinutes: WRONG_SUBMISSION_PENALTY_MINUTES,
+      };
+
       if (labIds.length === 0) {
         return {
-          penaltyRule: {
-            startAt: row.createdAt.toISOString(),
-            source: "lab_set_created_at",
-            wrongSubmissionPenaltyMinutes: WRONG_SUBMISSION_PENALTY_MINUTES,
-            formula:
-              "每道已 AC 题：max(0,⌊(首次AC−起点)/60000⌋)+20×首次AC前错误提交次数；总罚时为各题之和。起点=实验集创建时间。",
-          },
+          penaltyRule,
           problemCount: 0,
           enrolledStudentCount: enrolledIds.length,
           fullySolvedStudentCount: 0,
@@ -131,7 +176,7 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
       let fully = 0;
       for (const uid of enrolledIds) {
         const a = analyzeSubmissionsForLabSet({
-          penaltyStartMs: row.createdAt.getTime(),
+          penaltyStartMs: getPenaltyStartMs(timeRow),
           labIds,
           labTitles,
           submissions,
@@ -144,13 +189,7 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
         enrolledIds.length === 0 ? null : Math.round((fully / enrolledIds.length) * 1000) / 1000;
 
       return {
-        penaltyRule: {
-          startAt: row.createdAt.toISOString(),
-          source: "lab_set_created_at",
-          wrongSubmissionPenaltyMinutes: WRONG_SUBMISSION_PENALTY_MINUTES,
-          formula:
-            "每道已 AC 题：max(0,⌊(首次AC−起点)/60000⌋)+20×首次AC前错误提交次数；总罚时为各题之和。起点=实验集创建时间。",
-        },
+        penaltyRule,
         problemCount: labIds.length,
         enrolledStudentCount: enrolledIds.length,
         fullySolvedStudentCount: fully,
@@ -173,12 +212,11 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
 
       const row = await prisma.labSet.findFirst({
         where: { id: labSetId, courseId },
-        include: {
-          labs: { select: { id: true, title: true }, orderBy: { title: "asc" } },
-        },
+        select: labSetWithLabsSelect,
       });
       if (!row) return reply.code(404).send({ error: "实验集不存在" });
 
+      const timeRow = toLabSetTimeRow(row);
       const labIds = row.labs.map((l) => l.id);
       const labTitles = new Map(row.labs.map((l) => [l.id, l.title]));
 
@@ -197,7 +235,7 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
 
       const students = enrollments.map((en) => {
         const r = analyzeSubmissionsForLabSet({
-          penaltyStartMs: row.createdAt.getTime(),
+          penaltyStartMs: getPenaltyStartMs(timeRow),
           labIds,
           labTitles,
           submissions,
@@ -214,11 +252,8 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
 
       return {
         penaltyRule: {
-          startAt: row.createdAt.toISOString(),
-          source: "lab_set_created_at",
+          ...penaltyRulePayload(timeRow),
           wrongSubmissionPenaltyMinutes: WRONG_SUBMISSION_PENALTY_MINUTES,
-          formula:
-            "每道已 AC 题：max(0,⌊(首次AC−起点)/60000⌋)+20×首次AC前错误提交次数；总罚时为各题之和。起点=实验集创建时间。",
         },
         students,
       };
@@ -239,15 +274,31 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
 
       const row = await prisma.labSet.findFirst({
         where: { id: labSetId, courseId },
-        include: {
-          labs: {
-            orderBy: { title: "asc" },
-            select: { id: true, title: true, language: true },
-          },
-          _count: { select: { labs: true } },
-        },
+        select: labSetDetailSelect,
       });
       if (!row) return reply.code(404).send({ error: "实验集不存在" });
+
+      const privileged =
+        req.auth!.role === "ADMIN" || course.teacherId === req.auth!.sub;
+      const labIds = row.labs.map((l) => l.id);
+      let labSetCompleted = true;
+      if (!privileged && labIds.length > 0) {
+        const subs = await prisma.submission.findMany({
+          where: { userId: req.auth!.sub, labId: { in: labIds } },
+          select: { labId: true, userId: true, status: true },
+        });
+        labSetCompleted = isLabSetCompleted(labIds, subs, req.auth!.sub);
+      }
+
+      const access = computeLabSetAccess({
+        row: toLabSetTimeRow(row),
+        isTeacher: privileged,
+        labSetCompleted,
+      });
+
+      if (!privileged && !access.canBrowse) {
+        return reply.code(403).send({ error: "不在可访问时间内" });
+      }
 
       return {
         labSet: {
@@ -255,11 +306,15 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
           courseId: row.courseId,
           title: row.title,
           description: row.description,
-          dueAt: row.dueAt,
+          ...serializeLabSetTimes(row),
           sortOrder: row.sortOrder,
           createdAt: row.createdAt,
+          judgeMode: row.judgeMode,
+          allowedLanguages: row.allowedLanguages,
+          allowedFileExtensions: row.allowedFileExtensions,
           problemCount: row._count.labs,
           labs: row.labs,
+          access,
         },
       };
     },
@@ -279,7 +334,11 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
       const schema = z.object({
         title: z.string().min(1),
         description: z.string().optional().nullable(),
+        startAt: z.coerce.date().optional().nullable(),
         dueAt: z.coerce.date().optional().nullable(),
+        allowMakeup: z.boolean().optional(),
+        makeupDueAt: z.coerce.date().optional().nullable(),
+        outsideAccessMode: z.enum(["BLOCK", "VIEW_ONLY"]).optional(),
         sortOrder: z.number().int().optional(),
       });
       const body = schema.safeParse(req.body);
@@ -290,7 +349,13 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
           courseId,
           title: body.data.title,
           ...(body.data.description !== undefined ? { description: body.data.description } : {}),
+          ...(body.data.startAt !== undefined ? { startAt: body.data.startAt } : {}),
           ...(body.data.dueAt !== undefined ? { dueAt: body.data.dueAt } : {}),
+          ...(body.data.allowMakeup !== undefined ? { allowMakeup: body.data.allowMakeup } : {}),
+          ...(body.data.makeupDueAt !== undefined ? { makeupDueAt: body.data.makeupDueAt } : {}),
+          ...(body.data.outsideAccessMode !== undefined
+            ? { outsideAccessMode: body.data.outsideAccessMode }
+            : {}),
           sortOrder: body.data.sortOrder ?? 0,
         },
       });
@@ -301,7 +366,7 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
           courseId: created.courseId,
           title: created.title,
           description: created.description,
-          dueAt: created.dueAt,
+          ...serializeLabSetTimes(created),
           sortOrder: created.sortOrder,
           createdAt: created.createdAt,
           problemCount: 0,
@@ -323,19 +388,38 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
 
       const existing = await prisma.labSet.findFirst({
         where: { id: labSetId, courseId },
+        select: labSetTimeSelect,
       });
       if (!existing) return reply.code(404).send({ error: "实验集不存在" });
 
-      const schema = z.object({
-        title: z.string().min(1).optional(),
-        description: z.string().optional().nullable(),
-        dueAt: z.coerce.date().optional().nullable(),
-        sortOrder: z.number().int().optional(),
-      });
-      const body = schema.safeParse(req.body);
-      if (!body.success) return reply.code(400).send({ error: "参数无效" });
+      const existingTime = toLabSetTimeRow(existing);
+
+      const body = labSetTimePatchSchema.safeParse(req.body);
+      if (!body.success) {
+        const msg = body.error.issues[0]?.message ?? "参数无效";
+        return reply.code(400).send({ error: msg });
+      }
       if (Object.keys(body.data).length === 0) {
         return reply.code(400).send({ error: "无更新字段" });
+      }
+
+      const mergedStart =
+        body.data.startAt !== undefined ? body.data.startAt : existingTime.startAt;
+      const mergedDue = body.data.dueAt !== undefined ? body.data.dueAt : existingTime.dueAt;
+      const mergedMakeupDue =
+        body.data.makeupDueAt !== undefined ? body.data.makeupDueAt : existingTime.makeupDueAt;
+      const mergedAllowMakeup =
+        body.data.allowMakeup !== undefined ? body.data.allowMakeup : existingTime.allowMakeup;
+      if (mergedStart && mergedDue && mergedStart.getTime() > mergedDue.getTime()) {
+        return reply.code(400).send({ error: "开始时间不能晚于截止时间" });
+      }
+      if (
+        mergedAllowMakeup &&
+        mergedDue &&
+        mergedMakeupDue &&
+        mergedMakeupDue.getTime() <= mergedDue.getTime()
+      ) {
+        return reply.code(400).send({ error: "补交截止时间须晚于正式截止时间" });
       }
 
       const updated = await prisma.labSet.update({
@@ -343,10 +427,32 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
         data: {
           ...(body.data.title !== undefined ? { title: body.data.title } : {}),
           ...(body.data.description !== undefined ? { description: body.data.description } : {}),
+          ...(body.data.startAt !== undefined ? { startAt: body.data.startAt } : {}),
           ...(body.data.dueAt !== undefined ? { dueAt: body.data.dueAt } : {}),
+          ...(body.data.allowMakeup !== undefined ? { allowMakeup: body.data.allowMakeup } : {}),
+          ...(body.data.makeupDueAt !== undefined ? { makeupDueAt: body.data.makeupDueAt } : {}),
+          ...(body.data.outsideAccessMode !== undefined
+            ? { outsideAccessMode: body.data.outsideAccessMode }
+            : {}),
           ...(body.data.sortOrder !== undefined ? { sortOrder: body.data.sortOrder } : {}),
+          ...(body.data.judgeMode !== undefined ? { judgeMode: body.data.judgeMode } : {}),
+          ...(body.data.allowedLanguages !== undefined
+            ? { allowedLanguages: body.data.allowedLanguages }
+            : {}),
+          ...(body.data.allowedFileExtensions !== undefined
+            ? { allowedFileExtensions: body.data.allowedFileExtensions }
+            : {}),
         },
-        include: { _count: { select: { labs: true } } },
+        select: {
+          id: true,
+          courseId: true,
+          title: true,
+          description: true,
+          sortOrder: true,
+          ...labSetTimeSelect,
+          ...labSetJudgeSelect,
+          _count: { select: { labs: true } },
+        },
       });
 
       return {
@@ -355,12 +461,79 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
           courseId: updated.courseId,
           title: updated.title,
           description: updated.description,
-          dueAt: updated.dueAt,
+          ...serializeLabSetTimes(updated),
+          judgeMode: updated.judgeMode,
+          allowedLanguages: updated.allowedLanguages,
+          allowedFileExtensions: updated.allowedFileExtensions,
           sortOrder: updated.sortOrder,
           createdAt: updated.createdAt,
           problemCount: updated._count.labs,
         },
       };
+    },
+  );
+
+  /** 教师：某学生在实验集下各题最后一次提交（含文件下载信息） */
+  app.get(
+    "/courses/:courseId/lab-sets/:labSetId/students/:userId/submissions",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { courseId, labSetId, userId } = req.params as {
+        courseId: string;
+        labSetId: string;
+        userId: string;
+      };
+      const course = await prisma.course.findUnique({ where: { id: courseId } });
+      if (!course || !isCourseTeacher(req.auth!.role, course.teacherId, req.auth!.sub)) {
+        return reply.code(403).send({ error: "无权查看" });
+      }
+
+      const row = await prisma.labSet.findFirst({
+        where: { id: labSetId, courseId },
+        select: { labs: { select: { id: true, title: true }, orderBy: { title: "asc" } } },
+      });
+      if (!row) return reply.code(404).send({ error: "实验集不存在" });
+
+      const labIds = row.labs.map((l) => l.id);
+      const allSubs =
+        labIds.length === 0
+          ? []
+          : await prisma.submission.findMany({
+              where: { labId: { in: labIds }, userId },
+              orderBy: { createdAt: "desc" },
+              include: {
+                user: { select: { id: true, name: true, email: true } },
+              },
+            });
+
+      const latestByLab = new Map<string, (typeof allSubs)[0]>();
+      for (const s of allSubs) {
+        if (!latestByLab.has(s.labId)) latestByLab.set(s.labId, s);
+      }
+
+      const problems = row.labs.map((lab) => {
+        const sub = latestByLab.get(lab.id);
+        return {
+          labId: lab.id,
+          title: lab.title,
+          submission: sub
+            ? {
+                id: sub.id,
+                status: sub.status,
+                score: sub.score,
+                submissionKind: sub.submissionKind,
+                language: sub.language,
+                fileName: sub.fileName,
+                hasFile: Boolean(sub.fileStoredPath),
+                teacherComment: sub.teacherComment,
+                createdAt: sub.createdAt,
+                gradedAt: sub.gradedAt,
+              }
+            : null,
+        };
+      });
+
+      return { userId, problems };
     },
   );
 

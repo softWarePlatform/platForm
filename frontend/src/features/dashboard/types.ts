@@ -29,11 +29,24 @@ export type DashboardDeadline = {
   dueAt: string;
 };
 
+export type ActiveLabReminder = {
+  kind: "BEFORE_START" | "BEFORE_END";
+  labSetId: string;
+  courseId: string;
+  courseTitle: string;
+  labSetTitle: string;
+  eventAt: string;
+  title: string;
+  body: string;
+  linkPath: string;
+};
+
 export type DashboardPayload = {
   role: "STUDENT" | "TEACHER" | "ADMIN";
   semester: { key: string; label: string };
   courses: DashboardCourse[];
   deadlines: DashboardDeadline[];
+  activeLabReminders?: ActiveLabReminder[];
 };
 
 export type CustomScheduleEvent = {

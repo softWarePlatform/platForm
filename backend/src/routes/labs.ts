@@ -1,8 +1,47 @@
 import type { FastifyPluginAsync } from "fastify";
+import { createReadStream } from "node:fs";
+import { access } from "node:fs/promises";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/authGuard.js";
-import { getJudgeQueue } from "../lib/queue.js";
+import {
+  labJudgeSelect,
+  serializeJudgeConfig,
+  resolveLabJudgeConfig,
+  type LabJudgeSource,
+} from "../lib/lab-judge-config.js";
+import {
+  assertCanSubmitLab,
+  attachJudgeConfigToLab,
+  createCodeSubmission,
+  createFileSubmission,
+  getJudgeConfigFromLab,
+  loadLabForSubmit,
+} from "../lib/lab-submit.js";
+import { SubmissionStatus, type Prisma } from "@prisma/client";
+import { readStoredFileAbs } from "../lib/uploads.js";
+import {
+  computeLabSetAccess,
+  isLabSetCompleted,
+  labSetJudgeSelect,
+  serializeLabSetTimes,
+} from "../lib/lab-set-status.js";
+
+const labSetAccessSelect = {
+  id: true,
+  title: true,
+  startAt: true,
+  dueAt: true,
+  allowMakeup: true,
+  makeupDueAt: true,
+  outsideAccessMode: true,
+  createdAt: true,
+  ...labSetJudgeSelect,
+} as const;
+
+function isCoursePrivileged(role: string, courseTeacherId: string, userId: string) {
+  return role === "ADMIN" || courseTeacherId === userId;
+}
 
 async function canAccessCourse(
   userId: string,
@@ -97,10 +136,22 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
     const { id } = req.params as { id: string };
     const lab = await prisma.lab.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        courseId: true,
+        labSetId: true,
+        title: true,
+        description: true,
+        descriptionMd: true,
+        language: true,
+        starterCode: true,
+        ...labJudgeSelect,
         course: true,
-        labSet: { select: { id: true, title: true, dueAt: true } },
-        testCases: req.auth!.role === "STUDENT" ? { where: { hidden: false } } : true,
+        labSet: { select: labSetAccessSelect },
+        testCases:
+          req.auth!.role === "STUDENT"
+            ? { where: { hidden: false } }
+            : true,
       },
     });
     if (!lab) return reply.code(404).send({ error: "实验不存在" });
@@ -113,6 +164,41 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
     );
     if (!ok) return reply.code(403).send({ error: "无权访问" });
 
+    const privileged = isCoursePrivileged(req.auth!.role, lab.course.teacherId, req.auth!.sub);
+    const setLabs = await prisma.lab.findMany({
+      where: { labSetId: lab.labSetId },
+      select: { id: true },
+    });
+    const labIds = setLabs.map((l) => l.id);
+    let labSetCompleted = true;
+    if (!privileged && labIds.length > 0) {
+      const subs = await prisma.submission.findMany({
+        where: { userId: req.auth!.sub, labId: { in: labIds } },
+        select: { labId: true, userId: true, status: true },
+      });
+      labSetCompleted = isLabSetCompleted(labIds, subs, req.auth!.sub);
+    }
+
+    const access = computeLabSetAccess({
+      row: lab.labSet,
+      isTeacher: privileged,
+      labSetCompleted,
+    });
+
+    if (!privileged && !access.canBrowse) {
+      return reply.code(403).send({ error: "不在可访问时间内" });
+    }
+
+    const labSetPayload = {
+      ...lab.labSet,
+      ...serializeLabSetTimes(lab.labSet),
+      access,
+    };
+
+    const judgeConfig = serializeJudgeConfig(
+      resolveLabJudgeConfig(lab as LabJudgeSource, lab.labSet as LabJudgeSource),
+    );
+
     if (req.auth!.role === "STUDENT") {
       return {
         lab: {
@@ -122,7 +208,8 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
           descriptionMd: lab.descriptionMd,
           language: lab.language,
           starterCode: lab.starterCode,
-          labSet: lab.labSet,
+          judgeConfig,
+          labSet: labSetPayload,
           testCases: lab.testCases,
         },
       };
@@ -130,13 +217,40 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
 
     const full = await prisma.lab.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        courseId: true,
+        labSetId: true,
+        title: true,
+        description: true,
+        descriptionMd: true,
+        language: true,
+        starterCode: true,
+        ...labJudgeSelect,
         testCases: true,
-        labSet: { select: { id: true, title: true, dueAt: true, description: true, sortOrder: true } },
+        labSet: {
+          select: {
+            ...labSetAccessSelect,
+            description: true,
+            sortOrder: true,
+          },
+        },
         course: { select: { id: true, title: true } },
       },
     });
-    return { lab: full };
+    if (!full) return reply.code(404).send({ error: "实验不存在" });
+    const withConfig = attachJudgeConfigToLab(full);
+    return {
+      lab: {
+        ...withConfig,
+        judgeConfig: serializeJudgeConfig(withConfig.judgeConfig),
+        labSet: {
+          ...full.labSet,
+          ...serializeLabSetTimes(full.labSet),
+          access,
+        },
+      },
+    };
   });
 
   /**
@@ -250,6 +364,9 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
         descriptionMd: z.string().optional().nullable(),
         language: z.enum(["javascript", "python"]).optional(),
         starterCode: z.string().optional().nullable(),
+        judgeMode: z.enum(["AUTO", "MANUAL"]).optional().nullable(),
+        allowedLanguages: z.array(z.enum(["javascript", "python"])).optional(),
+        allowedFileExtensions: z.array(z.string().min(1).max(16)).optional(),
       });
       const body = schema.safeParse(req.body);
       if (!body.success) return reply.code(400).send({ error: "参数无效" });
@@ -445,14 +562,14 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
 
   app.post("/labs/:id/submit", { preHandler: authRequired("STUDENT", "TEACHER", "ADMIN") }, async (req, reply) => {
     const { id } = req.params as { id: string };
-    const schema = z.object({ code: z.string().min(1) });
+    const schema = z.object({
+      code: z.string().min(1),
+      language: z.enum(["javascript", "python"]).optional(),
+    });
     const body = schema.safeParse(req.body);
     if (!body.success) return reply.code(400).send({ error: "请提交代码" });
 
-    const lab = await prisma.lab.findUnique({
-      where: { id },
-      include: { course: true, labSet: { select: { dueAt: true } } },
-    });
+    const lab = await loadLabForSubmit(id);
     if (!lab) return reply.code(404).send({ error: "实验不存在" });
 
     const ok = await canAccessCourse(
@@ -463,28 +580,157 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
     );
     if (!ok) return reply.code(403).send({ error: "未选课" });
 
-    const due = lab.labSet.dueAt;
-    if (due != null && Date.now() > due.getTime()) {
-      return reply.code(403).send({ error: "已超过实验截止时间，无法提交" });
-    }
+    if (!assertCanSubmitLab(lab, req.auth!.role, req.auth!.sub, reply)) return;
 
-    const submission = await prisma.submission.create({
-      data: {
-        labId: id,
-        userId: req.auth!.sub,
-        code: body.data.code,
-        status: "PENDING",
-      },
+    const judgeConfig = getJudgeConfigFromLab(lab);
+    const submission = await createCodeSubmission({
+      labId: id,
+      userId: req.auth!.sub,
+      code: body.data.code,
+      language: body.data.language,
+      judgeConfig,
     });
-
-    await getJudgeQueue().add(
-      "judge",
-      { submissionId: submission.id },
-      { jobId: submission.id },
-    );
 
     return { submissionId: submission.id, status: submission.status };
   });
+
+  /** 学生：上传文件提交（multipart: file + language） */
+  app.post(
+    "/labs/:id/submit-file",
+    { preHandler: authRequired("STUDENT", "TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const lab = await loadLabForSubmit(id);
+      if (!lab) return reply.code(404).send({ error: "实验不存在" });
+
+      const ok = await canAccessCourse(
+        req.auth!.sub,
+        req.auth!.role,
+        lab.courseId,
+        lab.course.teacherId,
+      );
+      if (!ok) return reply.code(403).send({ error: "未选课" });
+
+      if (!assertCanSubmitLab(lab, req.auth!.role, req.auth!.sub, reply)) return;
+
+      const parts = (req as any).parts();
+      let fileBuf: Buffer | null = null;
+      let origName = "";
+      let language = lab.language;
+
+      for await (const part of parts) {
+        if (part.type === "file" && part.fieldname === "file") {
+          origName = part.filename;
+          fileBuf = await part.toBuffer();
+        } else if (part.type === "field" && part.fieldname === "language") {
+          language = String(part.value);
+        }
+      }
+
+      if (!fileBuf || !origName) {
+        return reply.code(400).send({ error: "请使用 multipart 上传 file 字段" });
+      }
+
+      const judgeConfig = getJudgeConfigFromLab(lab);
+      try {
+        const submission = await createFileSubmission({
+          labId: id,
+          userId: req.auth!.sub,
+          language,
+          fileName: origName,
+          fileBuf,
+          judgeConfig,
+        });
+        return { submissionId: submission.id, status: submission.status };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "提交失败";
+        return reply.code(400).send({ error: msg });
+      }
+    },
+  );
+
+  /** 教师：手动批改打分 */
+  app.patch(
+    "/submissions/:submissionId/grade",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { submissionId } = req.params as { submissionId: string };
+      const schema = z.object({
+        score: z.number().min(0).max(100),
+        teacherComment: z.string().max(4000).optional().nullable(),
+        status: z.enum(["ACCEPTED", "WRONG_ANSWER", "PENDING_REVIEW"]).optional(),
+      });
+      const body = schema.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: "参数无效" });
+
+      const sub = await prisma.submission.findUnique({
+        where: { id: submissionId },
+        include: { lab: { include: { course: true } } },
+      });
+      if (!sub) return reply.code(404).send({ error: "记录不存在" });
+      if (req.auth!.role !== "ADMIN" && sub.lab.course.teacherId !== req.auth!.sub) {
+        return reply.code(403).send({ error: "无权批改" });
+      }
+
+      const gradeStatus: SubmissionStatus =
+        body.data.status === "PENDING_REVIEW"
+          ? ("PENDING_REVIEW" as SubmissionStatus)
+          : body.data.status === "WRONG_ANSWER"
+            ? SubmissionStatus.WRONG_ANSWER
+            : SubmissionStatus.ACCEPTED;
+
+      const gradePatch = {
+        score: body.data.score,
+        teacherComment: body.data.teacherComment ?? null,
+        status: gradeStatus,
+        gradedById: req.auth!.sub,
+        gradedAt: new Date(),
+      } as Prisma.SubmissionUncheckedUpdateInput;
+      const updated = await prisma.submission.update({
+        where: { id: submissionId },
+        data: gradePatch,
+      });
+      return { submission: updated };
+    },
+  );
+
+  app.get(
+    "/submissions/:submissionId/download",
+    { preHandler: authRequired() },
+    async (req, reply) => {
+      const { submissionId } = req.params as { submissionId: string };
+      const sub = await prisma.submission.findUnique({
+        where: { id: submissionId },
+        include: { lab: { include: { course: true } } },
+      });
+      if (!sub) return reply.code(404).send({ error: "记录不存在" });
+
+      const fileRow = sub as typeof sub & { fileStoredPath?: string | null; fileName?: string | null };
+      const filePath = fileRow.fileStoredPath;
+      const downloadName = fileRow.fileName;
+      if (!filePath) return reply.code(404).send({ error: "无附件" });
+
+      const isOwner = sub.userId === req.auth!.sub;
+      const isTeacher =
+        req.auth!.role === "ADMIN" || sub.lab.course.teacherId === req.auth!.sub;
+      if (!isOwner && !isTeacher) return reply.code(403).send({ error: "无权下载" });
+
+      const abs = readStoredFileAbs(filePath);
+      try {
+        await access(abs);
+      } catch {
+        return reply.code(404).send({ error: "文件已丢失" });
+      }
+      const stream = createReadStream(abs);
+      return reply
+        .header("Content-Type", "application/octet-stream")
+        .header(
+          "Content-Disposition",
+          `attachment; filename*=UTF-8''${encodeURIComponent(downloadName ?? "submission")}`,
+        )
+        .send(stream);
+    },
+  );
 
   app.get("/labs/:id/submissions", { preHandler: authRequired() }, async (req, reply) => {
     const { id } = req.params as { id: string };

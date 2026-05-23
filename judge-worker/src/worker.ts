@@ -8,7 +8,11 @@ loadEnv({ path: resolve(__dirname, "../../backend/.env") });
 loadEnv({ path: resolve(__dirname, "../.env") });
 import { Redis } from "ioredis";
 import { PrismaClient } from "@prisma/client";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { normalizeOutput, runCode, type RunnerLanguage } from "./runner.js";
+
+const UPLOAD_ROOT = process.env.UPLOAD_DIR ?? join(process.cwd(), "uploads");
 
 const prisma = new PrismaClient({
   log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
@@ -48,7 +52,27 @@ const worker = new Worker(
 
     if (!submission) return;
 
-    const lang = mapLanguage(submission.lab.language);
+    if (submission.status === "PENDING_REVIEW") return;
+
+    let code = submission.code;
+    const runLang = submission.language ?? submission.lab.language;
+    if (submission.submissionKind === "FILE" && submission.fileStoredPath) {
+      const abs = join(UPLOAD_ROOT, ...submission.fileStoredPath.split("/").filter(Boolean));
+      try {
+        code = await readFile(abs, "utf8");
+      } catch {
+        await prisma.submission.update({
+          where: { id: submissionId },
+          data: {
+            status: "ERROR",
+            resultJson: JSON.stringify({ error: "提交文件无法读取" }),
+          },
+        });
+        return;
+      }
+    }
+
+    const lang = mapLanguage(runLang);
     const testCases = [...submission.lab.testCases].sort((a, b) => a.id.localeCompare(b.id));
 
     if (testCases.length === 0) {
@@ -72,7 +96,7 @@ const worker = new Worker(
       for (const tc of testCases) {
         const run = await runCode({
           language: lang,
-          code: submission.code,
+          code,
           stdin: tc.input.endsWith("\n") ? tc.input : `${tc.input}\n`,
           timeoutMs: defaultTimeout,
         });

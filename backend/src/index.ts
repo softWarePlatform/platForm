@@ -10,6 +10,7 @@ import coursesRoutes from "./routes/courses.js";
 import courseMaterialsRoutes from "./routes/course-materials.js";
 import labsRoutes from "./routes/labs.js";
 import labSetsRoutes from "./routes/lab-sets.js";
+import labOverviewRoutes from "./routes/lab-overview.js";
 import labFilesRoutes from "./routes/lab-files.js";
 import homeworkRoutes from "./routes/homework.js";
 import gradesRoutes from "./routes/grades.js";
@@ -22,6 +23,7 @@ import notificationsRoutes from "./routes/notifications.js";
 import homeworkStudentRoutes from "./routes/homework-student.js";
 import practiceRoutes from "./routes/practice.js";
 import { resolveHomeworkAi } from "./lib/homework-ai-config.js";
+import { startLabReminderScheduler } from "./lib/lab-reminders.js";
 
 function parseOrigins(): boolean | string | string[] {
   const raw = config.corsOrigin;
@@ -71,6 +73,7 @@ async function main() {
   await app.register(coursesRoutes);
   await app.register(courseMaterialsRoutes);
   await app.register(labSetsRoutes);
+  await app.register(labOverviewRoutes);
   /** 含 /labs/:labId/discussions，需在通配 /labs/:id 之前注册 */
   await app.register(discussionsRoutes);
   await app.register(labsRoutes);
@@ -91,6 +94,11 @@ async function main() {
       ? `大模型（作业批改 / 练习识题）：${ha.hint} → ${ha.baseUrl} / ${ha.model}${ha.omitBearerAuth ? "（无 Bearer）" : ""}`
       : "大模型：未配置云端密钥；练习识题将尝试本机 Ollama 或规则降级（见 backend/.env.example）",
   );
+
+  const stopLabReminders = startLabReminderScheduler(app.log);
+  app.addHook("onClose", async () => {
+    stopLabReminders();
+  });
 
   await app.listen({ port: config.port, host: "0.0.0.0" });
 }

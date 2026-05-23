@@ -5,6 +5,7 @@ import { refreshAfterAnnouncementRead, refreshNotificationBadge } from "../lib/a
 
 type NotificationRow = {
   id: string;
+  type?: string;
   title: string;
   body: string | null;
   linkPath: string | null;
@@ -12,6 +13,13 @@ type NotificationRow = {
   createdAt: string;
   announcementDeleted: boolean;
 };
+
+function notificationTypeLabel(type?: string): string | null {
+  if (type === "LAB_REMINDER") return "实验提醒";
+  if (type === "DISCUSSION") return "讨论";
+  if (type === "ANNOUNCEMENT") return "公告";
+  return null;
+}
 
 export default function Messages() {
   const navigate = useNavigate();
@@ -65,7 +73,9 @@ export default function Messages() {
       <div className="spread" style={{ marginBottom: 16 }}>
         <div>
           <h1 style={{ margin: "0 0 6px" }}>站内消息</h1>
-          <p className="muted" style={{ margin: 0 }}>课程公告、资料更新等系统通知将显示在这里。</p>
+          <p className="muted" style={{ margin: 0 }}>
+            课程公告、资料更新、实验开始前/截止前提醒等通知将显示在这里。
+          </p>
         </div>
         {items.some((n) => !n.read) ? (
           <button type="button" className="btn" onClick={markAllRead}>
@@ -89,6 +99,7 @@ export default function Messages() {
               >
                 <div className="notification-list__title">{n.title}</div>
                 <div className="muted notification-list__time">
+                  {notificationTypeLabel(n.type) ? `${notificationTypeLabel(n.type)} · ` : ""}
                   {new Date(n.createdAt).toLocaleString()}
                   {n.announcementDeleted ? " · 公告已删除" : ""}
                 </div>

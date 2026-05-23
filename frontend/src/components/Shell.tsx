@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import { useAuth } from "../auth/AuthContext";
+import { useAuth, type Role } from "../auth/AuthContext";
 import { NOTIFICATIONS_REFRESH } from "../lib/appEvents";
 
 const linkStyle = ({ isActive }: { isActive: boolean }) => ({
@@ -11,7 +11,23 @@ const linkStyle = ({ isActive }: { isActive: boolean }) => ({
   border: "1px solid transparent",
   color: "inherit",
   background: isActive ? "#e8eefc" : "transparent",
+  whiteSpace: "nowrap" as const,
 });
+
+type NavItem = { to: string; label: string; end?: boolean; roles: Role[]; className?: string };
+
+const NAV_ITEMS: NavItem[] = [
+  { to: "/", label: "主界面", end: true, roles: ["STUDENT", "TEACHER", "ADMIN"] },
+  { to: "/enrollment", label: "选课系统", roles: ["STUDENT", "ADMIN"] },
+  { to: "/teaching", label: "教学台", roles: ["TEACHER", "ADMIN"] },
+  { to: "/my-homework", label: "我的作业", roles: ["STUDENT", "ADMIN"] },
+  { to: "/my-labs", label: "我的实验", roles: ["STUDENT", "ADMIN"] },
+  { to: "/teaching/homework", label: "作业批改", roles: ["TEACHER", "ADMIN"] },
+  { to: "/teaching/labs", label: "实验管理", roles: ["TEACHER", "ADMIN"] },
+  { to: "/messages", label: "站内消息", roles: ["STUDENT", "TEACHER", "ADMIN"], className: "nav-messages" },
+  { to: "/profile", label: "个人中心", roles: ["STUDENT", "TEACHER", "ADMIN"] },
+  { to: "/admin/users", label: "用户管理", roles: ["ADMIN"] },
+];
 
 export default function Shell() {
   const { user, token, logout } = useAuth();
@@ -47,96 +63,69 @@ export default function Shell() {
     };
   }, [token]);
 
+  const role = user?.role;
+  const visibleNav = role ? NAV_ITEMS.filter((item) => item.roles.includes(role)) : [];
+
   return (
     <div>
-      <header
-        style={{
-          borderBottom: "1px solid var(--border)",
-          background: "rgba(255,255,255,0.85)",
-          backdropFilter: "blur(8px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 20,
-        }}
-      >
-        <div className="container spread">
-          <div className="row">
-            <Link to="/" style={{ textDecoration: "none", fontWeight: 800 }}>
+      <header className="app-header">
+        <div className="container app-header__inner">
+          <div className="app-header__top spread">
+            <Link to="/" className="app-header__brand">
               教学实训平台
             </Link>
-            {user ? (
-              <nav className="row" style={{ marginLeft: 8 }}>
-                <NavLink to="/" end style={linkStyle}>
-                  主界面
-                </NavLink>
-                {user.role === "STUDENT" || user.role === "ADMIN" ? (
-                  <NavLink to="/enrollment" style={linkStyle}>
-                    选课系统
-                  </NavLink>
-                ) : null}
-                {user.role === "TEACHER" || user.role === "ADMIN" ? (
-                  <NavLink to="/teaching" style={linkStyle}>
-                    教学台
-                  </NavLink>
-                ) : null}
-                {user.role === "STUDENT" || user.role === "ADMIN" ? (
-                  <NavLink to="/my-homework" style={linkStyle}>
-                    我的作业
-                  </NavLink>
-                ) : null}
-                {user.role === "TEACHER" || user.role === "ADMIN" ? (
-                  <NavLink to="/teaching/homework" style={linkStyle}>
-                    作业批改
-                  </NavLink>
-                ) : null}
-                <NavLink to="/messages" style={linkStyle} className="nav-messages">
-                  站内消息
-                  {unreadCount > 0 ? (
+            <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+              {user ? (
+                <>
+                  <span className="muted app-header__user">
+                    {user.name}（
+                    {user.role === "TEACHER" ? "教师" : user.role === "ADMIN" ? "管理员" : "学生"}）
+                  </span>
+                  {!user.emailVerified ? <span className="err">邮箱未验证</span> : null}
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      navigate("/login");
+                    }}
+                  >
+                    退出
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link className="btn" to="/login">
+                    登录
+                  </Link>
+                  <Link className="btn primary" to="/register">
+                    注册
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+
+          {user ? (
+            <nav className="app-header__nav row" aria-label="站点导航">
+              {visibleNav.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  style={linkStyle}
+                  className={item.className}
+                >
+                  {item.label}
+                  {item.to === "/messages" && unreadCount > 0 ? (
                     <span className="nav-badge" aria-label={`${unreadCount} 条未读`}>
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   ) : null}
                 </NavLink>
-                <NavLink to="/profile" style={linkStyle}>
-                  个人中心
-                </NavLink>
-                {user.role === "ADMIN" ? (
-                  <NavLink to="/admin/users" style={linkStyle}>
-                    用户管理
-                  </NavLink>
-                ) : null}
-              </nav>
-            ) : null}
-          </div>
-
-          <div className="row">
-            {user ? (
-              <>
-                <span className="muted">
-                  {user.name}（{user.role === "TEACHER" ? "教师" : user.role === "ADMIN" ? "管理员" : "学生"}）
-                </span>
-                {!user.emailVerified ? <span className="err">邮箱未验证</span> : null}
-                <button
-                  className="btn"
-                  onClick={() => {
-                    logout();
-                    navigate("/login");
-                  }}
-                >
-                  退出
-                </button>
-              </>
-            ) : (
-              <>
-                <Link className="btn" to="/login">
-                  登录
-                </Link>
-                <Link className="btn primary" to="/register">
-                  注册
-                </Link>
-              </>
-            )}
-          </div>
+              ))}
+            </nav>
+          ) : null}
         </div>
       </header>
       <main>

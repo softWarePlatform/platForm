@@ -67,3 +67,38 @@ export async function saveLabFile(
   const storedPath = `labs/${labId}/${diskName}`;
   return { storedPath, fileName: originalName };
 }
+
+export async function saveSubmissionFile(
+  submissionId: string,
+  originalName: string,
+  data: Buffer,
+): Promise<{ storedPath: string; fileName: string }> {
+  const dir = join(UPLOAD_ROOT, "submissions", submissionId);
+  await mkdir(dir, { recursive: true });
+  const safe = sanitizeFilename(originalName);
+  const id = randomUUID();
+  const diskName = `${id}_${safe}`;
+  await writeFile(join(dir, diskName), data);
+  const storedPath = `submissions/${submissionId}/${diskName}`;
+  return { storedPath, fileName: originalName };
+}
+
+export async function saveDiscussionAttachment(
+  scope: "posts" | "comments",
+  scopeId: string,
+  originalName: string,
+  data: Buffer,
+): Promise<{ storedPath: string; fileName: string }> {
+  const dir = join(UPLOAD_ROOT, "discussions", scope, scopeId);
+  await mkdir(dir, { recursive: true });
+  const safe = sanitizeFilename(originalName);
+  const id = randomUUID();
+  const diskName = `${id}_${safe}`;
+  await writeFile(join(dir, diskName), data);
+  const storedPath = `discussions/${scope}/${scopeId}/${diskName}`;
+  return { storedPath, fileName: originalName };
+}
+
+export function readStoredFileAbs(storedPath: string): string {
+  return join(UPLOAD_ROOT, ...storedPath.split("/").filter(Boolean));
+}

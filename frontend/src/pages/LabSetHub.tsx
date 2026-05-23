@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import LabSetTimeBanner from "../features/labs/LabSetTimeBanner";
 
 type LabRow = { id: string; title: string; language: string };
 
@@ -8,6 +9,8 @@ type Progress = {
   best: number | null;
   latestStatus: string;
   lastAt: string | null;
+  /** 是否存在至少一次 AC（与实验集完成/进度条逻辑一致） */
+  passed: boolean;
 };
 
 export default function LabSetHub() {
@@ -23,8 +26,14 @@ export default function LabSetHub() {
       try {
         const { data } = await api.get(`/courses/${courseId}/lab-sets/${labSetId}`);
         if (!cancelled) setLabSet(data.labSet);
-      } catch {
-        if (!cancelled) setErr("无法加载实验集（请先登录并选课）");
+      } catch (e: unknown) {
+        if (!cancelled) {
+          const msg =
+            typeof e === "object" && e !== null && "response" in e
+              ? (e as { response?: { data?: { error?: string } } }).response?.data?.error
+              : null;
+          setErr(msg ?? "无法加载实验集（请先登录并选课）");
+        }
       }
     })();
     return () => {
@@ -46,9 +55,10 @@ export default function LabSetHub() {
             const best = scores.length ? Math.max(...scores) : null;
             const latestStatus = rows[0]?.status ?? "—";
             const lastAt = rows[0]?.createdAt ?? null;
-            return [l.id, { best, latestStatus, lastAt }] as const;
+            const passed = rows.some((s: { status?: string }) => s.status === "ACCEPTED");
+            return [l.id, { best, latestStatus, lastAt, passed }] as const;
           } catch {
-            return [l.id, { best: null, latestStatus: "—", lastAt: null }] as const;
+            return [l.id, { best: null, latestStatus: "—", lastAt: null, passed: false }] as const;
           }
         }),
       );
@@ -58,9 +68,6 @@ export default function LabSetHub() {
       cancelled = true;
     };
   }, [labSet]);
-
-  const due = labSet?.dueAt ? new Date(labSet.dueAt) : null;
-  const duePast = due != null && !Number.isNaN(due.getTime()) && Date.now() > due.getTime();
 
   if (!labSet && !err) {
     return (
@@ -74,9 +81,14 @@ export default function LabSetHub() {
     return (
       <div className="container">
         <div className="err">{err}</div>
+        <div className="muted" style={{ marginTop: 12 }}>
+          <Link to={`/courses/${courseId}`}>返回课程</Link>
+        </div>
       </div>
     );
   }
+
+  const canSubmit = labSet.access?.canSubmit !== false;
 
   return (
     <div className="container">
@@ -90,37 +102,18 @@ export default function LabSetHub() {
         </div>
       ) : null}
 
-      {due ? (
-        <div
-          style={{
-            marginTop: 12,
-            padding: "10px 12px",
-            borderRadius: 12,
-            border: "1px solid var(--border)",
-            ...(duePast
-              ? { background: "rgba(180, 60, 60, 0.09)", color: "var(--err, #c44)" }
-              : { background: "rgba(80, 120, 200, 0.08)" }),
-          }}
-        >
-          <strong>{duePast ? "已截止" : "截止时间"}</strong>
-          <span style={{ marginLeft: 8 }}>{due.toLocaleString()}</span>
-          {duePast ? <span> · 不可再提交评测</span> : null}
-        </div>
-      ) : (
-        <div className="muted" style={{ marginTop: 10 }}>
-          本实验集未设置截止时间。
-        </div>
-      )}
+      <LabSetTimeBanner labSet={labSet} />
 
       <div className="card" style={{ marginTop: 16 }}>
         <div style={{ fontWeight: 900 }}>题目列表</div>
         <div className="muted" style={{ marginTop: 8 }}>
           最近提交与最高分来自你的提交记录；点击进入做题页。
+          {!canSubmit ? " · 当前不可提交评测" : null}
         </div>
         <div className="grid" style={{ marginTop: 12 }}>
           {(labSet.labs as LabRow[]).map((l) => {
             const p = progress[l.id];
-            const ac = p?.latestStatus === "ACCEPTED";
+            const ac = p?.passed === true;
             return (
               <div
                 key={l.id}

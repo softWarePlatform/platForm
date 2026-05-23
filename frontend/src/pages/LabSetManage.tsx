@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import LabProblemCreateModal from "../components/LabProblemCreateModal";
+import LabSetStudentSubmissionsModal from "../components/labs/LabSetStudentSubmissionsModal";
+import LabSetTitleInlineEdit from "../components/labs/LabSetTitleInlineEdit";
+import LabSetTimeBanner from "../features/labs/LabSetTimeBanner";
 
 function toLocalDatetimeValue(iso: string | null | undefined) {
   if (!iso) return "";
@@ -67,14 +70,45 @@ export default function LabSetManage() {
   const { courseId, labSetId } = useParams();
   const navigate = useNavigate();
   const [labSet, setLabSet] = useState<any>(null);
+  const [startLocal, setStartLocal] = useState("");
   const [dueLocal, setDueLocal] = useState("");
+  const [allowMakeup, setAllowMakeup] = useState(false);
+  const [makeupDueLocal, setMakeupDueLocal] = useState("");
+  const [outsideAccessMode, setOutsideAccessMode] = useState<"BLOCK" | "VIEW_ONLY">("BLOCK");
   const [err, setErr] = useState<string | null>(null);
   const [statsErr, setStatsErr] = useState<string | null>(null);
   const [stats, setStats] = useState<LabSetStatsDto | null>(null);
   const [progress, setProgress] = useState<StudentsProgressDto | null>(null);
-  const [savingDue, setSavingDue] = useState(false);
+  const [savingTime, setSavingTime] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editLabId, setEditLabId] = useState<string | null>(null);
+  const [judgeMode, setJudgeMode] = useState<"AUTO" | "MANUAL">("AUTO");
+  const [allowedLangs, setAllowedLangs] = useState<string[]>(["python", "javascript"]);
+  const [extInput, setExtInput] = useState(".py, .js, .java, .cpp, .c");
+  const [savingJudge, setSavingJudge] = useState(false);
+  const [studentModal, setStudentModal] = useState<{
+    userId: string;
+    name: string;
+  } | null>(null);
+
+  const syncTimeForm = useCallback((detail: any) => {
+    setStartLocal(toLocalDatetimeValue(detail?.startAt));
+    setDueLocal(toLocalDatetimeValue(detail?.dueAt));
+    setAllowMakeup(Boolean(detail?.allowMakeup));
+    setMakeupDueLocal(toLocalDatetimeValue(detail?.makeupDueAt));
+    setOutsideAccessMode(detail?.outsideAccessMode === "VIEW_ONLY" ? "VIEW_ONLY" : "BLOCK");
+    setJudgeMode(detail?.judgeMode === "MANUAL" ? "MANUAL" : "AUTO");
+    setAllowedLangs(
+      Array.isArray(detail?.allowedLanguages) && detail.allowedLanguages.length > 0
+        ? detail.allowedLanguages
+        : ["python", "javascript"],
+    );
+    setExtInput(
+      Array.isArray(detail?.allowedFileExtensions) && detail.allowedFileExtensions.length > 0
+        ? detail.allowedFileExtensions.join(", ")
+        : ".py, .js, .java, .cpp, .c",
+    );
+  }, []);
 
   const load = useCallback(async () => {
     setErr(null);
@@ -86,7 +120,7 @@ export default function LabSetManage() {
       const { data } = await api.get(`/courses/${courseId}/lab-sets/${labSetId}`);
       detail = data.labSet;
       setLabSet(detail);
-      setDueLocal(toLocalDatetimeValue(detail?.dueAt));
+      syncTimeForm(detail);
     } catch {
       setErr("无法加载（仅本课教师或管理员）");
       return;
@@ -101,7 +135,7 @@ export default function LabSetManage() {
     } catch {
       setStatsErr("汇总统计或学生进度加载失败（需教师/管理员权限）");
     }
-  }, [courseId, labSetId]);
+  }, [courseId, labSetId, syncTimeForm]);
 
   useEffect(() => {
     void load();
@@ -130,9 +164,18 @@ export default function LabSetManage() {
           <div className="muted">
             <Link to={`/courses/${courseId}`}>返回课程</Link>
           </div>
-          <h2 style={{ margin: "8px 0 0" }}>实验集管理 · {labSet.title}</h2>
+          <div className="muted" style={{ fontSize: 14, marginTop: 8 }}>
+            实验集管理
+          </div>
+          <LabSetTitleInlineEdit
+            courseId={courseId!}
+            labSetId={labSetId!}
+            title={labSet.title}
+            onRenamed={(newTitle) => setLabSet((prev: any) => ({ ...prev, title: newTitle }))}
+            onError={setErr}
+          />
           <div className="muted" style={{ marginTop: 8 }}>
-            题目列表、截止时间；新建/编辑题目（弹窗含 Markdown 预览，已发布题目可改题面）。
+            题目列表、时间窗与补交；新建/编辑题目（弹窗含 Markdown 预览，已发布题目可改题面）。
           </div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -180,6 +223,8 @@ export default function LabSetManage() {
       {err ? <div className="err" style={{ marginTop: 10 }}>{err}</div> : null}
       {statsErr ? <div className="err" style={{ marginTop: 10 }}>{statsErr}</div> : null}
 
+      {labSet.access ? <LabSetTimeBanner labSet={labSet} showAccessMode /> : null}
+
       <div className="card" style={{ marginTop: 14 }}>
         <div style={{ fontWeight: 900 }}>汇总统计 · 罚时规则</div>
         {!stats ? (
@@ -190,7 +235,7 @@ export default function LabSetManage() {
           <>
             <div className="muted" style={{ marginTop: 10, lineHeight: 1.55 }}>
               <div>
-                <span style={{ fontWeight: 700 }}>计时起点</span>：实验集创建时间{" "}
+                <span style={{ fontWeight: 700 }}>计时起点</span>：{" "}
                 {formatShortDateTime(stats.penaltyRule.startAt)}（{stats.penaltyRule.source}）。
               </div>
               <div style={{ marginTop: 6 }}>
@@ -290,7 +335,25 @@ export default function LabSetManage() {
                   return (
                     <tr key={s.user.id} style={{ borderBottom: "1px solid var(--border)" }}>
                       <td style={{ padding: "8px 6px", whiteSpace: "nowrap" }}>
-                        <div style={{ fontWeight: 600 }}>{s.user.name || "（未命名）"}</div>
+                        <button
+                          type="button"
+                          className="btn"
+                          style={{
+                            textAlign: "left",
+                            padding: "4px 8px",
+                            border: "none",
+                            background: "transparent",
+                            fontWeight: 600,
+                          }}
+                          onClick={() =>
+                            setStudentModal({
+                              userId: s.user.id,
+                              name: s.user.name || s.user.email || "学生",
+                            })
+                          }
+                        >
+                          {s.user.name || "（未命名）"}
+                        </button>
                         <div className="muted" style={{ fontSize: 12 }}>
                           {s.user.email || s.user.id.slice(0, 8)}
                         </div>
@@ -300,7 +363,7 @@ export default function LabSetManage() {
                       <td style={{ padding: "8px 6px", whiteSpace: "nowrap" }}>
                         {formatShortDateTime(s.lastSubmitAt)}
                       </td>
-                      {(labSet.labs as { id: string }[]).map((l) => {
+                      {(labSet.labs as { id: string; title: string }[]).map((l) => {
                         const cell = byLab.get(l.id);
                         if (!cell) return <td key={l.id} style={{ padding: "8px 6px" }}>—</td>;
                         const scorePart =
@@ -328,20 +391,25 @@ export default function LabSetManage() {
       </div>
 
       <div className="card" style={{ marginTop: 14 }}>
-        <div style={{ fontWeight: 900 }}>实验截止时间</div>
+        <div style={{ fontWeight: 900 }}>实验时间设置</div>
         <div className="muted" style={{ marginTop: 8 }}>
-          留空表示不限制；保存后对学生与教师提交均生效。
+          开始/截止时间控制正式提交窗口；补交须在截止后另设补交截止。留空表示该项不限制。
         </div>
         <form
-          className="row"
-          style={{ marginTop: 12, flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}
+          className="grid"
+          style={{ marginTop: 12, gap: 12, maxWidth: 520 }}
           onSubmit={async (e) => {
             e.preventDefault();
-            setSavingDue(true);
+            setSavingTime(true);
             setErr(null);
             try {
               await api.patch(`/courses/${courseId}/lab-sets/${labSetId}`, {
+                startAt: startLocal ? new Date(startLocal).toISOString() : null,
                 dueAt: dueLocal ? new Date(dueLocal).toISOString() : null,
+                allowMakeup,
+                makeupDueAt:
+                  allowMakeup && makeupDueLocal ? new Date(makeupDueLocal).toISOString() : null,
+                outsideAccessMode,
               });
               await load();
             } catch (e2: unknown) {
@@ -351,23 +419,140 @@ export default function LabSetManage() {
                   : null;
               setErr(msg ?? "保存失败");
             } finally {
-              setSavingDue(false);
+              setSavingTime(false);
             }
           }}
         >
           <div className="field" style={{ margin: 0 }}>
-            <label>截止时间</label>
+            <label>开始时间</label>
             <input
               type="datetime-local"
-              value={dueLocal}
-              onChange={(e) => setDueLocal(e.target.value)}
+              value={startLocal}
+              onChange={(e) => setStartLocal(e.target.value)}
             />
           </div>
-          <button className="btn" type="button" onClick={() => setDueLocal("")}>
-            清空
-          </button>
-          <button className="btn primary" type="submit" disabled={savingDue}>
-            {savingDue ? "保存中…" : "保存截止时间"}
+          <div className="field" style={{ margin: 0 }}>
+            <label>截止时间</label>
+            <input type="datetime-local" value={dueLocal} onChange={(e) => setDueLocal(e.target.value)} />
+          </div>
+          <label className="row" style={{ gap: 8, alignItems: "center", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={allowMakeup}
+              onChange={(e) => setAllowMakeup(e.target.checked)}
+            />
+            开放补交
+          </label>
+          {allowMakeup ? (
+            <div className="field" style={{ margin: 0 }}>
+              <label>补交截止时间</label>
+              <input
+                type="datetime-local"
+                value={makeupDueLocal}
+                onChange={(e) => setMakeupDueLocal(e.target.value)}
+              />
+            </div>
+          ) : null}
+          <div className="field" style={{ margin: 0 }}>
+            <label>窗口外访问（未开始 / 已截止且非补交时）</label>
+            <select
+              value={outsideAccessMode}
+              onChange={(e) => setOutsideAccessMode(e.target.value as "BLOCK" | "VIEW_ONLY")}
+            >
+              <option value="BLOCK">不可进入（阻断）</option>
+              <option value="VIEW_ONLY">可查看题面，不可提交</option>
+            </select>
+          </div>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                setStartLocal("");
+                setDueLocal("");
+                setAllowMakeup(false);
+                setMakeupDueLocal("");
+              }}
+            >
+              清空时间
+            </button>
+            <button className="btn primary" type="submit" disabled={savingTime}>
+              {savingTime ? "保存中…" : "保存时间设置"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="card" style={{ marginTop: 14 }}>
+        <div style={{ fontWeight: 900 }}>提交与批改设置</div>
+        <p className="muted" style={{ marginTop: 8, lineHeight: 1.55 }}>
+          学生以<strong>上传文件</strong>为主提交方式；可限制扩展名与语言。手动批改模式下提交后进入待批改，由教师打分。
+        </p>
+        <form
+          className="grid"
+          style={{ marginTop: 12, gap: 12, maxWidth: 520 }}
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setSavingJudge(true);
+            setErr(null);
+            try {
+              const exts = extInput
+                .split(/[,，\s]+/)
+                .map((x) => x.trim())
+                .filter(Boolean)
+                .map((x) => (x.startsWith(".") ? x : `.${x}`));
+              await api.patch(`/courses/${courseId}/lab-sets/${labSetId}`, {
+                judgeMode,
+                allowedLanguages: allowedLangs,
+                allowedFileExtensions: exts,
+              });
+              await load();
+            } catch (e2: unknown) {
+              const msg =
+                typeof e2 === "object" && e2 !== null && "response" in e2
+                  ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
+                  : null;
+              setErr(msg ?? "保存失败");
+            } finally {
+              setSavingJudge(false);
+            }
+          }}
+        >
+          <div className="field" style={{ margin: 0 }}>
+            <label>批改模式</label>
+            <select
+              value={judgeMode}
+              onChange={(e) => setJudgeMode(e.target.value as "AUTO" | "MANUAL")}
+            >
+              <option value="AUTO">自动评测（评测机）</option>
+              <option value="MANUAL">手动批改</option>
+            </select>
+          </div>
+          <div className="field" style={{ margin: 0 }}>
+            <label>允许语言（多选）</label>
+            <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+              {(["python", "javascript"] as const).map((lang) => (
+                <label key={lang} className="row" style={{ gap: 6, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={allowedLangs.includes(lang)}
+                    onChange={(e) => {
+                      setAllowedLangs((prev) =>
+                        e.target.checked ? [...prev, lang] : prev.filter((x) => x !== lang),
+                      );
+                    }}
+                  />
+                  {lang}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="field" style={{ margin: 0 }}>
+            <label>允许文件扩展名（逗号分隔）</label>
+            <input value={extInput} onChange={(e) => setExtInput(e.target.value)} />
+          </div>
+          <button className="btn primary" type="submit" disabled={savingJudge}>
+            {savingJudge ? "保存中…" : "保存提交设置"}
           </button>
         </form>
       </div>
@@ -437,6 +622,17 @@ export default function LabSetManage() {
         }}
         onCreated={() => void load()}
       />
+
+      {studentModal ? (
+        <LabSetStudentSubmissionsModal
+          open
+          courseId={courseId!}
+          labSetId={labSetId!}
+          userId={studentModal.userId}
+          studentName={studentModal.name}
+          onClose={() => setStudentModal(null)}
+        />
+      ) : null}
     </div>
   );
 }
