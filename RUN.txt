@@ -1,0 +1,165 @@
+在线教学与实训平台 — 运行说明
+=====================================
+
+环境要求：Node.js 20+（含 npm）、PostgreSQL、Redis。
+日常开发无需构建 Docker 镜像，也无需执行下文「附录 A」中的 Docker 全栈。
+
+-------------------------------------------------------------------------------
+一、本地开发（主流程，推荐）
+-------------------------------------------------------------------------------
+
+0）首次：安装依赖
+
+   在项目根目录 platForm 执行：
+
+   npm install
+   npm run install:all
+
+   （会安装根目录的 concurrently，以及 backend / frontend / judge-worker 各自依赖。）
+
+1）准备 PostgreSQL 与 Redis（任选其一）
+
+   · 本机安装：在 Windows 安装 PostgreSQL、Redis（或 Memurai 等兼容实现），创建数据库
+     teaching_platform，用户名密码与下文 DATABASE_URL 一致。
+
+   · 仅当本机能从 Docker Hub 拉镜像时，可用：docker compose up -d db redis
+     本项目的 Postgres 映射为宿主机 5433→容器 5432，不占 5432，可与 openGauss 等并存。
+     （拉不动镜像时不要用 Docker，请用本机或云数据库。）
+
+2）后端环境变量
+
+   复制 backend/.env.example 为 backend/.env，至少配置：
+
+   DATABASE_URL   指向你的 PostgreSQL
+   REDIS_URL      一般为 redis://127.0.0.1:6379
+   JWT_SECRET     本地可任意长随机字符串
+
+   说明：后端已使用 dotenv，npm run dev 时会自动读取 backend/.env。
+
+   练习「文档 AI 识题」与作业批改使用同一套 backend/.env 大模型配置，无需单独设置。
+
+3）数据库迁移与演示数据
+
+   cd backend
+   npx prisma migrate deploy
+   npx prisma generate
+   npm run db:seed
+
+   docker compose up -d db redis
+   cd backend
+   npx prisma migrate deploy
+   npx prisma generate
+   npm run db:seed
+   cd ..
+   npm run dev
+   若 db:seed 报 Unknown argument `courseCode` 等：说明 Prisma Client 与 schema 不同步，先执行
+   npx prisma generate（改 schema 或拉代码后都应执行一次），再 npm run db:seed。
+
+   练习模块：迁移 20260520120000_practice_module 会创建题库/练习会话等表；seed 为「程序设计基础」
+   课程注入演示题。登录学生后进入课程 → 练习，可智能组卷/按标签/错题/自定义练习。
+
+   演示账号见终端输出；管理员 admin@demo.local，教师 teacher@demo.local，学生 student@demo.local、
+   li@demo.local、wang@demo.local，密码均为 Demo123456。
+
+4）一键启动前端 + 后端（在项目根目录 platForm，勿在子目录）
+
+   npm run dev
+
+   浏览器访问 http://localhost:5173（Vite 会把 /api 代理到本机 3000 端口后端）。
+
+   也可分两个终端：cd backend && npm run dev 与 cd frontend && npm run dev。
+
+   【若浏览器登录时报错，且终端出现 http proxy error / ECONNREFUSED 127.0.0.1:3000】
+   含义：前端在跑，但本机 3000 上没有 API（后端未监听或已崩溃退出）。
+   处理：看同一窗口里带 [api] 前缀的日志是否有报错（常见：连不上数据库 P1001、端口被占用）。
+   单独验证后端：另开终端执行 cd backend && npm run dev，应看到监听成功；再访问
+   http://127.0.0.1:3000/health/live 应返回 JSON。确认 PostgreSQL（如 Docker 的 db 已起、.env 端口为 5433）
+   与 Redis 已启动后再 npm run dev。
+
+5）自动评测（提交实验代码时需要）
+
+   需本机 Redis 已启动，并运行评测 Worker（与后端共用 backend/.env 中的 DATABASE_URL、REDIS_URL）：
+
+   npm run dev:full
+
+   或另开终端：npm run dev:worker
+
+   若只浏览页面、不点「提交评测」，可只跑第 4 步（不启 Worker）。
+
+根目录其它命令：
+
+   npm run db:migrate   等价于在 backend 执行 prisma migrate deploy
+   npm run db:seed      等价于在 backend 执行 prisma db seed
+
+-------------------------------------------------------------------------------
+二、支撑约 1000 人同时在线的工程要点（设计说明）
+-------------------------------------------------------------------------------
+
+   - Nginx 入口、无状态 API、JWT，便于横向扩展 API 实例。
+   - 自动评测走 Redis + BullMQ，评测与 Web 解耦，可独立扩 judge-worker。
+   - PostgreSQL 持久化；需要时可加 Redis 缓存层。
+   - 安全基线：API 已启用 rate-limit、基础安全响应头（helmet）、请求体大小限制、请求 ID 回传。
+   - 健康检查：/health/live（存活）、/health/ready（DB+Redis 就绪）。
+
+三、非功能验证（本地）
+-------------------------------------------------------------------------------
+
+   1) 可用性检查：
+      打开 http://127.0.0.1:3000/health/live 与 /health/ready，应返回 ok=true。
+
+   2) 基础压测（冒烟）：
+      在项目根目录执行：
+      npm run perf:smoke
+
+      可通过环境变量调整：
+      CONCURRENCY=100 REQUESTS=2000 TARGET_URL=http://127.0.0.1:3000/health/ready npm run perf:smoke
+
+      输出会给出吞吐 req/s，用于和你的机器资源做横向扩容估算。
+
+-------------------------------------------------------------------------------
+附录 A：Docker 全栈（可选，非课程作业必做）
+-------------------------------------------------------------------------------
+
+   用途：在单机上用 Nginx + 容器模拟「上线」部署（访问 http://localhost 80 端口）。
+   数据库：宿主机连接使用 localhost:5433（compose 内服务名仍为 db:5432）。
+   若本机无法从 Docker Hub 拉镜像，请直接跳过本附录，只使用上文「一、本地开发」。
+
+   docker compose build
+   docker compose up -d
+
+   扩容示例：docker compose up -d --scale api=3 --scale judge-worker=4
+
+-------------------------------------------------------------------------------
+附录 B：Docker 拉镜像超时 / auth.docker.io 失败
+-------------------------------------------------------------------------------
+
+   多为网络或 IPv6 问题。可尝试：镜像加速、代理、手机热点、或完全不用 Docker，仅按「一」用本机数据库 +
+   npm 运行。
+
+-------------------------------------------------------------------------------
+附录 C：API 容器连接「宿主机上的 openGauss / Postgres」（不抢 5432 上的第二个库容器）
+-------------------------------------------------------------------------------
+
+   场景：本机已有 openGauss（或 platform-postgres）把 5432 映射到宿主机，不想再起 docker-compose.yml
+   里的 db 服务，以免端口或习惯冲突。
+
+   1）先启动你的 openGauss 容器，保证在 Windows 上可通过 127.0.0.1:5432 连上（或你映射的其它宿主机端口）。
+
+   2）在 backend/.env 里把数据库主机写成容器能访问的宿主机地址：
+      DATABASE_URL=postgresql://用户名:密码@host.docker.internal:5432/数据库名?schema=public
+      （若 openGauss 映射的是 5433:5432，则把上面的 5432 改成 5433。）
+
+   3）在项目根目录执行（用 backend/.env 做变量替换）：
+      docker compose -f docker-compose.host-db.yml --env-file backend/.env up -d --build
+
+   启动后 API 暴露在 http://127.0.0.1:3000 ；评测依赖本 compose 内的 Redis。
+
+   兼容说明：本项目 Prisma 面向 PostgreSQL。openGauss 仅「兼容」PG 协议，迁移与运行时若报错，请使用本仓库
+   docker-compose.yml 中的官方 Postgres（默认已映射到宿主机 5433，与 5432 上的库并存）。
+
+-------------------------------------------------------------------------------
+安全提示
+-------------------------------------------------------------------------------
+
+   评测 Worker 在容器或本机中执行学生代码，属于教学演示级隔离；面向公网或多租户生产环境时请使用更强沙箱
+   （独立容器 per job、cgroup、网络隔离等）。
