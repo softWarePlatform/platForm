@@ -1646,3 +1646,626 @@ a.btn.primary:visited {
   background: #ecfdf5;
   color: #047857;
 }
+
+.lab-attachments__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lab-attachments__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.lab-attachments__link {
+  font-weight: 600;
+  color: var(--brand-dark);
+}
+
+.lab-status--ok {
+  color: var(--ok, #3fb950);
+}
+
+.lab-status--warn {
+  color: #b45309;
+}
+
+.lab-status--pending {
+  color: var(--brand);
+}
+
+.lab-status--muted {
+  color: var(--muted);
+}
+
+.lab-status--default {
+  color: inherit;
+}
+
+.lab-judge-timer {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+}
+
+.lab-judge-timer--warn {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.lab-judge-timer__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.lab-judge-timer__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #93c5fd;
+  border-top-color: var(--brand, #2563eb);
+  border-radius: 50%;
+  animation: lab-judge-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes lab-judge-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lab-judge-timer__bar {
+  margin-top: 10px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  overflow: hidden;
+}
+
+.lab-judge-timer__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand, #2563eb);
+  transition: width 0.3s ease;
+}
+
+.lab-judge-timer--warn .lab-judge-timer__fill {
+  background: #d97706;
+}
+
+.lab-judge-timer__hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ---------- 实验学习情况（课程 → 作业横条 → 题目行） ---------- */
+
+.lab-explorer {
+  margin-top: 4px;
+  max-width: 920px;
+}
+
+.lab-explorer-panel {
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #fff;
+  margin-bottom: 16px;
+}
+
+.lab-explorer-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.lab-explorer-desc {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.lab-explorer-loading {
+  padding: 40px 0;
+  text-align: center;
+}
+
+.lab-explorer-empty {
+  margin-top: 8px;
+}
+
+.lab-explorer-foot {
+  margin-top: 20px;
+  font-size: 13px;
+}
+
+.lab-explorer-banner-wrap {
+  margin-bottom: 14px;
+}
+
+.lab-explorer-banner-wrap > div {
+  margin-top: 0 !important;
+}
+
+.lab-explorer-crumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.lab-explorer-crumb__sep {
+  margin: 0 8px;
+  color: #cbd5e1;
+}
+
+.lab-explorer-crumb__link {
+  color: var(--brand-dark);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.lab-explorer-crumb__link:hover {
+  text-decoration: underline;
+}
+
+.lab-explorer-crumb__current {
+  color: var(--muted);
+}
+
+.lab-explorer-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.lab-explorer-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lab-explorer-legend__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.lab-explorer-legend__dot--gray {
+  background: #94a3b8;
+}
+
+.lab-explorer-legend__dot--yellow {
+  background: #eab308;
+}
+
+.lab-explorer-legend__dot--green {
+  background: #22c55e;
+}
+
+.lab-explorer-legend__dot--red {
+  background: #ef4444;
+}
+
+/* 轻量 Q 弹：用于横条、题目行、按钮 */
+.lab-pressable {
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.45, 0.64, 1),
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.lab-pressable:hover {
+  transform: translateY(-1px);
+}
+
+.lab-pressable:active {
+  transform: scale(0.985);
+  transition-duration: 0.1s;
+}
+
+/* 每次作业 — 横条 */
+.lab-assign-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lab-assign-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  padding: 14px 16px 14px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.lab-assign-bar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 12px 0 0 12px;
+}
+
+.lab-assign-bar--gray::before {
+  background: #94a3b8;
+}
+
+.lab-assign-bar--yellow::before {
+  background: #eab308;
+}
+
+.lab-assign-bar--green::before {
+  background: #22c55e;
+}
+
+/* 全部 AC：整圈 3px 五彩渐变流光边框 */
+@property --lab-ring-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.lab-assign-bar-shimmer {
+  --lab-ring-angle: 0deg;
+  position: relative;
+  border-radius: 12px;
+  padding: 3px;
+  overflow: hidden;
+  isolation: isolate;
+  background: conic-gradient(
+    from var(--lab-ring-angle),
+    #c084fc,
+    #a855f7,
+    #818cf8,
+    #60a5fa,
+    #38bdf8,
+    #22d3ee,
+    #f472b6,
+    #ec4899,
+    #f9a8d4,
+    #e879f9,
+    #c084fc
+  );
+  animation: lab-assign-ring-flow 20s linear infinite;
+  box-shadow: 0 2px 12px rgba(129, 140, 248, 0.12);
+}
+
+@keyframes lab-assign-ring-flow {
+  to {
+    --lab-ring-angle: 360deg;
+  }
+}
+
+/* 不支持 @property 时：旋转渐变层 */
+@supports not (background: conic-gradient(from var(--lab-ring-angle), red, blue)) {
+  .lab-assign-bar-shimmer {
+    animation: none;
+    padding: 3px;
+    background: #e8ecf4;
+  }
+
+  .lab-assign-bar-shimmer::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 240%;
+    height: 240%;
+    margin: -120% 0 0 -120%;
+    background: conic-gradient(
+      from 0deg,
+      #c084fc,
+      #818cf8,
+      #60a5fa,
+      #38bdf8,
+      #f472b6,
+      #ec4899,
+      #f9a8d4,
+      #e879f9,
+      #c084fc
+    );
+    animation: lab-assign-ring-spin 20s linear infinite;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  @keyframes lab-assign-ring-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+.lab-assign-bar-shimmer .lab-assign-bar {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  border: none;
+  box-shadow: none;
+  background: #fff;
+  border-radius: 9px;
+}
+
+.lab-assign-bar-shimmer .lab-assign-bar--all-ac::before {
+  display: none;
+}
+
+.lab-assign-bar-shimmer .lab-assign-bar__score {
+  color: #6d28d9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab-assign-bar-shimmer {
+    animation: none;
+    background: conic-gradient(
+      from 0deg,
+      #c084fc,
+      #60a5fa,
+      #38bdf8,
+      #f472b6,
+      #e879f9,
+      #c084fc
+    );
+  }
+
+  .lab-assign-bar-shimmer::before {
+    display: none;
+  }
+}
+
+.lab-assign-bar:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+}
+
+.lab-assign-bar-shimmer .lab-assign-bar:hover {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.lab-assign-bar-shimmer:hover {
+  box-shadow: 0 4px 16px rgba(129, 140, 248, 0.2);
+}
+
+.lab-assign-bar__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.lab-assign-bar__title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lab-assign-bar__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.lab-assign-bar__meta {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.lab-assign-bar__dot {
+  opacity: 0.5;
+}
+
+.lab-assign-bar__progress {
+  margin-top: 10px;
+  height: 4px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.lab-assign-bar__progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #60a5fa, var(--brand));
+  transition: width 0.25s ease;
+}
+
+.lab-assign-bar--green .lab-assign-bar__progress-fill {
+  background: linear-gradient(90deg, #4ade80, #16a34a);
+}
+
+.lab-assign-bar--yellow .lab-assign-bar__progress-fill {
+  background: linear-gradient(90deg, #fde047, #eab308);
+}
+
+.lab-assign-bar__side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.lab-assign-bar__score {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  min-width: 2ch;
+  text-align: right;
+  letter-spacing: -0.03em;
+}
+
+.lab-assign-bar__chevron {
+  font-size: 22px;
+  font-weight: 300;
+  color: #94a3b8;
+  line-height: 1;
+}
+
+.lab-status-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.lab-status-pill--gray {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.lab-status-pill--yellow {
+  color: #a16207;
+  background: #fef9c3;
+}
+
+.lab-status-pill--green {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.lab-status-pill--red {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+/* 题目 — 行列表 */
+.lab-problem-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lab-problem-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.lab-problem-row:hover {
+  border-color: #c7d2fe;
+  background: #fafbff;
+}
+
+.lab-problem-row__badge {
+  flex-shrink: 0;
+  min-width: 40px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 8px;
+  border-radius: 8px;
+  letter-spacing: 0.04em;
+}
+
+.lab-problem-row__badge--gray {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+.lab-problem-row__badge--green {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.lab-problem-row__badge--red {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.lab-problem-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lab-problem-row__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lab-problem-row__lang {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.lab-problem-row__side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.lab-problem-row__score {
+  font-size: 15px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.lab-problem-row__chevron {
+  font-size: 20px;
+  color: #94a3b8;
+  font-weight: 300;
+}
+
+.course-dash-card__title {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.course-dash-card__sub {
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.course-dash-card__progress {
+  margin-top: 12px;
+}

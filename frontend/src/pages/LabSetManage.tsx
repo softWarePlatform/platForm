@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import LabProblemCreateModal from "../components/LabProblemCreateModal";
 import LabSetStudentSubmissionsModal from "../components/labs/LabSetStudentSubmissionsModal";
+import LabSetDiscussionPanel from "../components/labs/LabSetDiscussionPanel";
 import LabSetTitleInlineEdit from "../components/labs/LabSetTitleInlineEdit";
 import LabSetTimeBanner from "../features/labs/LabSetTimeBanner";
 
@@ -85,6 +86,8 @@ export default function LabSetManage() {
   const [judgeMode, setJudgeMode] = useState<"AUTO" | "MANUAL">("AUTO");
   const [allowedLangs, setAllowedLangs] = useState<string[]>(["python", "javascript"]);
   const [extInput, setExtInput] = useState(".py, .js, .java, .cpp, .c");
+  const [maxReturnCount, setMaxReturnCount] = useState<string>("");
+  const [studentSort, setStudentSort] = useState<"name" | "score">("name");
   const [savingJudge, setSavingJudge] = useState(false);
   const [studentModal, setStudentModal] = useState<{
     userId: string;
@@ -98,6 +101,11 @@ export default function LabSetManage() {
     setMakeupDueLocal(toLocalDatetimeValue(detail?.makeupDueAt));
     setOutsideAccessMode(detail?.outsideAccessMode === "VIEW_ONLY" ? "VIEW_ONLY" : "BLOCK");
     setJudgeMode(detail?.judgeMode === "MANUAL" ? "MANUAL" : "AUTO");
+    setMaxReturnCount(
+      detail?.maxReturnCount != null && detail.maxReturnCount !== ""
+        ? String(detail.maxReturnCount)
+        : "",
+    );
     setAllowedLangs(
       Array.isArray(detail?.allowedLanguages) && detail.allowedLanguages.length > 0
         ? detail.allowedLanguages
@@ -297,7 +305,16 @@ export default function LabSetManage() {
       </div>
 
       <div className="card" style={{ marginTop: 14 }}>
-        <div style={{ fontWeight: 900 }}>学生完成情况 / 罚时</div>
+        <div className="row spread" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+          <div style={{ fontWeight: 900 }}>学生完成情况 / 罚时</div>
+          <label className="row" style={{ gap: 6, fontSize: 13 }}>
+            排序
+            <select value={studentSort} onChange={(e) => setStudentSort(e.target.value as "name" | "score")}>
+              <option value="name">按姓名</option>
+              <option value="score">按平均分</option>
+            </select>
+          </label>
+        </div>
         {!progress ? (
           <div className="muted" style={{ marginTop: 10 }}>
             {statsErr ? null : "加载中…"}
@@ -330,7 +347,18 @@ export default function LabSetManage() {
                 </tr>
               </thead>
               <tbody>
-                {progress.students.map((s) => {
+                {[...progress.students]
+                  .sort((a, b) => {
+                    if (studentSort !== "score") {
+                      return (a.user.name ?? "").localeCompare(b.user.name ?? "");
+                    }
+                    const avg = (s: typeof a) => {
+                      const scores = s.labs.map((x) => x.bestScore).filter((x) => x != null) as number[];
+                      return scores.length ? scores.reduce((p, c) => p + c, 0) / scores.length : -1;
+                    };
+                    return avg(b) - avg(a);
+                  })
+                  .map((s) => {
                   const byLab = new Map(s.labs.map((x) => [x.labId, x]));
                   return (
                     <tr key={s.user.id} style={{ borderBottom: "1px solid var(--border)" }}>
@@ -403,6 +431,24 @@ export default function LabSetManage() {
             setSavingTime(true);
             setErr(null);
             try {
+              const newDue = dueLocal ? new Date(dueLocal) : null;
+              const oldDue = labSet?.dueAt ? new Date(labSet.dueAt) : null;
+              if (
+                newDue &&
+                oldDue &&
+                !Number.isNaN(newDue.getTime()) &&
+                !Number.isNaN(oldDue.getTime()) &&
+                newDue.getTime() < oldDue.getTime()
+              ) {
+                if (
+                  !confirm(
+                    "你将提前实验截止时间，可能影响学生提交计划。确定继续？",
+                  )
+                ) {
+                  setSavingTime(false);
+                  return;
+                }
+              }
               await api.patch(`/courses/${courseId}/lab-sets/${labSetId}`, {
                 startAt: startLocal ? new Date(startLocal).toISOString() : null,
                 dueAt: dueLocal ? new Date(dueLocal).toISOString() : null,
@@ -505,6 +551,8 @@ export default function LabSetManage() {
                 judgeMode,
                 allowedLanguages: allowedLangs,
                 allowedFileExtensions: exts,
+                maxReturnCount:
+                  maxReturnCount.trim() === "" ? null : Number(maxReturnCount.trim()),
               });
               await load();
             } catch (e2: unknown) {
@@ -550,6 +598,17 @@ export default function LabSetManage() {
           <div className="field" style={{ margin: 0 }}>
             <label>允许文件扩展名（逗号分隔）</label>
             <input value={extInput} onChange={(e) => setExtInput(e.target.value)} />
+          </div>
+          <div className="field" style={{ margin: 0 }}>
+            <label>最大打回次数（留空不限制）</label>
+            <input
+              type="number"
+              min={0}
+              max={20}
+              placeholder="例如 3"
+              value={maxReturnCount}
+              onChange={(e) => setMaxReturnCount(e.target.value)}
+            />
           </div>
           <button className="btn primary" type="submit" disabled={savingJudge}>
             {savingJudge ? "保存中…" : "保存提交设置"}
@@ -633,6 +692,16 @@ export default function LabSetManage() {
           onClose={() => setStudentModal(null)}
         />
       ) : null}
+
+      <div className="card" style={{ marginTop: 14 }}>
+        <div style={{ fontWeight: 900 }}>实验集讨论</div>
+        <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+          本实验集通用答疑区；单题讨论请进入对应题目页。
+        </p>
+        <div style={{ marginTop: 12 }}>
+          <LabSetDiscussionPanel courseId={courseId!} labSetId={labSetId!} />
+        </div>
+      </div>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
 import { readStoredFileAbs, saveSubmissionFile } from "./uploads.js";
 import { canBrowseAt, canSubmitAt } from "./lab-set-status.js";
 import { labSetJudgeSelect } from "./lab-set-status.js";
+import { assertReturnQuota } from "./lab-return.js";
 
 const labSetAccessSelect = {
   id: true,
@@ -88,6 +89,13 @@ export function getJudgeConfigFromLab(
   return resolveLabJudgeConfig(l, labSet);
 }
 
+async function checkReturnQuotaBeforeSubmit(
+  lab: NonNullable<Awaited<ReturnType<typeof loadLabForSubmit>>>,
+  userId: string,
+): Promise<void> {
+  await assertReturnQuota(lab.id, userId, lab.labSet.maxReturnCount);
+}
+
 export async function createCodeSubmission(opts: {
   labId: string;
   userId: string;
@@ -96,6 +104,8 @@ export async function createCodeSubmission(opts: {
   judgeConfig: LabJudgeConfig;
 }) {
   const { labId, userId, code, language, judgeConfig } = opts;
+  const lab = await loadLabForSubmit(labId);
+  if (lab) await checkReturnQuotaBeforeSubmit(lab, userId);
   if (judgeConfig.judgeMode === "MANUAL") {
     const data = {
       labId,
@@ -130,6 +140,9 @@ export async function createFileSubmission(opts: {
   judgeConfig: LabJudgeConfig;
 }) {
   const { labId, userId, language, fileName, fileBuf, judgeConfig } = opts;
+
+  const labRow = await loadLabForSubmit(labId);
+  if (labRow) await checkReturnQuotaBeforeSubmit(labRow, userId);
 
   if (!judgeConfig.allowedLanguages.includes(language)) {
     throw new Error("不允许的提交语言");

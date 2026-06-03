@@ -1,0 +1,13 @@
+{
+  "labId": "00000000-0000-4000-8000-000000000010",
+  "title": "实验一：标准输出",
+  "language": "javascript",
+  "cases": [
+    {
+      "input": "",
+      "expected": "Hello",
+      "hidden": false,
+      "weight": 1
+    }
+  ]
+}

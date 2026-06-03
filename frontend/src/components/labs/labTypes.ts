@@ -25,6 +25,7 @@ export type SubmissionRow = {
   status: string;
   score: number | null;
   createdAt: string;
+  returnReason?: string | null;
   submissionKind?: string;
   fileName?: string | null;
   language?: string | null;
@@ -47,5 +48,6 @@ export type SubmissionFeedback = {
     details?: TestCaseDetail[];
     last?: { testCaseId?: string; error?: string; stderr?: string } | null;
     note?: string | null;
+    error?: string | null;
   };
 };

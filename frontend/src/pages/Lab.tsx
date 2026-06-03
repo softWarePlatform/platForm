@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import LabAiPanel from "../components/labs/LabAiPanel";
 import LabDiscussionPanel from "../components/labs/LabDiscussionPanel";
 import LabSubmitPanel from "../components/labs/LabSubmitPanel";
+import LabAttachmentsPanel from "../components/labs/LabAttachmentsPanel";
 import LabSetTimeBanner from "../features/labs/LabSetTimeBanner";
 import type { LabDetail } from "../components/labs/labTypes";
 
@@ -140,6 +141,12 @@ export default function Lab() {
               <pre className="lab-code-block">{lab.starterCode}</pre>
             </div>
           ) : null}
+          <div style={{ marginTop: 16 }}>
+            <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>
+              附件资料
+            </div>
+            <LabAttachmentsPanel labId={labId} isTeacher={isTeacher} />
+          </div>
         </div>
 
         <div className="lab-pane-right card">

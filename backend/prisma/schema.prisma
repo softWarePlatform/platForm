@@ -2,6 +2,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+/** judge-worker 独立输出，避免与 API 争用 backend 下 query_engine DLL（Windows EPERM） */
+generator judge_worker {
+  provider = "prisma-client-js"
+  output   = "../../judge-worker/node_modules/.prisma/client"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -388,6 +394,8 @@ model LabSet {
   judgeMode           JudgeMode  @default(AUTO)
   /** 学生提交前可选语言列表 */
   allowedLanguages    String[]   @default(["python", "javascript"])
+  /** 打回次数上限；null 表示不限制 */
+  maxReturnCount      Int?
   createdAt   DateTime  @default(now())
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -483,6 +491,9 @@ model Submission {
   score           Float?
   resultJson      String?
   teacherComment  String?
+  returnReason    String?
+  returnCount     Int              @default(0)
+  returnedAt      DateTime?
   gradedById      String?
   gradedAt        DateTime?
   createdAt       DateTime         @default(now())

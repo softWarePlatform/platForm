@@ -28,6 +28,7 @@ export const labSetJudgeSelect = {
   judgeMode: true,
   allowedLanguages: true,
   allowedFileExtensions: true,
+  maxReturnCount: true,
 } as const;
 
 export const labSetDetailSelect = {
@@ -318,6 +319,19 @@ export function countAcceptedLabsInSet(
       .map((s) => s.labId),
   );
   return labIds.filter((id) => ac.has(id)).length;
+}
+
+/** 至少提交过一次（任意状态）的题目数 */
+export function countAttemptedLabsInSet(
+  labIds: string[],
+  submissions: Array<{ labId: string; userId: string; status: string }>,
+  userId: string,
+): number {
+  if (labIds.length === 0) return 0;
+  const tried = new Set(
+    submissions.filter((s) => s.userId === userId && labIds.includes(s.labId)).map((s) => s.labId),
+  );
+  return tried.size;
 }
 
 /** 选课学生中集内全部 AC 的人数（与 stats.fullySolvedStudentCount 一致） */

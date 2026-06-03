@@ -62,6 +62,61 @@ async function canDiscussLab(userId: string, role: string, labId: string) {
   return { ok: true as const, lab, course: lab.course, isTeacher: false };
 }
 
+async function canDiscussLabSet(
+  userId: string,
+  role: string,
+  courseId: string,
+  labSetId: string,
+) {
+  const labSet = await prisma.labSet.findFirst({
+    where: { id: labSetId, courseId },
+    include: { course: true },
+  });
+  if (!labSet) return { ok: false as const, labSet: null, course: null, isTeacher: false };
+  if (role === "ADMIN" || labSet.course.teacherId === userId) {
+    return { ok: true as const, labSet, course: labSet.course, isTeacher: true };
+  }
+  const en = await prisma.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+  });
+  if (!en) return { ok: false as const, labSet, course: labSet.course, isTeacher: false };
+  return { ok: true as const, labSet, course: labSet.course, isTeacher: false };
+}
+
+function mapDiscussionPosts(
+  posts: DiscussionPostListItem[],
+  teacherId: string,
+  viewerId: string,
+) {
+  return posts.map((p) => {
+    const isTeacherAuthor = p.user.id === teacherId;
+    return {
+      id: p.id,
+      title: p.title,
+      body: p.body.slice(0, 200),
+      pinned: p.pinned,
+      resolved: p.resolved,
+      viewCount: p.viewCount,
+      commentCount: p._count.comments,
+      createdAt: p.createdAt,
+      author: displayAuthor(p, viewerId, isTeacherAuthor),
+    };
+  });
+}
+
+function sortDiscussionPosts(mapped: ReturnType<typeof mapDiscussionPosts>, sortKey: string) {
+  mapped.sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    if (sortKey === "new") {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    const hotA = a.viewCount + a.commentCount * 3;
+    const hotB = b.viewCount + b.commentCount * 3;
+    return hotB - hotA;
+  });
+  return mapped;
+}
+
 function displayAuthor(
   post: { anonymous: boolean; user: { id: string; name: string } },
   viewerId: string,
@@ -131,31 +186,10 @@ const discussionsRoutes: FastifyPluginAsync = async (app) => {
     })) as unknown as DiscussionPostListItem[];
 
     const teacherId = gate.course!.teacherId;
-    const mapped = posts.map((p) => {
-      const isTeacherAuthor = p.user.id === teacherId;
-      return {
-        id: p.id,
-        title: p.title,
-        body: p.body.slice(0, 200),
-        pinned: p.pinned,
-        resolved: p.resolved,
-        viewCount: p.viewCount,
-        commentCount: p._count.comments,
-        createdAt: p.createdAt,
-        author: displayAuthor(p, req.auth!.sub, isTeacherAuthor),
-      };
-    });
+    const mapped = mapDiscussionPosts(posts, teacherId, req.auth!.sub);
 
     const sortKey = q.sort ?? "hot";
-    mapped.sort((a, b) => {
-      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-      if (sortKey === "new") {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-      const hotA = a.viewCount + a.commentCount * 3;
-      const hotB = b.viewCount + b.commentCount * 3;
-      return hotB - hotA;
-    });
+    sortDiscussionPosts(mapped, sortKey);
 
     const hot = [...mapped]
       .filter((p) => !p.pinned)
@@ -548,6 +582,89 @@ const discussionsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** 课程成员列表（@ 选人） */
+  app.get("/courses/:courseId/lab-sets/:labSetId/discussions", { preHandler: authRequired() }, async (req, reply) => {
+    const { courseId, labSetId } = req.params as { courseId: string; labSetId: string };
+    const q = req.query as { q?: string; sort?: string };
+    const gate = await canDiscussLabSet(req.auth!.sub, req.auth!.role, courseId, labSetId);
+    if (!gate.labSet) return reply.code(404).send({ error: "实验集不存在" });
+    if (!gate.ok) return reply.code(403).send({ error: "未选课或无权访问" });
+
+    const where: {
+      labSetId: string;
+      labId: null;
+      OR?: Array<{ title?: object; body?: object; user?: object }>;
+    } = { labSetId, labId: null };
+
+    if (q.q?.trim()) {
+      const term = q.q.trim();
+      where.OR = [
+        { title: { contains: term, mode: "insensitive" } },
+        { body: { contains: term, mode: "insensitive" } },
+        { user: { name: { contains: term, mode: "insensitive" } } },
+      ];
+    }
+
+    const posts = (await prisma.discussionPost.findMany({
+      where,
+      include: postInclude as Prisma.DiscussionPostInclude,
+    })) as unknown as DiscussionPostListItem[];
+
+    const mapped = mapDiscussionPosts(posts, gate.course!.teacherId, req.auth!.sub);
+    sortDiscussionPosts(mapped, q.sort ?? "hot");
+
+    const hot = [...mapped]
+      .filter((p) => !p.pinned)
+      .sort((a, b) => b.viewCount + b.commentCount * 3 - (a.viewCount + a.commentCount * 3))
+      .slice(0, 5);
+
+    return { posts: mapped, hot };
+  });
+
+  app.post(
+    "/courses/:courseId/lab-sets/:labSetId/discussions",
+    { preHandler: authRequired() },
+    async (req, reply) => {
+      const { courseId, labSetId } = req.params as { courseId: string; labSetId: string };
+      const gate = await canDiscussLabSet(req.auth!.sub, req.auth!.role, courseId, labSetId);
+      if (!gate.labSet) return reply.code(404).send({ error: "实验集不存在" });
+      if (!gate.ok) return reply.code(403).send({ error: "未选课或无权访问" });
+
+      const schema = z.object({
+        title: z.string().min(1).max(200),
+        body: z.string().min(1).max(50_000),
+        anonymous: z.boolean().optional(),
+        mentionUserIds: z.array(z.string().uuid()).optional(),
+      });
+      const body = schema.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: "参数无效" });
+
+      const post = (await prisma.discussionPost.create({
+        data: {
+          courseId,
+          labSetId,
+          labId: null,
+          userId: req.auth!.sub,
+          title: body.data.title,
+          body: body.data.body,
+          anonymous: body.data.anonymous ?? false,
+        },
+        include: postInclude as Prisma.DiscussionPostInclude,
+      })) as unknown as DiscussionPostListItem;
+
+      const linkPath = `/courses/${courseId}/lab-sets/${labSetId}/discussions/${post.id}`;
+      if (body.data.mentionUserIds?.length) {
+        await notifyMentions({
+          mentionUserIds: body.data.mentionUserIds,
+          fromUserId: req.auth!.sub,
+          title: `讨论：${post.title}`,
+          linkPath,
+        });
+      }
+
+      return { post: { ...post, linkPath } };
+    },
+  );
+
   app.get("/courses/:courseId/discussion-members", { preHandler: authRequired() }, async (req, reply) => {
     const { courseId } = req.params as { courseId: string };
     const course = await prisma.course.findUnique({ where: { id: courseId } });

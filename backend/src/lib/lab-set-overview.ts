@@ -7,6 +7,7 @@ import {
   TEACHER_GROUP_ORDER,
   computeLabSetAccess,
   countAcceptedLabsInSet,
+  countAttemptedLabsInSet,
   countFullySolvedStudents,
   getLabSetSortDueMs,
   isLabSetCompleted,
@@ -21,6 +22,8 @@ import {
 export type LabSetOverviewProgress = {
   done: number;
   total: number;
+  /** 至少提交过一次的题目数（用于学习情况灰/黄/绿） */
+  attempted: number;
 };
 
 export type LabSetOverviewCompletion = {
@@ -142,6 +145,7 @@ function buildStudentCard(
   const total = labIds.length;
   const completed = isLabSetCompleted(labIds, submissions, userId);
   const done = countAcceptedLabsInSet(labIds, submissions, userId);
+  const attempted = countAttemptedLabsInSet(labIds, submissions, userId);
   const access = computeLabSetAccess({
     row: timeRow,
     isTeacher: false,
@@ -159,7 +163,7 @@ function buildStudentCard(
     problemCount: total,
     ...serializeLabSetTimes(set),
     access,
-    progress: { done, total },
+    progress: { done, total, attempted },
     completed,
     score: computeLabSetSetAverage(labIds, submissions, userId),
   };

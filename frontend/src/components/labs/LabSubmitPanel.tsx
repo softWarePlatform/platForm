@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api/client";
 import type { LabDetail, SubmissionFeedback, TestCaseDetail } from "./labTypes";
 
@@ -18,8 +18,13 @@ const TERMINAL_STATUSES = new Set([
   "PENDING_REVIEW",
 ]);
 
-function isJudgingStatus(status: string) {
-  return status === "PENDING" || status === "JUDGING";
+const JUDGE_TIMEOUT_SEC = 60;
+const JUDGE_POLL_MS = 800;
+
+function formatJudgeElapsed(sec: number) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m > 0 ? `${m}:${String(s).padStart(2, "0")}` : `${s} 秒`;
 }
 
 function sleep(ms: number) {
@@ -44,6 +49,33 @@ function statusLabel(status: string) {
     default:
       return status;
   }
+}
+
+function JudgeTimerPanel({ elapsedSec }: { elapsedSec: number }) {
+  const pct = Math.min(100, Math.round((elapsedSec / JUDGE_TIMEOUT_SEC) * 100));
+  const nearLimit = elapsedSec >= JUDGE_TIMEOUT_SEC - 10;
+
+  return (
+    <div className={`lab-judge-timer${nearLimit ? " lab-judge-timer--warn" : ""}`}>
+      <div className="lab-judge-timer__head">
+        <span className="lab-judge-timer__spinner" aria-hidden />
+        <span>
+          评测进行中 · 已等待 <strong>{formatJudgeElapsed(elapsedSec)}</strong>
+          <span className="muted"> / {JUDGE_TIMEOUT_SEC} 秒</span>
+        </span>
+      </div>
+      <div className="lab-judge-timer__bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <div className="lab-judge-timer__fill" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="muted lab-judge-timer__hint">
+        计时仅表示等待评测结果的时间；超过 {JUDGE_TIMEOUT_SEC} 秒将自动提示异常。
+      </p>
+    </div>
+  );
+}
+
+function isJudgingStatus(status: string) {
+  return status === "PENDING" || status === "JUDGING";
 }
 
 function TestCaseResultItem({ detail, index }: { detail: TestCaseDetail; index: number }) {
@@ -106,39 +138,94 @@ export default function LabSubmitPanel({
 }: Props) {
   const cfg = lab.judgeConfig;
   const pollAbortRef = useRef(false);
+  const judgeStartedAtRef = useRef<number | null>(null);
   const [language, setLanguage] = useState(cfg.allowedLanguages[0] ?? lab.language);
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [judging, setJudging] = useState(false);
+  const [judgingElapsedSec, setJudgingElapsedSec] = useState(0);
   const [err, setErr] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<SubmissionFeedback | null>(null);
+  const [pendingReturn, setPendingReturn] = useState<string | null>(null);
+
+  async function refreshFeedback(submissionId: string): Promise<SubmissionFeedback> {
+    const { data } = await api.get<SubmissionFeedback>(`/submissions/${submissionId}/feedback`);
+    setFeedback(data);
+    if (data.submission?.returnReason) {
+      setPendingReturn(data.submission.returnReason);
+    }
+    return data;
+  }
+
+  useEffect(() => {
+    void api
+      .get<{ submissions: { id: string; returnReason?: string | null }[] }>(
+        `/labs/${labId}/submissions`,
+      )
+      .then(({ data }) => {
+        const latest = data.submissions?.[0];
+        if (latest?.returnReason) {
+          setPendingReturn(latest.returnReason);
+          void refreshFeedback(latest.id).catch(() => undefined);
+        }
+      })
+      .catch(() => undefined);
+  }, [labId]);
 
   const examples = useMemo(() => lab.testCases ?? [], [lab.testCases]);
   const activeSub = feedback?.submission ?? null;
   const testDetails = feedback?.feedback?.details ?? [];
   const status = activeSub?.status ?? "";
   const isJudging = isJudgingStatus(status);
+  const showJudgeTimer = judging || isJudging;
 
-  async function refreshFeedback(submissionId: string): Promise<SubmissionFeedback> {
-    const { data } = await api.get<SubmissionFeedback>(`/submissions/${submissionId}/feedback`);
-    setFeedback(data);
-    return data;
-  }
+  useEffect(() => {
+    if (!showJudgeTimer) {
+      setJudgingElapsedSec(0);
+      judgeStartedAtRef.current = null;
+      return;
+    }
+
+    if (judgeStartedAtRef.current == null) {
+      judgeStartedAtRef.current = activeSub?.createdAt
+        ? new Date(activeSub.createdAt).getTime()
+        : Date.now();
+    }
+
+    const tick = () => {
+      const start = judgeStartedAtRef.current ?? Date.now();
+      const sec = Math.floor((Date.now() - start) / 1000);
+      setJudgingElapsedSec(sec);
+    };
+
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [showJudgeTimer, activeSub?.createdAt]);
+
+  const judgeTimeoutMessage =
+    `评测已超过 ${JUDGE_TIMEOUT_SEC} 秒未完成，可能 judge-worker 或 Redis 未启动（见 RUN.txt），请检查后重试。`;
 
   async function waitForResult(submissionId: string) {
     pollAbortRef.current = false;
-    const maxAttempts = 45;
-    const intervalMs = 800;
+    judgeStartedAtRef.current = Date.now();
+    setJudgingElapsedSec(0);
+    const deadline = Date.now() + JUDGE_TIMEOUT_SEC * 1000;
 
-    for (let i = 0; i < maxAttempts; i++) {
+    while (Date.now() < deadline) {
       if (pollAbortRef.current) return;
       const data = await refreshFeedback(submissionId);
       const nextStatus = data.submission?.status ?? "";
       if (TERMINAL_STATUSES.has(nextStatus)) return;
-      if (i < maxAttempts - 1) await sleep(intervalMs);
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) break;
+      await sleep(Math.min(JUDGE_POLL_MS, remaining));
     }
 
-    setErr("评测耗时较长，请确认 judge-worker 与 Redis 已启动（见 RUN.txt），或稍后重新提交。");
+    if (!pollAbortRef.current) {
+      pollAbortRef.current = true;
+      setErr(judgeTimeoutMessage);
+    }
   }
 
   async function submitFile() {
@@ -171,7 +258,10 @@ export default function LabSubmitPanel({
       }
 
       setJudging(true);
+      setErr(null);
+      judgeStartedAtRef.current = Date.now();
       await waitForResult(data.submissionId);
+      setPendingReturn(null);
     } catch (e: unknown) {
       const msg =
         typeof e === "object" && e !== null && "response" in e
@@ -192,6 +282,16 @@ export default function LabSubmitPanel({
         ；允许语言：{cfg.allowedLanguages.join("、")}；允许扩展名：
         {cfg.allowedFileExtensions.join(" ")}
       </div>
+
+      {pendingReturn ? (
+        <div className="practice-ai-notice" style={{ borderColor: "#fcd34d", background: "#fffbeb" }}>
+          <strong>教师已打回本次提交</strong>
+          <p style={{ margin: "6px 0 0", fontSize: 13 }}>{pendingReturn}</p>
+          <p className="muted" style={{ margin: "6px 0 0", fontSize: 12 }}>
+            请修改后重新上传提交。
+          </p>
+        </div>
+      ) : null}
 
       <section>
         <div style={{ fontWeight: 800, marginBottom: 8 }}>公开样例</div>
@@ -253,7 +353,7 @@ export default function LabSubmitPanel({
         {err ? <div className="err" style={{ marginTop: 8 }}>{err}</div> : null}
         <button
           type="button"
-          className="btn primary"
+          className="btn primary lab-pressable"
           style={{ marginTop: 12 }}
           disabled={submitting || judging || !canSubmit || !file}
           onClick={() => void submitFile()}
@@ -266,6 +366,8 @@ export default function LabSubmitPanel({
           </p>
         ) : null}
       </section>
+
+      {showJudgeTimer ? <JudgeTimerPanel elapsedSec={judgingElapsedSec} /> : null}
 
       {activeSub ? (
         <section>
@@ -301,11 +403,20 @@ export default function LabSubmitPanel({
           </div>
 
           {isJudging && testDetails.length === 0 ? (
-            <div className="muted" style={{ fontSize: 13 }}>评测进行中，请稍候…</div>
+            <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+              正在等待评测机返回结果，请查看上方计时条。
+            </p>
           ) : status === "PENDING_REVIEW" ? (
             <div className="muted" style={{ fontSize: 13 }}>已提交，等待教师批改。</div>
           ) : testDetails.length > 0 ? (
             testDetails.map((d, i) => <TestCaseResultItem key={d.testCaseId ?? i} detail={d} index={i} />)
+          ) : feedback?.feedback?.error ? (
+            <div className="err" style={{ fontSize: 13 }}>{feedback.feedback.error}</div>
+          ) : feedback?.feedback?.last?.stderr ? (
+            <div className="lab-tc-result-row">
+              <div className="muted">运行错误</div>
+              <pre className="lab-code-block">{feedback.feedback.last.stderr}</pre>
+            </div>
           ) : feedback?.feedback?.note ? (
             <div className="muted" style={{ fontSize: 13 }}>{feedback.feedback.note}</div>
           ) : (

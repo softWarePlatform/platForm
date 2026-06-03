@@ -21,6 +21,10 @@ import {
 import { SubmissionStatus, type Prisma } from "@prisma/client";
 import { readStoredFileAbs } from "../lib/uploads.js";
 import {
+  notifyLabSubmissionGraded,
+  notifyLabSubmissionReturned,
+} from "../lib/lab-notify.js";
+import {
   computeLabSetAccess,
   isLabSetCompleted,
   labSetJudgeSelect,
@@ -690,6 +694,71 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
         where: { id: submissionId },
         data: gradePatch,
       });
+
+      if (gradeStatus === SubmissionStatus.ACCEPTED || gradeStatus === SubmissionStatus.WRONG_ANSWER) {
+        await notifyLabSubmissionGraded({
+          userId: sub.userId,
+          labTitle: sub.lab.title,
+          courseId: sub.lab.courseId,
+          labId: sub.labId,
+          score: body.data.score,
+          labSetId: sub.lab.labSetId,
+        }).catch(() => undefined);
+      }
+
+      return { submission: updated };
+    },
+  );
+
+  /** 教师：打回重做 */
+  app.patch(
+    "/submissions/:submissionId/return",
+    { preHandler: authRequired("TEACHER", "ADMIN") },
+    async (req, reply) => {
+      const { submissionId } = req.params as { submissionId: string };
+      const schema = z.object({ returnReason: z.string().min(1).max(2000) });
+      const body = schema.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: "请填写打回原因" });
+
+      const sub = await prisma.submission.findUnique({
+        where: { id: submissionId },
+        include: { lab: { include: { course: true, labSet: true } } },
+      });
+      if (!sub) return reply.code(404).send({ error: "记录不存在" });
+      if (req.auth!.role !== "ADMIN" && sub.lab.course.teacherId !== req.auth!.sub) {
+        return reply.code(403).send({ error: "无权打回" });
+      }
+
+      const maxReturn = sub.lab.labSet.maxReturnCount;
+      if (maxReturn != null) {
+        const returnedCount = await prisma.submission.count({
+          where: { labId: sub.labId, userId: sub.userId, returnedAt: { not: null } },
+        });
+        if (returnedCount >= maxReturn) {
+          return reply.code(400).send({ error: `该学生已达最大打回次数（${maxReturn}）` });
+        }
+      }
+
+      const reason = body.data.returnReason.trim();
+      const updated = await prisma.submission.update({
+        where: { id: submissionId },
+        data: {
+          returnReason: reason,
+          returnedAt: new Date(),
+          returnCount: { increment: 1 },
+          status: SubmissionStatus.WRONG_ANSWER,
+        },
+      });
+
+      await notifyLabSubmissionReturned({
+        userId: sub.userId,
+        labTitle: sub.lab.title,
+        courseId: sub.lab.courseId,
+        labId: sub.labId,
+        reason,
+        labSetId: sub.lab.labSetId,
+      }).catch(() => undefined);
+
       return { submission: updated };
     },
   );
@@ -827,11 +896,13 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
           score: sub.score,
           createdAt: sub.createdAt,
           labId: sub.labId,
+          returnReason: sub.returnReason,
         },
         feedback: {
           details: masked,
           last: parsed?.last ?? null,
           note: parsed?.note ?? null,
+          error: typeof parsed?.error === "string" ? parsed.error : null,
         },
       };
     },

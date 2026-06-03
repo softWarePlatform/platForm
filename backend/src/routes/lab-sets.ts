@@ -6,6 +6,8 @@ import {
   WRONG_SUBMISSION_PENALTY_MINUTES,
   analyzeSubmissionsForLabSet,
 } from "../lib/lab-set-penalty.js";
+import { computeLabSetSetAverage } from "../lib/lab-grades.js";
+import { notifyLabSetPublished } from "../lib/lab-notify.js";
 import {
   computeLabSetAccess,
   getPenaltyStartMs,
@@ -34,6 +36,7 @@ const labSetTimePatchSchema = z
     judgeMode: z.enum(["AUTO", "MANUAL"]).optional(),
     allowedLanguages: z.array(z.enum(["javascript", "python"])).optional(),
     allowedFileExtensions: z.array(z.string().min(1).max(16)).optional(),
+    maxReturnCount: z.number().int().min(0).max(20).optional().nullable(),
   })
   .refine(
     (d) => {
@@ -320,6 +323,107 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
+  /** 学生：本集各题学习情况（灰/黄/绿、AC/WA 网格用） */
+  app.get(
+    "/courses/:courseId/lab-sets/:labSetId/my-progress",
+    { preHandler: authRequired() },
+    async (req, reply) => {
+      const { courseId, labSetId } = req.params as { courseId: string; labSetId: string };
+      const course = await prisma.course.findUnique({ where: { id: courseId } });
+      if (!course) return reply.code(404).send({ error: "课程不存在" });
+
+      const ok = await canAccessCourse(req.auth!.sub, req.auth!.role, courseId, course.teacherId);
+      if (!ok) return reply.code(403).send({ error: "未选课或无权访问" });
+
+      const row = await prisma.labSet.findFirst({
+        where: { id: labSetId, courseId },
+        select: labSetDetailSelect,
+      });
+      if (!row) return reply.code(404).send({ error: "实验集不存在" });
+
+      const privileged =
+        req.auth!.role === "ADMIN" || course.teacherId === req.auth!.sub;
+      const labIds = row.labs.map((l) => l.id);
+      let labSetCompleted = true;
+      if (!privileged && labIds.length > 0) {
+        const subs = await prisma.submission.findMany({
+          where: { userId: req.auth!.sub, labId: { in: labIds } },
+          select: { labId: true, userId: true, status: true },
+        });
+        labSetCompleted = isLabSetCompleted(labIds, subs, req.auth!.sub);
+      }
+
+      const access = computeLabSetAccess({
+        row: toLabSetTimeRow(row),
+        isTeacher: privileged,
+        labSetCompleted,
+      });
+
+      if (!privileged && !access.canBrowse) {
+        return reply.code(403).send({ error: "不在可访问时间内" });
+      }
+
+      const timeRow = toLabSetTimeRow(row);
+      const labTitles = new Map(row.labs.map((l) => [l.id, l.title]));
+      const submissions =
+        labIds.length === 0
+          ? []
+          : await prisma.submission.findMany({
+              where: { labId: { in: labIds }, userId: req.auth!.sub },
+              select: {
+                labId: true,
+                userId: true,
+                status: true,
+                score: true,
+                createdAt: true,
+              },
+            });
+
+      const analysis = analyzeSubmissionsForLabSet({
+        penaltyStartMs: getPenaltyStartMs(timeRow),
+        labIds,
+        labTitles,
+        submissions,
+        userId: req.auth!.sub,
+      });
+
+      const byLab = new Map(analysis.labs.map((l) => [l.labId, l]));
+
+      return {
+        labSet: {
+          id: row.id,
+          courseId: row.courseId,
+          title: row.title,
+          ...serializeLabSetTimes(row),
+          access,
+          score: computeLabSetSetAverage(labIds, submissions, req.auth!.sub),
+          completed: analysis.allSolved,
+          progress: {
+            done: analysis.labs.filter((l) => l.solved).length,
+            total: labIds.length,
+            attempted: analysis.labs.filter((l) => l.lastStatus !== "—").length,
+          },
+        },
+        labs: row.labs.map((lab) => {
+          const p = byLab.get(lab.id);
+          let gridStatus: "NONE" | "AC" | "WA" = "NONE";
+          if (p?.solved) gridStatus = "AC";
+          else if (p && p.lastStatus !== "—") gridStatus = "WA";
+
+          return {
+            id: lab.id,
+            title: lab.title,
+            language: lab.language,
+            gridStatus,
+            bestScore: p?.bestScore ?? null,
+            lastStatus: p?.lastStatus ?? "—",
+            lastSubmitAt: p?.lastSubmitAt ?? null,
+          };
+        }),
+      };
+    },
+  );
+
   /** 创建实验集 */
   app.post(
     "/courses/:courseId/lab-sets",
@@ -358,7 +462,15 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
             : {}),
           sortOrder: body.data.sortOrder ?? 0,
         },
+        include: { course: { select: { title: true } } },
       });
+
+      await notifyLabSetPublished({
+        courseId,
+        labSetId: created.id,
+        labSetTitle: created.title,
+        courseTitle: created.course.title,
+      }).catch(() => undefined);
 
       return reply.code(201).send({
         labSet: {
@@ -441,6 +553,9 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
             : {}),
           ...(body.data.allowedFileExtensions !== undefined
             ? { allowedFileExtensions: body.data.allowedFileExtensions }
+            : {}),
+          ...(body.data.maxReturnCount !== undefined
+            ? { maxReturnCount: body.data.maxReturnCount }
             : {}),
         },
         select: {
@@ -526,6 +641,8 @@ const labSetsRoutes: FastifyPluginAsync = async (app) => {
                 fileName: sub.fileName,
                 hasFile: Boolean(sub.fileStoredPath),
                 teacherComment: sub.teacherComment,
+                returnReason: sub.returnReason,
+                returnedAt: sub.returnedAt?.toISOString() ?? null,
                 createdAt: sub.createdAt,
                 gradedAt: sub.gradedAt,
               }

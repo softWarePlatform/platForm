@@ -78,13 +78,24 @@
 
 5）自动评测（提交实验代码时需要）
 
-   需本机 Redis 已启动，并运行评测 Worker（与后端共用 backend/.env 中的 DATABASE_URL、REDIS_URL）：
+   需本机 Redis 已启动，并运行评测 Worker（与后端共用 backend/.env 中的 DATABASE_URL、REDIS_URL）。
+   上传文件默认保存在 backend/uploads；Worker 已对齐该目录。若自定义 UPLOAD_DIR，请在 backend/.env
+   中设置且 backend 与 judge-worker 读取同一份 .env：
 
    npm run dev:full
 
    或另开终端：npm run dev:worker
 
    若只浏览页面、不点「提交评测」，可只跑第 4 步（不启 Worker）。
+
+   Windows 若 db:generate / dev:worker 报 EPERM（query_engine-windows.dll.node）：
+   - 原因：本机仍有 node 进程占用 judge-worker 的 Prisma 引擎 DLL。
+   - 处理（在 judge-worker 目录）：
+       npm run stop:worker
+       npm run db:generate
+       npm run dev
+   - 若 Client 已生成过，db:generate 失败也可直接 npm run dev（脚本会沿用已有 Client）。
+   - 日常 dev:worker 会自动跳过 generate，一般不必重复 db:generate。
 
 根目录其它命令：
 

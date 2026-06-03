@@ -1,0 +1,13 @@
+{
+  "labId": "00000000-0000-4000-8000-000000000012",
+  "title": "实验：整数输出",
+  "language": "python",
+  "cases": [
+    {
+      "input": "",
+      "expected": "42",
+      "hidden": false,
+      "weight": 1
+    }
+  ]
+}

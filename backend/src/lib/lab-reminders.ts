@@ -2,7 +2,6 @@ import type { FastifyBaseLogger } from "fastify";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
 
-/** 与 schema 对齐；避免 IDE 使用未 regenerate 的 Client 时报缺 delegate / 字段 */
 type LabReminderSentDelegate = {
   findUnique(args: {
     where: { labSetId_userId_kind: { labSetId: string; userId: string; kind: string } };
@@ -32,9 +31,15 @@ function labReminderNotificationData(input: {
 }
 
 export const LAB_REMINDER_TYPE = "LAB_REMINDER";
-export const REMINDER_LEAD_MS = 2 * 60 * 60 * 1000;
+/** 主界面待办横幅：截止前 24 小时 */
+export const REMINDER_BANNER_LEAD_MS = 24 * 60 * 60 * 1000;
+/** 站内信：截止前 1 小时 */
+export const REMINDER_NOTIFY_LEAD_MS = 60 * 60 * 1000;
 
-export type LabReminderKind = "BEFORE_START" | "BEFORE_END";
+export type LabReminderKind =
+  | "BEFORE_START"
+  | "BEFORE_END_24H"
+  | "BEFORE_END_1H";
 
 export type ActiveLabReminderDto = {
   kind: LabReminderKind;
@@ -57,11 +62,10 @@ type LabSetReminderRow = {
   course: { title: string };
 };
 
-/** 事件前 2 小时内且尚未到点 */
-export function isInLabReminderWindow(eventAt: Date, now: Date): boolean {
+export function isInLabReminderWindow(eventAt: Date, now: Date, leadMs: number): boolean {
   const t = eventAt.getTime();
   const n = now.getTime();
-  return n >= t - REMINDER_LEAD_MS && n < t;
+  return n >= t - leadMs && n < t;
 }
 
 function formatEventTime(d: Date): string {
@@ -84,6 +88,12 @@ export function buildLabReminderCopy(
     return {
       title: `实验即将开始：${labSet.title}`,
       body: `课程「${labSet.course.title}」的实验集「${labSet.title}」将于 ${when} 开始，请提前准备。`,
+    };
+  }
+  if (kind === "BEFORE_END_1H") {
+    return {
+      title: `实验即将截止（1 小时内）：${labSet.title}`,
+      body: `课程「${labSet.course.title}」的实验集「${labSet.title}」将于 ${when} 截止，请尽快完成提交。`,
     };
   }
   return {
@@ -115,24 +125,24 @@ function toActiveDto(
   };
 }
 
+/** 主界面横幅：开始前 24h、截止前 24h */
 export function collectActiveRemindersForLabSets(
   labSets: LabSetReminderRow[],
   now: Date,
 ): ActiveLabReminderDto[] {
   const out: ActiveLabReminderDto[] = [];
   for (const ls of labSets) {
-    if (ls.startAt && isInLabReminderWindow(ls.startAt, now)) {
+    if (ls.startAt && isInLabReminderWindow(ls.startAt, now, REMINDER_BANNER_LEAD_MS)) {
       out.push(toActiveDto(ls, "BEFORE_START", ls.startAt));
     }
-    if (ls.dueAt && isInLabReminderWindow(ls.dueAt, now)) {
-      out.push(toActiveDto(ls, "BEFORE_END", ls.dueAt));
+    if (ls.dueAt && isInLabReminderWindow(ls.dueAt, now, REMINDER_BANNER_LEAD_MS)) {
+      out.push(toActiveDto(ls, "BEFORE_END_24H", ls.dueAt));
     }
   }
   out.sort((a, b) => a.eventAt.localeCompare(b.eventAt));
   return out;
 }
 
-/** 学生主界面：当前仍在 2h 提醒窗内的实验集 */
 export async function getActiveLabRemindersForUser(
   userId: string,
   now = new Date(),
@@ -203,13 +213,11 @@ async function sendReminderIfNeeded(
   return true;
 }
 
-/** 扫描所有实验集，在 2h 窗口内为选课学生创建站内通知（去重） */
+/** 扫描：截止前 1 小时发站内信（去重） */
 export async function scanAndSendLabReminders(log?: FastifyBaseLogger): Promise<number> {
   const now = new Date();
   const labSets = await prisma.labSet.findMany({
-    where: {
-      OR: [{ startAt: { not: null } }, { dueAt: { not: null } }],
-    },
+    where: { dueAt: { not: null } },
     select: {
       id: true,
       courseId: true,
@@ -222,32 +230,19 @@ export async function scanAndSendLabReminders(log?: FastifyBaseLogger): Promise<
 
   let sent = 0;
   for (const ls of labSets) {
+    if (!ls.dueAt || !isInLabReminderWindow(ls.dueAt, now, REMINDER_NOTIFY_LEAD_MS)) continue;
+
     const enrollments = await prisma.enrollment.findMany({
       where: { courseId: ls.courseId },
       select: { userId: true },
     });
-    const userIds = enrollments.map((e) => e.userId);
-    if (userIds.length === 0) continue;
 
-    const tasks: Array<{ kind: LabReminderKind; eventAt: Date }> = [];
-    if (ls.startAt && isInLabReminderWindow(ls.startAt, now)) {
-      tasks.push({ kind: "BEFORE_START", eventAt: ls.startAt });
-    }
-    if (ls.dueAt && isInLabReminderWindow(ls.dueAt, now)) {
-      tasks.push({ kind: "BEFORE_END", eventAt: ls.dueAt });
-    }
-
-    for (const userId of userIds) {
-      for (const t of tasks) {
-        try {
-          const ok = await sendReminderIfNeeded(ls, userId, t.kind, t.eventAt);
-          if (ok) sent += 1;
-        } catch (err) {
-          log?.warn(
-            { err, labSetId: ls.id, userId, kind: t.kind },
-            "lab-reminder send failed",
-          );
-        }
+    for (const { userId } of enrollments) {
+      try {
+        const ok = await sendReminderIfNeeded(ls, userId, "BEFORE_END_1H", ls.dueAt);
+        if (ok) sent += 1;
+      } catch (err) {
+        log?.warn({ err, labSetId: ls.id, userId }, "lab-reminder send failed");
       }
     }
   }

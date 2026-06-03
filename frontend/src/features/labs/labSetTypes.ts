@@ -3,6 +3,7 @@ import type { LabSetAccess } from "./labSetAccess";
 export type LabSetOverviewProgress = {
   done: number;
   total: number;
+  attempted: number;
 };
 
 export type LabSetOverviewCompletion = {

@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { api } from "../../../api/client";
 import CreateLabSetModal from "../../../components/labs/CreateLabSetModal";
 import LabSetListPanel from "../../../features/labs/LabSetListPanel";
+import LabExplorerSets from "../../../features/labs/explorer/LabExplorerSets";
 import { useLabSetOverview } from "../../../features/labs/useLabSetOverview";
 import { useCourse } from "../CourseContext";
 import CourseSectionHead from "../CourseSectionHead";
 import type {
   LabSetOverviewGroup,
-  StudentLabSetOverviewCard,
   TeacherLabSetOverviewCard,
 } from "../../../features/labs/labSetTypes";
 
@@ -21,8 +21,6 @@ export default function CourseLabs() {
     setErr(overviewErr);
   }, [overviewErr, setErr]);
 
-  const studentGroups =
-    (data?.groups as LabSetOverviewGroup<StudentLabSetOverviewCard>[] | undefined) ?? [];
   const teacherGroups =
     (data?.groups as LabSetOverviewGroup<TeacherLabSetOverviewCard>[] | undefined) ?? [];
 
@@ -69,7 +67,7 @@ export default function CourseLabs() {
         description={
           isTeacher
             ? "按状态查看本课实验集与学生完成情况；可新建实验集、管理题目与评测配置。"
-            : "按状态查看本课实验集，进入实验集完成题目并提交评测。"
+            : "每次作业一行展示进度；点进作业查看各题 AC / WA。"
         }
       />
 
@@ -85,14 +83,7 @@ export default function CourseLabs() {
           onDelete={handleDelete}
         />
       ) : (
-        <LabSetListPanel
-          mode="student"
-          groups={studentGroups}
-          loading={loading}
-          err={overviewErr}
-          showCourseName={false}
-          emptyHint="暂无实验集，请等待教师发布。"
-        />
+        <LabExplorerSets embedded courseIdProp={courseId} setsLinkPrefix={`/courses/${courseId}/lab-sets`} />
       )}
 
       {isTeacher && courseId ? (

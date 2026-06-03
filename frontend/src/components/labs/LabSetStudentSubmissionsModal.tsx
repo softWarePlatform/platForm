@@ -11,6 +11,7 @@ type Problem = {
     fileName: string | null;
     hasFile: boolean;
     teacherComment: string | null;
+    returnReason: string | null;
   } | null;
 };
 
@@ -34,6 +35,7 @@ export default function LabSetStudentSubmissionsModal({
   const [problems, setProblems] = useState<Problem[]>([]);
   const [scores, setScores] = useState<Record<string, string>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
+  const [returnReasons, setReturnReasons] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,8 +56,28 @@ export default function LabSetStudentSubmissionsModal({
         }
         setScores(sc);
         setComments(cm);
+        const rr: Record<string, string> = {};
+        for (const p of data.problems ?? []) {
+          if (p.submission?.returnReason) rr[p.labId] = p.submission.returnReason;
+        }
+        setReturnReasons(rr);
       });
   }, [open, courseId, labSetId, userId]);
+
+  async function returnSubmission(submissionId: string, labId: string) {
+    const reason = returnReasons[labId]?.trim();
+    if (!reason) {
+      alert("请填写打回原因");
+      return;
+    }
+    setSaving(submissionId);
+    try {
+      await api.patch(`/submissions/${submissionId}/return`, { returnReason: reason });
+      alert("已打回，学生将收到通知");
+    } finally {
+      setSaving(null);
+    }
+  }
 
   if (!open) return null;
 
@@ -111,6 +133,11 @@ export default function LabSetStudentSubmissionsModal({
                       下载提交文件
                     </a>
                   ) : null}
+                  {p.submission.returnReason ? (
+                    <div className="practice-ai-notice" style={{ marginTop: 8 }}>
+                      已打回：{p.submission.returnReason}
+                    </div>
+                  ) : null}
                   <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
                     <input
                       type="number"
@@ -138,6 +165,23 @@ export default function LabSetStudentSubmissionsModal({
                       onClick={() => void grade(p.submission!.id, p.labId)}
                     >
                       保存打分
+                    </button>
+                    <input
+                      placeholder="打回原因"
+                      style={{ flex: 1, minWidth: 140 }}
+                      value={returnReasons[p.labId] ?? ""}
+                      onChange={(e) =>
+                        setReturnReasons((r) => ({ ...r, [p.labId]: e.target.value }))
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ color: "var(--danger)" }}
+                      disabled={saving === p.submission.id}
+                      onClick={() => void returnSubmission(p.submission!.id, p.labId)}
+                    >
+                      打回重做
                     </button>
                   </div>
                 </>

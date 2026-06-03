@@ -180,7 +180,7 @@ export default function App() {
           }
         />
         <Route
-          path="/my-labs"
+          path="/my-labs/*"
           element={
             <RequireRole roles={["STUDENT", "ADMIN"]}>
               <MyLabs />

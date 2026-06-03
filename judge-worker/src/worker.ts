@@ -12,7 +12,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { normalizeOutput, runCode, type RunnerLanguage } from "./runner.js";
 
-const UPLOAD_ROOT = process.env.UPLOAD_DIR ?? join(process.cwd(), "uploads");
+/** 与 backend 默认目录一致；worker 的 cwd 是 judge-worker，不能再用 process.cwd()/uploads */
+const UPLOAD_ROOT =
+  process.env.UPLOAD_DIR ?? join(resolve(__dirname, "../../backend/uploads"));
 
 const prisma = new PrismaClient({
   log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
