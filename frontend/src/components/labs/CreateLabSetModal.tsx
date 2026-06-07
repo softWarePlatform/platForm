@@ -87,17 +87,10 @@ export default function CreateLabSetModal({ open, onClose, onCreated, fixedCours
         <h3 id="create-lab-set-title" style={{ marginTop: 0 }}>
           新建实验集
         </h3>
-        <p className="muted" style={{ margin: "0 0 16px", lineHeight: 1.6 }}>
-          {inCourse ? "为本课程创建实验集，请填写标题。" : "先选择要布置实验的课程，再创建实验集。"}
-        </p>
-
         {loadingCourses ? (
           <div className="muted">加载课程…</div>
         ) : !inCourse && courses.length === 0 ? (
           <div>
-            <div className="muted" style={{ marginBottom: 12 }}>
-              暂无可用课程。请先在教学台创建课程。
-            </div>
             <Link className="btn primary" to="/teaching" onClick={onClose}>
               前往教学台
             </Link>

@@ -1,5 +1,4 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import CourseEnrollmentFields, {
   emptyEnrollmentDraft,
@@ -9,12 +8,31 @@ import CourseEnrollmentFields, {
 } from "../../components/CourseEnrollmentFields";
 import CourseScheduleFields, {
   emptyScheduleSlot,
-  formatScheduleSummary,
   type ScheduleSlotDraft,
 } from "../../components/CourseScheduleFields";
+import EmptyState from "../../components/layout/EmptyState";
+import FormBlock from "../../components/layout/FormBlock";
+import PageShell from "../../components/layout/PageShell";
+import TeachingSubnav from "../../components/layout/TeachingSubnav";
+import Reveal from "../../components/motion/Reveal";
+import TeachingCourseCard from "../../features/teaching/TeachingCourseCard";
+import TeachingWelcome from "../../features/teaching/TeachingWelcome";
+import { useAuth } from "../../auth/AuthContext";
+
+type CourseRow = {
+  id: string;
+  title: string;
+  courseCode?: string | null;
+  category?: string | null;
+  published: boolean;
+  capacity?: number | null;
+  _count?: { enrollments?: number; labs?: number; homeworks?: number };
+  scheduleSlots?: Array<{ dayOfWeek: number; periodStart: number; periodEnd: number; room: string }>;
+};
 
 export default function TeachingHub() {
-  const [courses, setCourses] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [courses, setCourses] = useState<CourseRow[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("程序设计");
@@ -74,104 +92,99 @@ export default function TeachingHub() {
     }
   }
 
+  if (!user) return <div className="container muted">加载中…</div>;
+
   return (
-    <div className="container">
-      <div className="spread" style={{ marginTop: 10, alignItems: "flex-start" }}>
-        <div>
-          <h2 style={{ margin: 0 }}>教学台</h2>
-          <div className="muted" style={{ marginTop: 8 }}>
-            创建课程、发布内容；选课系统字段可在创建时一并设置。
-          </div>
-        </div>
-        <Link className="btn primary" to="/teaching/homework">
-          作业测评
-        </Link>
-      </div>
+    <PageShell className="teach-page">
+      <div className="teach-home">
+        <Reveal>
+          <TeachingWelcome name={user.name} section="课程" lead={`${courses.length} 门课程`} />
+        </Reveal>
 
-      <div
-        className="grid"
-        style={{ marginTop: 16, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}
-      >
-        <form className="card grid" onSubmit={createCourse}>
-          <div style={{ fontWeight: 900 }}>新建课程</div>
-          <div className="field">
-            <label>标题</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} required />
-          </div>
-          <div className="field">
-            <label>简介分类（内部备注）</label>
-            <input value={category} onChange={(e) => setCategory(e.target.value)} />
-          </div>
-          <div className="field">
-            <label>简介</label>
-            <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
+        <Reveal delay={0.04}>
+          <TeachingSubnav />
+        </Reveal>
 
-          <div style={{ fontWeight: 700, marginTop: 4 }}>选课系统信息</div>
-          <CourseEnrollmentFields
-            value={enrollment}
-            onChange={setEnrollment}
-            options={enrollmentOptions}
-          />
+        {err ? <div className="page-alert err">{err}</div> : null}
 
-          <div style={{ fontWeight: 700, marginTop: 4 }}>上课时间 · 地点</div>
-          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            节次与教室将同步至主界面课表及选课系统。
-          </p>
-          <CourseScheduleFields slots={scheduleSlots} onChange={setScheduleSlots} />
-
-          <label className="row">
-            <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
-            <span className="muted">发布后对学生可见并可选课</span>
-          </label>
-          {err ? <div className="err">{err}</div> : null}
-          <div className="row" style={{ alignItems: "center", gap: 12 }}>
-            <button className="btn primary" type="submit">
-              创建
-            </button>
-            {createOk ? <span className="save-ok">创建成功</span> : null}
-          </div>
-        </form>
-
-        <div className="card">
-          <div style={{ fontWeight: 900 }}>我的课程</div>
-          <div className="grid" style={{ marginTop: 12 }}>
-            {courses.map((c) => (
-              <div
-                key={c.id}
-                className="row spread"
-                style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}
-              >
-                <div>
-                  <div style={{ fontWeight: 850 }}>
-                    {c.courseCode ? `${c.courseCode} · ` : ""}
-                    {c.title}
-                  </div>
-                  <div className="muted">
-                    {c.published ? "已发布" : "未发布"} · 容量 {c.capacity ?? "—"} · 选课{" "}
-                    {c._count?.enrollments ?? 0} · 实验 {c._count?.labs ?? 0} · 作业{" "}
-                    {c._count?.homeworks ?? 0}
-                  </div>
-                  {c.scheduleSlots?.length ? (
-                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                      {formatScheduleSummary(c.scheduleSlots)}
-                    </div>
-                  ) : null}
-                </div>
-                <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-                  <Link className="btn primary" to={`/courses/${c.id}/manage`}>
-                    课程管理
-                  </Link>
-                  <Link className="btn" to={`/courses/${c.id}/announcements`}>
-                    打开课程
-                  </Link>
-                </div>
+        <Reveal delay={0.06}>
+          <section className="dash-glass-panel teach-courses-panel">
+            <div className="dash-section-head">
+              <h2 className="dash-section-head__title">我的课程</h2>
+              <span className="teach-toolbar__hint">{courses.length} 门</span>
+            </div>
+            {courses.length === 0 ? (
+              <EmptyState title="还没有课程" />
+            ) : (
+              <div className="teach-course-grid">
+                {courses.map((c) => (
+                  <TeachingCourseCard
+                    key={c.id}
+                    id={c.id}
+                    title={c.title}
+                    courseCode={c.courseCode}
+                    category={c.category}
+                    published={c.published}
+                    capacity={c.capacity}
+                    enrollments={c._count?.enrollments}
+                    labs={c._count?.labs}
+                    homeworks={c._count?.homeworks}
+                    scheduleSlots={c.scheduleSlots}
+                  />
+                ))}
               </div>
-            ))}
-            {courses.length === 0 ? <div className="muted">暂无课程</div> : null}
-          </div>
-        </div>
+            )}
+          </section>
+        </Reveal>
+
+        <Reveal delay={0.08}>
+          <details className="dash-glass-panel teach-create-details">
+            <summary>新建课程</summary>
+            <div className="teach-create-details__body">
+              <form className="grid" onSubmit={createCourse}>
+                <FormBlock title="基本信息">
+                  <div className="field">
+                    <label>标题</label>
+                    <input value={title} onChange={(e) => setTitle(e.target.value)} required />
+                  </div>
+                  <div className="field">
+                    <label>分类备注</label>
+                    <input value={category} onChange={(e) => setCategory(e.target.value)} />
+                  </div>
+                  <div className="field">
+                    <label>简介</label>
+                    <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+                  </div>
+                </FormBlock>
+
+                <FormBlock title="选课信息">
+                  <CourseEnrollmentFields
+                    value={enrollment}
+                    onChange={setEnrollment}
+                    options={enrollmentOptions}
+                  />
+                </FormBlock>
+
+                <FormBlock title="上课时间">
+                  <CourseScheduleFields slots={scheduleSlots} onChange={setScheduleSlots} />
+                </FormBlock>
+
+                <label className="check-row">
+                  <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
+                  <span>发布选课</span>
+                </label>
+
+                <div className="form-actions">
+                  <button className="btn primary" type="submit">
+                    创建课程
+                  </button>
+                  {createOk ? <span className="save-ok">已创建</span> : null}
+                </div>
+              </form>
+            </div>
+          </details>
+        </Reveal>
       </div>
-    </div>
+    </PageShell>
   );
 }

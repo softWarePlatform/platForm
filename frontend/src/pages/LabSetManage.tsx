@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { getApiError } from "../api/errors";
 import { api } from "../api/client";
+import { useConfirm } from "../components/ui/ConfirmDialog";
+import { useToast } from "../components/ui/Toast";
 import LabProblemCreateModal from "../components/LabProblemCreateModal";
 import LabSetStudentSubmissionsModal from "../components/labs/LabSetStudentSubmissionsModal";
 import LabSetDiscussionPanel from "../components/labs/LabSetDiscussionPanel";
@@ -68,6 +71,8 @@ type StudentsProgressDto = {
 };
 
 export default function LabSetManage() {
+  const { confirm } = useConfirm();
+  const { success } = useToast();
   const { courseId, labSetId } = useParams();
   const navigate = useNavigate();
   const [labSet, setLabSet] = useState<any>(null);
@@ -182,9 +187,6 @@ export default function LabSetManage() {
             onRenamed={(newTitle) => setLabSet((prev: any) => ({ ...prev, title: newTitle }))}
             onError={setErr}
           />
-          <div className="muted" style={{ marginTop: 8 }}>
-            题目列表、时间窗与补交；新建/编辑题目（弹窗含 Markdown 预览，已发布题目可改题面）。
-          </div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           <button
@@ -207,19 +209,22 @@ export default function LabSetManage() {
                 n > 0
                   ? `将删除本集下 ${n} 道题及全部测试用例与学生提交，且不可恢复。`
                   : "将删除本实验集（当前无题目），不可恢复。";
-              if (!confirm(`确定删除实验集「${labSet.title}」？${extra}`)) return;
+              const okDel = await confirm({
+                title: "删除实验集",
+                message: `确定删除实验集「${labSet.title}」？${extra}`,
+                confirmLabel: "删除",
+                danger: true,
+              });
+              if (!okDel) return;
               setErr(null);
               try {
                 await api.delete(`/courses/${courseId}/lab-sets/${labSetId}`, {
                   params: n > 0 ? { force: 1 } : {},
                 });
+                success("已删除实验集");
                 navigate(`/courses/${courseId}`);
               } catch (e2: unknown) {
-                const msg =
-                  typeof e2 === "object" && e2 !== null && "response" in e2
-                    ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
-                    : null;
-                setErr(msg ?? "删除失败");
+                setErr(getApiError(e2, "删除失败"));
               }
             }}
           >
@@ -420,9 +425,6 @@ export default function LabSetManage() {
 
       <div className="card" style={{ marginTop: 14 }}>
         <div style={{ fontWeight: 900 }}>实验时间设置</div>
-        <div className="muted" style={{ marginTop: 8 }}>
-          开始/截止时间控制正式提交窗口；补交须在截止后另设补交截止。留空表示该项不限制。
-        </div>
         <form
           className="grid"
           style={{ marginTop: 12, gap: 12, maxWidth: 520 }}
@@ -440,11 +442,11 @@ export default function LabSetManage() {
                 !Number.isNaN(oldDue.getTime()) &&
                 newDue.getTime() < oldDue.getTime()
               ) {
-                if (
-                  !confirm(
-                    "你将提前实验截止时间，可能影响学生提交计划。确定继续？",
-                  )
-                ) {
+                const okEarly = await confirm({
+                  title: "提前截止时间",
+                  message: "你将提前实验截止时间，可能影响学生提交计划。确定继续？",
+                });
+                if (!okEarly) {
                   setSavingTime(false);
                   return;
                 }
@@ -531,9 +533,6 @@ export default function LabSetManage() {
 
       <div className="card" style={{ marginTop: 14 }}>
         <div style={{ fontWeight: 900 }}>提交与批改设置</div>
-        <p className="muted" style={{ marginTop: 8, lineHeight: 1.55 }}>
-          学生以<strong>上传文件</strong>为主提交方式；可限制扩展名与语言。手动批改模式下提交后进入待批改，由教师打分。
-        </p>
         <form
           className="grid"
           style={{ marginTop: 12, gap: 12, maxWidth: 520 }}
@@ -647,17 +646,19 @@ export default function LabSetManage() {
                   type="button"
                   className="btn"
                   onClick={async () => {
-                    if (!confirm(`确定删除题目「${l.title}」？将同时删除用例与提交记录。`)) return;
+                    const okLab = await confirm({
+                      title: "删除题目",
+                      message: `确定删除题目「${l.title}」？将同时删除用例与提交记录。`,
+                      danger: true,
+                    });
+                    if (!okLab) return;
                     setErr(null);
                     try {
                       await api.delete(`/labs/${l.id}`);
                       await load();
+                      success("已删除题目");
                     } catch (e2: unknown) {
-                      const msg =
-                        typeof e2 === "object" && e2 !== null && "response" in e2
-                          ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
-                          : null;
-                      setErr(msg ?? "删除失败");
+                      setErr(getApiError(e2, "删除失败"));
                     }
                   }}
                 >
@@ -666,7 +667,7 @@ export default function LabSetManage() {
               </div>
             </div>
           ))}
-          {labSet.labs.length === 0 ? <div className="muted">暂无题目，点击右上角新建。</div> : null}
+          {labSet.labs.length === 0 ? <div className="muted">暂无题目</div> : null}
         </div>
       </div>
 
@@ -695,9 +696,6 @@ export default function LabSetManage() {
 
       <div className="card" style={{ marginTop: 14 }}>
         <div style={{ fontWeight: 900 }}>实验集讨论</div>
-        <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-          本实验集通用答疑区；单题讨论请进入对应题目页。
-        </p>
         <div style={{ marginTop: 12 }}>
           <LabSetDiscussionPanel courseId={courseId!} labSetId={labSetId!} />
         </div>

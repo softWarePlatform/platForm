@@ -11,6 +11,7 @@ import {
 import type { CustomScheduleEvent, DashboardCourse, DashboardDeadline } from "./types";
 import { PERIOD_OPTIONS } from "../../lib/schedulePeriods";
 import { exportTimetableExcel } from "./exportTimetableExcel";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 import { loadCustomEvents, saveCustomEvents } from "./scheduleStorage";
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
@@ -74,6 +75,7 @@ export default function WeeklySchedule({
   semesterLabel = "",
   userName = "",
 }: Props) {
+  const { confirm } = useConfirm();
   const { user } = useAuth();
   const userId = user?.id;
   const [weekOffset, setWeekOffset] = useState(0);
@@ -198,8 +200,14 @@ export default function WeeklySchedule({
     }, 800);
   }
 
-  function deleteEditor() {
-    if (!editingId || !confirm("确定删除该个人事项吗？")) return;
+  async function deleteEditor() {
+    if (!editingId) return;
+    const ok = await confirm({
+      title: "删除事项",
+      message: "确定删除该个人事项吗？",
+      danger: true,
+    });
+    if (!ok) return;
     persistCustom(custom.filter((e) => e.id !== editingId));
     closeEditor();
   }
@@ -298,9 +306,6 @@ export default function WeeklySchedule({
         </div>
       ) : null}
 
-      <p className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-        课程块点击进入课程主页；个人事项（彩色块）点击可编辑时间、地点、颜色与备注，或删除。连续节次以同色填充。
-      </p>
     </section>
   );
 }

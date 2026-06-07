@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import EmptyState from "../components/layout/EmptyState";
+import PageHeader from "../components/layout/PageHeader";
+import PageShell from "../components/layout/PageShell";
 
 export default function Gradebook() {
   const { courseId } = useParams();
@@ -34,35 +37,30 @@ export default function Gradebook() {
 
   if (err) {
     return (
-      <div className="container">
-        <div className="err">{err}</div>
-        <Link className="btn" to="/teaching" style={{ display: "inline-block", marginTop: 12 }}>
+      <PageShell>
+        <div className="page-alert err">{err}</div>
+        <Link className="btn" to="/teaching">
           返回教学台
         </Link>
-      </div>
+      </PageShell>
     );
   }
 
   if (!data) {
     return (
-      <div className="container">
-        <div className="muted">加载中…</div>
-      </div>
+      <PageShell>
+        <div className="panel-loading muted">加载中…</div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="container">
-      <div className="spread" style={{ marginTop: 10 }}>
-        <div>
-          <h2 style={{ margin: 0 }}>课程成绩册</h2>
-          {data.courseTitle ? (
-            <div className="muted" style={{ marginTop: 6 }}>
-              {data.courseTitle}
-            </div>
-          ) : null}
-        </div>
-        <div className="row">
+    <PageShell>
+      <PageHeader
+        title="成绩册"
+        lead={data.courseTitle ?? `${data.students?.length ?? 0} 名学生`}
+        actions={
+          <>
           <button
             className="btn"
             type="button"
@@ -100,20 +98,15 @@ export default function Gradebook() {
           <Link className="btn" to={`/courses/${courseId}/grades`}>
             返回课程
           </Link>
-        </div>
-      </div>
-      <div className="muted" style={{ marginTop: 8 }}>
-        实验成绩按<strong>实验集</strong>分组：每集内为各题最高分，<strong>集均分</strong>为其算术平均；<strong>实验总均分</strong>为各集均分的算术平均。导出
-        CSV 含各题得分与各实验集均分列，UTF-8 BOM 便于 Excel 打开。
-      </div>
-      {data.labGradingRule ? (
-        <div className="muted" style={{ marginTop: 6, fontSize: 13 }}>
-          {data.labGradingRule}
-        </div>
-      ) : null}
+          </>
+        }
+      />
 
-      <div className="card grid" style={{ marginTop: 14 }}>
-        <div style={{ fontWeight: 800 }}>成绩权重配置</div>
+      <section className="panel panel--form panel--accent" style={{ marginBottom: 16 }}>
+        <div className="panel__head">
+          <h2 className="panel__title">权重配置</h2>
+        </div>
+        <div className="panel__body grid">
         <div className="row">
           <label className="muted">实验权重</label>
           <input
@@ -151,51 +144,51 @@ export default function Gradebook() {
             保存并重算
           </button>
         </div>
-        <div className="muted">要求：实验权重 + 作业权重 = 1。当前总和：{(weights.labWeight + weights.homeworkWeight).toFixed(2)}</div>
-      </div>
+        </div>
+      </section>
 
       {data.distribution ? (
-        <div className="card" style={{ marginTop: 14 }}>
-          <div style={{ fontWeight: 800 }}>总评分布</div>
-          <div className="muted" style={{ marginTop: 6, fontSize: 13, lineHeight: 1.5 }}>
-            按加权总评分段；仅统计已算出总评的学生。「暂无总评」表示实验与作业均分皆不可用（不计入各分段）。
+        <section className="panel panel--accent" style={{ marginBottom: 16 }}>
+          <div className="panel__head">
+            <h2 className="panel__title">总评分布</h2>
           </div>
-          <div className="row" style={{ marginTop: 10, gap: 10, flexWrap: "wrap" }}>
-            <span className="muted">&lt;60：{data.distribution.lt60}</span>
-            <span className="muted">60–69：{data.distribution.b60_69}</span>
-            <span className="muted">70–79：{data.distribution.b70_79}</span>
-            <span className="muted">80–89：{data.distribution.b80_89}</span>
-            <span className="muted">90+：{data.distribution.gte90}</span>
-            <span className="muted">暂无总评：{data.distribution.noTotalScore ?? 0}</span>
+          <div className="panel__body">
+            <div className="meta-chips">
+              <span className="meta-chips__item">&lt;60 · {data.distribution.lt60}</span>
+              <span className="meta-chips__item">60–69 · {data.distribution.b60_69}</span>
+              <span className="meta-chips__item">70–79 · {data.distribution.b70_79}</span>
+              <span className="meta-chips__item">80–89 · {data.distribution.b80_89}</span>
+              <span className="meta-chips__item">90+ · {data.distribution.gte90}</span>
+              <span className="meta-chips__item">无总评 · {data.distribution.noTotalScore ?? 0}</span>
+            </div>
           </div>
-        </div>
+        </section>
       ) : null}
 
-      <div className="card" style={{ marginTop: 14, overflow: "auto" }}>
+      <section className="panel panel--accent">
         {data.students.length === 0 ? (
-          <div className="muted" style={{ padding: 16, lineHeight: 1.7 }}>
-            当前还没有选课学生，成绩册为空。请让学生从「课程中心」选课后刷新本页；作业批改请在
-            <Link to={`/courses/${courseId}/announcements`}>返回课程主页</Link>
-            的「作业」区块操作。
-          </div>
-        ) : null}
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <EmptyState title="暂无学生">
+            <Link to={`/courses/${courseId}/announcements`}>返回课程</Link>
+          </EmptyState>
+        ) : (
+        <div className="data-table-wrap panel__body--flush">
+        <table className="data-table">
           <thead>
             <tr>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>学生</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>实验汇总</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>作业</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>总评/排名</th>
+              <th>学生</th>
+              <th>实验</th>
+              <th>作业</th>
+              <th>总评</th>
             </tr>
           </thead>
           <tbody>
             {data.students.map((s: any) => (
               <tr key={s.user.id}>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)", verticalAlign: "top" }}>
-                  <div style={{ fontWeight: 800 }}>{s.user.name}</div>
-                  <div className="muted">{s.user.email}</div>
+                <td style={{ verticalAlign: "top" }}>
+                  <div className="data-table__primary">{s.user.name}</div>
+                  <div className="data-table__sub">{s.user.email}</div>
                 </td>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)", verticalAlign: "top" }}>
+                <td style={{ verticalAlign: "top" }}>
                   <div className="grid" style={{ gap: 10 }}>
                     {(s.labSets ?? []).length > 0
                       ? (s.labSets as Array<{
@@ -228,29 +221,32 @@ export default function Gradebook() {
                         ))}
                   </div>
                 </td>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)", verticalAlign: "top" }}>
+                <td style={{ verticalAlign: "top" }}>
                   <div className="grid">
                     {s.homework.map((h: any) => (
-                      <div key={h.homeworkId} className="muted">
-                        {h.title}：
-                        {!h.graded ? "未批改" : h.score == null ? "—" : `${Number(h.score).toFixed(1)}`}
+                      <div key={h.homeworkId} className="muted" style={{ fontSize: 13 }}>
+                        {h.title} · {!h.graded ? "—" : h.score == null ? "—" : Number(h.score).toFixed(1)}
                       </div>
                     ))}
                   </div>
                 </td>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)", verticalAlign: "top" }}>
-                  <div className="muted">实验均分：{s.summary?.labAverage == null ? "—" : Number(s.summary.labAverage).toFixed(1)}</div>
-                  <div className="muted">作业均分：{s.summary?.homeworkAverage == null ? "—" : Number(s.summary.homeworkAverage).toFixed(1)}</div>
-                  <div style={{ fontWeight: 700, marginTop: 6 }}>
-                    总评：{s.summary?.totalScore == null ? "—" : Number(s.summary.totalScore).toFixed(1)}
+                <td style={{ verticalAlign: "top" }}>
+                  <div className="data-table__primary">
+                    {s.summary?.totalScore == null ? "—" : Number(s.summary.totalScore).toFixed(1)}
                   </div>
-                  <div className="muted">排名：{s.rank ?? "—"}</div>
+                  <div className="data-table__sub">
+                    实验 {s.summary?.labAverage == null ? "—" : Number(s.summary.labAverage).toFixed(1)} · 作业{" "}
+                    {s.summary?.homeworkAverage == null ? "—" : Number(s.summary.homeworkAverage).toFixed(1)} · 排名{" "}
+                    {s.rank ?? "—"}
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
+        </div>
+        )}
+      </section>
+    </PageShell>
   );
 }

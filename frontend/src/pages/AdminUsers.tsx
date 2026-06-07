@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
+import EmptyState from "../components/layout/EmptyState";
+import PageHeader from "../components/layout/PageHeader";
+import PageShell from "../components/layout/PageShell";
+import StatusBadge from "../components/layout/StatusBadge";
 
 export default function AdminUsers() {
   const [rows, setRows] = useState<any[]>([]);
@@ -12,7 +16,7 @@ export default function AdminUsers() {
         const { data } = await api.get("/admin/users");
         if (!cancelled) setRows(data.users ?? []);
       } catch {
-        if (!cancelled) setErr("无权查看用户列表（仅管理员）");
+        if (!cancelled) setErr("无权查看（仅管理员）");
       }
     })();
     return () => {
@@ -21,39 +25,49 @@ export default function AdminUsers() {
   }, []);
 
   return (
-    <div className="container">
-      <h2 style={{ marginTop: 10 }}>管理员：用户列表</h2>
-      {err ? <div className="err">{err}</div> : null}
-      <div className="card" style={{ marginTop: 14, overflow: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>姓名</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>邮箱</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>角色</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>邮箱状态</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>创建时间</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((u) => (
-              <tr key={u.id}>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)" }}>{u.name}</td>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)" }}>{u.email}</td>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)" }}>{u.role}</td>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)" }}>
-                  {u.emailVerifiedAt ? "已验证" : "未验证"}
-                </td>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)" }}>
-                  {new Date(u.createdAt).toLocaleString()}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!err && rows.length === 0 ? <div className="muted" style={{ padding: 10 }}>暂无数据</div> : null}
-      </div>
-    </div>
+    <PageShell>
+      <PageHeader title="用户管理" lead={`${rows.length} 个用户`} />
+
+      {err ? <div className="page-alert err">{err}</div> : null}
+
+      <section className="panel panel--accent">
+        {rows.length === 0 && !err ? (
+          <EmptyState title="暂无用户" />
+        ) : (
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>姓名</th>
+                  <th>邮箱</th>
+                  <th>角色</th>
+                  <th>邮箱</th>
+                  <th>注册</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((u) => (
+                  <tr key={u.id}>
+                    <td>
+                      <div className="data-table__primary">{u.name}</div>
+                    </td>
+                    <td className="data-table__muted">{u.email}</td>
+                    <td>
+                      <StatusBadge tone="brand">{u.role}</StatusBadge>
+                    </td>
+                    <td>
+                      <StatusBadge tone={u.emailVerifiedAt ? "ok" : "muted"}>
+                        {u.emailVerifiedAt ? "已验证" : "未验证"}
+                      </StatusBadge>
+                    </td>
+                    <td className="data-table__muted">{new Date(u.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </PageShell>
   );
 }
-

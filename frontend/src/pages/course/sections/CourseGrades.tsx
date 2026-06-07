@@ -7,19 +7,12 @@ export default function CourseGrades() {
 
   return (
     <div>
-      <CourseSectionHead
-        title="成绩统计"
-        description={
-          isTeacher
-            ? "全班成绩册、分数段分布、权重配置与 CSV 导出。"
-            : "查看已发布的作业与实验成绩及课程总评。"
-        }
-      />
+      <CourseSectionHead title="成绩统计" />
       {isTeacher ? (
         <Link className="btn primary" to={`/courses/${courseId}/gradebook`}>
           打开成绩册
         </Link>
-      ) : user?.role === "STUDENT" || user?.role === "ADMIN" ? (
+      ) : user?.role === "STUDENT" ? (
         <Link className="btn primary" to="/my-homework">
           我的作业与成绩
         </Link>

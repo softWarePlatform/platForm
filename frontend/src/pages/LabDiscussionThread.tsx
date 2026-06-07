@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { api } from "../api/client";
+import { useConfirm } from "../components/ui/ConfirmDialog";
 import MentionComposer, { getMentionIdsForSubmit } from "../components/labs/MentionComposer";
 import type { MentionMember } from "../components/labs/mentionUtils";
 import {
@@ -25,6 +26,7 @@ function highlightMentions(text: string) {
 }
 
 export default function LabDiscussionThread() {
+  const { confirm } = useConfirm();
   const { courseId, labId, postId } = useParams();
   const composerRef = useRef<HTMLDivElement>(null);
   const [post, setPost] = useState<any>(null);
@@ -248,7 +250,12 @@ export default function LabDiscussionThread() {
                 className="btn"
                 style={{ color: "var(--danger)" }}
                 onClick={async () => {
-                  if (!confirm("确定删除此帖？")) return;
+                  const ok = await confirm({
+                    title: "删除帖子",
+                    message: "确定删除此帖？",
+                    danger: true,
+                  });
+                  if (!ok) return;
                   await api.delete(`/labs/${labId}/discussions/${postId}`);
                   window.location.href = `/courses/${courseId}/labs/${labId}`;
                 }}

@@ -147,10 +147,6 @@ export default function PracticeDocumentImport({
   return (
     <div className="card grid practice-doc-import">
       <div style={{ fontWeight: 700 }}>文档识题（AI）</div>
-      <p className="muted" style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
-        上传 PDF 或 Word（.docx），由 AI 识别题目；文档无答案时由 AI 补全，并标注「AI提供，仅供参考」。
-        AI 与作业批改共用 backend/.env 配置（Ollama 或 OpenAI / DeepSeek 等）。
-      </p>
       <label className="field">
         本题集知识点标签
         <select value={defaultTagPath} onChange={(e) => onTagPathChange(e.target.value)} required>

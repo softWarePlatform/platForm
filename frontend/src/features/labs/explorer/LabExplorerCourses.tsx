@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { useLabSetOverview } from "../useLabSetOverview";
 import type { LabSetOverviewGroup, StudentLabSetOverviewCard } from "../labSetTypes";
-import LabExplorerBreadcrumb from "./LabExplorerBreadcrumb";
+import EmptyState from "../../../components/layout/EmptyState";
+import { CourseCardGridSkeleton } from "../../../components/layout/PageSkeleton";
+import PageHeader from "../../../components/layout/PageHeader";
 import { groupSetsByCourse } from "./labExplorerStatus";
 
 export default function LabExplorerCourses() {
@@ -10,69 +12,57 @@ export default function LabExplorerCourses() {
   const courses = groupSetsByCourse(groups);
 
   return (
-    <div className="lab-explorer">
-      <div className="lab-explorer-panel">
-        <div className="spread" style={{ alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-          <div>
-            <h2 className="lab-explorer-title">我的实验</h2>
-            <p className="lab-explorer-desc">先选择课程，再查看各次作业与题目完成情况。</p>
-          </div>
+    <>
+      <PageHeader
+        title="我的实验"
+        lead={`${courses.length} 门课程`}
+        actions={
           <button type="button" className="btn" onClick={() => void reload()}>
             刷新
           </button>
-        </div>
-        <LabExplorerBreadcrumb items={[{ label: "全部课程" }]} />
-      </div>
+        }
+      />
 
-      {err ? <div className="err" style={{ marginTop: 12 }}>{err}</div> : null}
-      {loading ? <div className="muted lab-explorer-loading">加载中…</div> : null}
+      {err ? <div className="page-alert err">{err}</div> : null}
+      {loading ? <CourseCardGridSkeleton count={3} /> : null}
 
       {!loading && courses.length === 0 ? (
-        <div className="course-section-empty lab-explorer-empty">
-          暂无实验。请先在选课系统中加入课程，或等待教师发布实验。
-        </div>
+        <EmptyState title="暂无实验">
+          <Link to="/enrollment">去选课</Link>
+        </EmptyState>
       ) : null}
 
       {!loading && courses.length > 0 ? (
-        <div className="course-card-grid">
-          {courses.map((course) => {
-            const completed = course.sets.filter((s) => s.completed).length;
-            const total = course.sets.length;
-            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-            return (
-              <div key={course.courseId} className="course-dash-card">
-                <div className="course-dash-card__title">{course.courseTitle}</div>
-                <div className="muted course-dash-card__sub">
-                  {total} 个实验集
-                  {total > 0 ? ` · 已全部通过 ${completed}/${total}` : ""}
-                </div>
-                {total > 0 ? (
-                  <div className="course-dash-card__progress">
-                    <div className="spread muted" style={{ fontSize: 12, marginBottom: 4 }}>
-                      <span>实验完成度</span>
-                      <span>{pct}%</span>
-                    </div>
-                    <div className="progress-bar">
-                      <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
-                    </div>
+        <div className="lab-assign-stack">
+          <div className="lab-course-grid">
+            {courses.map((course) => {
+              const completed = course.sets.filter((s) => s.completed).length;
+              const total = course.sets.length;
+              const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+              return (
+                <Link key={course.courseId} className="lab-course-card lab-pressable" to={`/my-labs/${course.courseId}`}>
+                  <div className="lab-course-card__title">{course.courseTitle}</div>
+                  <div className="lab-course-card__sub">
+                    {total} 个实验集 · 已完成 {completed}/{total}
                   </div>
-                ) : null}
-                <Link
-                  className="btn primary lab-pressable"
-                  to={`/my-labs/${course.courseId}`}
-                  style={{ marginTop: 12, display: "block", textAlign: "center" }}
-                >
-                  进入实验
+                  {total > 0 ? (
+                    <div className="lab-course-card__progress">
+                      <div className="lab-course-card__progress-head">
+                        <span>进度</span>
+                        <span>{pct}%</span>
+                      </div>
+                      <div className="progress-bar">
+                        <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  ) : null}
+                  <span className="lab-course-card__cta">进入课程实验 →</span>
                 </Link>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       ) : null}
-
-      <p className="muted lab-explorer-foot">
-        也可在 <Link to="/enrollment">选课系统</Link> 选课，或进入各课程「实验管理」。
-      </p>
-    </div>
+    </>
   );
 }

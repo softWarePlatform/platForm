@@ -16,15 +16,16 @@ import {
 } from "./pages/course/sections";
 import PracticeSession from "./pages/course/PracticeSession";
 import CourseHomeworkDetail from "./pages/course/sections/CourseHomeworkDetail";
+import CourseLabSetProblems from "./pages/course/sections/CourseLabSetProblems";
 import EnrollmentPage from "./pages/enrollment/EnrollmentPage";
 import TeachingHub from "./pages/teaching/TeachingHub";
 import HomeworkList from "./pages/teaching/HomeworkList";
-import HomeworkReview from "./pages/teaching/HomeworkReview";
+import TeachingHomeworkRedirect from "./pages/teaching/TeachingHomeworkRedirect";
 import Gradebook from "./pages/Gradebook";
 import Home from "./pages/Home";
 import Lab from "./pages/Lab";
 import LabDiscussionThread from "./pages/LabDiscussionThread";
-import LabSetHub from "./pages/LabSetHub";
+import LabSetHubRedirect from "./pages/LabSetHubRedirect";
 import LabSetManage from "./pages/LabSetManage";
 import Login from "./pages/Login";
 import Messages from "./pages/Messages";
@@ -34,6 +35,7 @@ import TeachingLabs from "./pages/teaching/TeachingLabs";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import AdminUsers from "./pages/AdminUsers";
+import Help from "./pages/Help";
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { token } = useAuth();
@@ -61,6 +63,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/help" element={<Help />} />
         <Route
           path="/enrollment"
           element={
@@ -86,6 +89,7 @@ export default function App() {
           <Route path="homework" element={<CourseHomework />} />
           <Route path="homework/:homeworkId" element={<CourseHomeworkDetail />} />
           <Route path="labs" element={<CourseLabs />} />
+          <Route path="labs/sets/:labSetId" element={<CourseLabSetProblems />} />
           <Route path="grades" element={<CourseGrades />} />
           <Route path="practice" element={<CoursePractice />} />
           <Route
@@ -111,7 +115,7 @@ export default function App() {
           path="/courses/:courseId/lab-sets/:labSetId"
           element={
             <RequireAuth>
-              <LabSetHub />
+              <LabSetHubRedirect />
             </RequireAuth>
           }
         />
@@ -143,7 +147,7 @@ export default function App() {
           path="/teaching/homework/:homeworkId"
           element={
             <RequireRole roles={["TEACHER", "ADMIN"]}>
-              <HomeworkReview />
+              <TeachingHomeworkRedirect />
             </RequireRole>
           }
         />
@@ -174,7 +178,7 @@ export default function App() {
         <Route
           path="/my-homework"
           element={
-            <RequireRole roles={["STUDENT", "ADMIN"]}>
+            <RequireRole roles={["STUDENT"]}>
               <MyHomework />
             </RequireRole>
           }
@@ -182,7 +186,7 @@ export default function App() {
         <Route
           path="/my-labs/*"
           element={
-            <RequireRole roles={["STUDENT", "ADMIN"]}>
+            <RequireRole roles={["STUDENT"]}>
               <MyLabs />
             </RequireRole>
           }

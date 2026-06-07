@@ -8,11 +8,11 @@
 .enroll-main-nav {
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  padding: 8px 24px 0;
+  padding: 8px var(--content-gutter) 0;
 }
 
 .enroll-main-nav-inner {
-  max-width: 1100px;
+  max-width: var(--content-max);
   margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
@@ -46,11 +46,11 @@
 .enroll-sub-nav {
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  padding: 10px 24px;
+  padding: 10px var(--content-gutter);
 }
 
 .enroll-sub-nav-inner {
-  max-width: 1100px;
+  max-width: var(--content-max);
   margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
@@ -59,9 +59,9 @@
 }
 
 .enroll-body {
-  max-width: 1100px;
+  max-width: var(--content-max);
   margin: 0 auto;
-  padding: 24px 24px 32px;
+  padding: 24px var(--content-gutter) 32px;
 }
 
 .enroll-status-bar {

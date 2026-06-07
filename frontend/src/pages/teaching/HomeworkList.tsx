@@ -1,25 +1,16 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api/client";
+import PageShell from "../../components/layout/PageShell";
+import TeachingSubnav from "../../components/layout/TeachingSubnav";
+import Reveal from "../../components/motion/Reveal";
+import TeachingHomeworkGrid, { type HomeworkRow } from "../../features/teaching/TeachingHomeworkGrid";
+import TeachingStatsBar from "../../features/teaching/TeachingStatsBar";
+import TeachingWelcome from "../../features/teaching/TeachingWelcome";
 import { useAuth } from "../../auth/AuthContext";
-
-type Row = {
-  id: string;
-  title: string;
-  courseId: string;
-  courseTitle: string;
-  dueAt: string | null;
-  published: boolean;
-  targetClassName: string | null;
-  submissionCount: number;
-  gradedCount: number;
-  releasedCount: number;
-};
 
 export default function TeachingHomeworkList() {
   const { user } = useAuth();
-  const location = useLocation();
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<HomeworkRow[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [legacyBackend, setLegacyBackend] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -33,8 +24,8 @@ export default function TeachingHomeworkList() {
         const { data } = await api.get("/courses/mine");
         const d = data as {
           courses?: Array<{ _count?: { homeworks?: number } }>;
-          teachingHomework?: { homework?: Row[] };
-          homework?: Row[];
+          teachingHomework?: { homework?: HomeworkRow[] };
+          homework?: HomeworkRow[];
         };
         let hw = d.teachingHomework?.homework ?? d.homework ?? [];
         hw = Array.isArray(hw) ? hw : [];
@@ -50,11 +41,9 @@ export default function TeachingHomeworkList() {
           try {
             const { data: alt } = await api.get("/homework/teaching");
             const h2 = alt?.homework;
-            if (Array.isArray(h2) && h2.length > 0) {
-              hw = h2;
-            }
+            if (Array.isArray(h2) && h2.length > 0) hw = h2;
           } catch {
-            /* 忽略备用接口错误 */
+            /* ignore */
           }
         }
 
@@ -69,109 +58,68 @@ export default function TeachingHomeworkList() {
         const status = ax.response?.status;
         const serverMsg = ax.response?.data?.error;
         let hint: string;
-        if (status === 401) hint = "未登录或登录已过期，请重新登录";
-        else if (status === 403) hint = "当前账号不是教师或管理员";
+        if (status === 401) hint = "请重新登录";
+        else if (status === 403) hint = "无教师权限";
         else if (status === 404 || /not\s*found/i.test(String(serverMsg ?? ""))) {
-          hint =
-            "接口返回 404（Not Found）。请完全退出并重新运行根目录 npm run dev；浏览器请使用 http://localhost:5173，并确认 Vite 把 /api 代理到本机 3000 端口后端。";
+          hint = "接口不可用，请确认前后端已启动";
         } else if (serverMsg) hint = serverMsg;
         else hint = ax.message ?? "网络错误";
-        if (!cancelled) setErr(`加载失败：${hint}`);
+        if (!cancelled) setErr(hint);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [location.key, refreshKey]);
+  }, [refreshKey]);
 
-  const listIntro =
-    user?.role === "ADMIN"
-      ? "以下为系统中全部课程下的作业（管理员视图）。教师账号仅能看到自己授课的课程。"
-      : "以下为您作为授课教师名下的课程中的作业。布置作业后若未显示，请先点「刷新列表」。作业须保存在对应课程下才会出现在此表。";
+  const stats = useMemo(() => {
+    const published = rows.filter((r) => r.published).length;
+    const pending = rows.reduce((n, r) => n + Math.max(0, r.submissionCount - r.gradedCount), 0);
+    const submissions = rows.reduce((n, r) => n + r.submissionCount, 0);
+    return [
+      { key: "total", label: "作业总数", value: String(rows.length), tone: "blue" as const, icon: "📋" },
+      { key: "pending", label: "待批改", value: String(pending), tone: "amber" as const, icon: "✏️" },
+      { key: "sub", label: "提交人次", value: String(submissions), tone: "purple" as const, icon: "📥" },
+      { key: "pub", label: "已发布", value: String(published), tone: "teal" as const, icon: "✅" },
+    ];
+  }, [rows]);
+
+  if (!user) return <div className="container muted">加载中…</div>;
 
   return (
-    <div className="container">
-      <div className="spread" style={{ marginTop: 10, alignItems: "flex-start" }}>
-        <div>
-          <h2 style={{ margin: 0 }}>作业测评</h2>
-          <div className="muted" style={{ marginTop: 8, lineHeight: 1.6 }}>
-            {listIntro}
-          </div>
-        </div>
-        <div className="row">
-          <button type="button" className="btn primary" onClick={() => setRefreshKey((k) => k + 1)}>
-            刷新列表
-          </button>
-          <Link className="btn" to="/teaching">
-            教学台
-          </Link>
-        </div>
-      </div>
+    <PageShell className="teach-page">
+      <div className="teach-home">
+        <Reveal>
+          <TeachingWelcome name={user.name} section="作业批改" lead={`共 ${rows.length} 项作业`} />
+        </Reveal>
 
-      {err ? <div className="err" style={{ marginTop: 12 }}>{err}</div> : null}
-      {legacyBackend ? (
-        <div className="muted" style={{ marginTop: 12, padding: 12, background: "#fff7ed", borderRadius: 12 }}>
-          当前后端响应里没有作业测评字段，列表可能为空。请保存代码后<strong>重启</strong>根目录{" "}
-          <code>npm run dev</code>，再刷新本页。
-        </div>
-      ) : null}
-
-      <div className="card" style={{ marginTop: 16, overflow: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>课程</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>作业</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>截止</th>
-              <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>状态</th>
-              <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid var(--border)" }}>提交/批改/已发布</th>
-              <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid var(--border)" }}>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)", verticalAlign: "top" }}>
-                  <div style={{ fontWeight: 700 }}>{r.courseTitle}</div>
-                  <Link className="muted" style={{ fontSize: 12 }} to={`/courses/${r.courseId}`}>
-                    进入课程
-                  </Link>
-                </td>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)", verticalAlign: "top" }}>
-                  <div style={{ fontWeight: 700 }}>{r.title}</div>
-                  {r.targetClassName ? (
-                    <div className="muted" style={{ fontSize: 12 }}>
-                      面向班级：{r.targetClassName}
-                    </div>
-                  ) : null}
-                </td>
-                <td className="muted" style={{ padding: 10, borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>
-                  {r.dueAt ? new Date(r.dueAt).toLocaleString() : "—"}
-                </td>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)" }}>
-                  <span className="muted">{r.published ? "已发布" : "未发布"}</span>
-                </td>
-                <td
-                  className="muted"
-                  style={{ padding: 10, borderBottom: "1px solid var(--border)", textAlign: "right", whiteSpace: "nowrap" }}
-                >
-                  {r.submissionCount} / {r.gradedCount} / {r.releasedCount}
-                </td>
-                <td style={{ padding: 10, borderBottom: "1px solid var(--border)", textAlign: "right" }}>
-                  <Link className="btn" to={`/teaching/homework/${r.id}`}>
-                    批改与导出
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {rows.length === 0 && !err ? (
-          <div className="muted" style={{ padding: 16 }}>
-            暂无作业。请确认：① 使用<strong>创建该课程的同一账号</strong>登录（教师只能看到自己教的课）；② 在课程详情里已成功创建作业；③ 点击右上角「刷新列表」。
+        <Reveal delay={0.04}>
+          <div className="teach-toolbar">
+            <TeachingSubnav />
+            <button type="button" className="btn primary" onClick={() => setRefreshKey((k) => k + 1)}>
+              刷新
+            </button>
           </div>
+        </Reveal>
+
+        {err ? <div className="page-alert err">{err}</div> : null}
+        {legacyBackend ? (
+          <div className="page-alert page-alert--warn">后端版本较旧，请重启 npm run dev 后刷新</div>
         ) : null}
+
+        <Reveal delay={0.06}>
+          <TeachingStatsBar items={stats} />
+        </Reveal>
+
+        <Reveal delay={0.08}>
+          <section className="dash-glass-panel teach-homework-panel">
+            <div className="dash-section-head dash-section-head--compact">
+              <h2 className="dash-section-head__title">全部作业</h2>
+            </div>
+            {!err ? <TeachingHomeworkGrid rows={rows} /> : null}
+          </section>
+        </Reveal>
       </div>
-    </div>
+    </PageShell>
   );
 }

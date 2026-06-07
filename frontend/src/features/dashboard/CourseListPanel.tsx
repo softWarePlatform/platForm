@@ -92,13 +92,9 @@ export default function CourseListPanel({ courses, semesterLabel }: Props) {
         <div className="muted" style={{ padding: 24, textAlign: "center" }}>
           {courses.length === 0 ? (
             user?.role === "TEACHER" || user?.role === "ADMIN" ? (
-              <>
-                暂无授课课程。请前往 <Link to="/teaching">教学台</Link> 创建课程并发布。
-              </>
+              <Link to="/teaching">教学台</Link>
             ) : (
-              <>
-                暂无课程。请前往 <Link to="/enrollment">选课系统</Link> 选课。
-              </>
+              <Link to="/enrollment">选课系统</Link>
             )
           ) : (
             "没有匹配的课程"
@@ -135,9 +131,6 @@ export default function CourseListPanel({ courses, semesterLabel }: Props) {
         })
       )}
 
-      <p className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-        可拖拽课程卡片调整展示顺序；进度根据作业提交与实验通过情况估算。课程资料、实验、作业请进入各课程主页。
-      </p>
     </section>
   );
 }

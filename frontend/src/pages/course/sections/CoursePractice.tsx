@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../../../api/client";
+import { useConfirm } from "../../../components/ui/ConfirmDialog";
+import { useToast } from "../../../components/ui/Toast";
 import { useCourse } from "../CourseContext";
 import CourseSectionHead from "../CourseSectionHead";
 import {
@@ -62,6 +64,8 @@ type TeacherTab = "bank" | "feedback" | "sessions";
 export default function CoursePractice() {
   const { courseId, isTeacher, err, setErr } = useCourse();
   const navigate = useNavigate();
+  const { confirm } = useConfirm();
+  const { success } = useToast();
   const [tab, setTab] = useState<TeacherTab>("bank");
   const [tags, setTags] = useState<string[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -243,7 +247,7 @@ export default function CoursePractice() {
         { questions },
       );
       setImportJson("");
-      alert(`成功导入 ${data.imported} 道题目`);
+      success(`成功导入 ${data.imported} 道题目`);
       await reload();
     } catch (e: unknown) {
       const msg =
@@ -280,7 +284,12 @@ export default function CoursePractice() {
   }, [questions, bankTagFilter]);
 
   async function deleteSession(sessionId: string) {
-    if (!confirm("确定删除该练习记录吗？删除后不可恢复。")) return;
+    const ok = await confirm({
+      title: "删除练习记录",
+      message: "确定删除该练习记录吗？删除后不可恢复。",
+      danger: true,
+    });
+    if (!ok) return;
     setErr(null);
     try {
       await api.delete(`/practice/sessions/${sessionId}`);
@@ -296,14 +305,7 @@ export default function CoursePractice() {
 
   return (
     <div className="practice-page">
-      <CourseSectionHead
-        title="练习"
-        description={
-          isTeacher
-            ? "管理知识点标签、文档 AI 识题与手动出题；查看学生练习记录与题目反馈。"
-            : "智能组卷、按知识点练习、错题本与自定义练习；仅可查看本人的练习记录。"
-        }
-      />
+      <CourseSectionHead title="练习" />
       {err ? <div className="err" style={{ marginTop: 12 }}>{err}</div> : null}
 
       {isTeacher ? (
@@ -387,9 +389,6 @@ export default function CoursePractice() {
           />
           <form className="card grid" onSubmit={createQuestion}>
             <div style={{ fontWeight: 700 }}>手动出题</div>
-            <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-              答案与解析可留空，将由 AI 补全并标注「AI提供，仅供参考」。
-            </p>
             <label className="field">
               题型
               <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
@@ -406,7 +405,7 @@ export default function CoursePractice() {
                 onChange={(e) => setForm({ ...form, tagPath: e.target.value })}
                 required
               >
-                <option value="">请先在上方新建标签</option>
+                <option value="">选择标签</option>
                 {tags.map((t) => (
                   <option key={t} value={t}>
                     {t}
@@ -485,10 +484,6 @@ export default function CoursePractice() {
 
           <div className="card grid">
             <div style={{ fontWeight: 700 }}>批量导入（JSON）</div>
-            <p className="muted" style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
-              提交格式：<code>{`{ "questions": [ ... ] }`}</code> 或直接题目数组。每题需含 type、stem、tagPath、answer、explanation
-              等字段，单次最多 200 题。
-            </p>
             <label className="field">
               JSON 内容
               <textarea
@@ -741,9 +736,6 @@ function StudentPracticePanel(props: {
             开始自定义练习
           </button>
         </div>
-        <p className="muted" style={{ marginTop: 10, fontSize: 13 }}>
-          自定义练习使用上方标签筛选；未选标签时不限知识点。
-        </p>
       </div>
 
       <div className="practice-panel">

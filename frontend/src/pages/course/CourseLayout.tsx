@@ -1,24 +1,21 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { CourseProvider, useCourse } from "./CourseContext";
+import { CourseHeroSkeleton } from "../../components/layout/PageSkeleton";
 import { courseModulesForNav } from "../../modules/courseNav";
+import { CourseProvider, useCourse } from "./CourseContext";
 
 function CourseLayoutInner() {
   const { course, err, user, courseId, enroll, isTeacher, isEnrolled } = useCourse();
   const modules = courseModulesForNav();
 
   if (!course && !err) {
-    return (
-      <div className="course-page">
-        <div className="container course-page__loading muted">加载课程…</div>
-      </div>
-    );
+    return <CourseHeroSkeleton />;
   }
 
   if (err && !course) {
     return (
-      <div className="container" style={{ paddingTop: 32 }}>
-        <div className="err">{err}</div>
-        <Link className="btn" to="/" style={{ marginTop: 16 }}>
+      <div className="container course-error-page">
+        <div className="page-alert err">{err}</div>
+        <Link className="btn" to="/">
           返回主界面
         </Link>
       </div>

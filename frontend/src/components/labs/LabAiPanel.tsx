@@ -35,9 +35,6 @@ export default function LabAiPanel({
   const [aiTurns, setAiTurns] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
   const [aiMeta, setAiMeta] = useState<{ source?: string; model?: string | null } | null>(null);
-  const [contextUsed, setContextUsed] = useState<{ submission?: boolean; attachments?: boolean } | null>(
-    null,
-  );
   const [aiLoading, setAiLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [contextSubmissionId, setContextSubmissionId] = useState<string | null>(null);
@@ -69,7 +66,6 @@ export default function LabAiPanel({
         ]);
         setAiNotice(data.notice ?? null);
         setAiMeta({ source: data.source, model: data.model });
-        setContextUsed(data.contextUsed ?? null);
       } catch (e: unknown) {
         const msg =
           typeof e === "object" && e !== null && "response" in e
@@ -128,7 +124,6 @@ export default function LabAiPanel({
       setAiTurns([...payload, { role: "assistant", content: data.answer ?? "" }]);
       setAiNotice(data.notice ?? null);
       setAiMeta({ source: data.source, model: data.model });
-      setContextUsed(data.contextUsed ?? null);
     } catch (e: unknown) {
       setAiTurns((prev) => prev.slice(0, -1));
       setAiQ(content);
@@ -144,9 +139,6 @@ export default function LabAiPanel({
 
   return (
     <div className="grid" style={{ gap: 10 }}>
-      <div className="muted" style={{ fontSize: 13, lineHeight: 1.65 }}>
-        题目与公开样例会写入系统提示；隐藏用例不会下发。从「提交测评」点「AI 分析」时会附带该次提交代码与评测结果。
-      </div>
       {contextSubmissionId ? (
         <div className="muted" style={{ fontSize: 12 }}>
           已关联提交记录，后续对话将继续带入该次提交上下文。
@@ -154,17 +146,11 @@ export default function LabAiPanel({
             type="button"
             className="btn"
             style={{ marginLeft: 8, padding: "2px 8px", fontSize: 12 }}
-            onClick={() => {
-              setContextSubmissionId(null);
-              setContextUsed(null);
-            }}
+            onClick={() => setContextSubmissionId(null)}
           >
             取消关联
           </button>
         </div>
-      ) : null}
-      {contextUsed?.submission ? (
-        <div className="muted" style={{ fontSize: 12 }}>上次回复已使用提交与评测上下文。</div>
       ) : null}
       {aiNotice ? <div className="muted" style={{ fontSize: 12 }}>{aiNotice}</div> : null}
       {aiMeta?.source ? (
@@ -175,9 +161,7 @@ export default function LabAiPanel({
       ) : null}
       {err ? <div className="err">{err}</div> : null}
       <div className="lab-ai-chat">
-        {aiTurns.length === 0 ? (
-          <div className="muted" style={{ fontSize: 13 }}>在下方输入问题后发送，或从提交结果点击「AI 分析」。</div>
-        ) : (
+        {aiTurns.length === 0 ? null : (
           aiTurns.map((t, i) => (
             <div key={i} className={`lab-ai-bubble lab-ai-bubble--${t.role}`}>
               {t.role === "assistant" ? (
@@ -224,11 +208,7 @@ export default function LabAiPanel({
               </span>
             ))}
           </div>
-        ) : (
-          <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-            可上传代码片段或说明文档（最多 5 个，单文件 2MB）。
-          </p>
-        )}
+        ) : null}
       </div>
       <textarea
         className="lab-ai-input"
@@ -246,7 +226,6 @@ export default function LabAiPanel({
             setAiTurns([]);
             setAiNotice(null);
             setAiMeta(null);
-            setContextUsed(null);
             setAttachments([]);
             autoRanRef.current = null;
           }}

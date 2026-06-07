@@ -54,12 +54,21 @@ export function labProblemStatusLabel(status: LabProblemGridStatus): string {
   return "未做";
 }
 
+function labSetRecencyMs(card: StudentLabSetOverviewCard): number {
+  const iso = card.dueAt ?? card.startAt;
+  return iso ? new Date(iso).getTime() : 0;
+}
+
+/** 未完成在前；已完成自动靠后；同组内较新的在前 */
 export function sortLabSetsForDisplay(
   sets: StudentLabSetOverviewCard[],
 ): StudentLabSetOverviewCard[] {
   return [...sets].sort((a, b) => {
     if (a.completed !== b.completed) return a.completed ? 1 : -1;
-    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    const ta = labSetRecencyMs(a);
+    const tb = labSetRecencyMs(b);
+    if (ta !== tb) return tb - ta;
+    if (a.sortOrder !== b.sortOrder) return b.sortOrder - a.sortOrder;
     return a.title.localeCompare(b.title, "zh-CN");
   });
 }

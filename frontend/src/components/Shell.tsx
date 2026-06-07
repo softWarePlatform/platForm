@@ -1,37 +1,29 @@
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import PageTransition from "./motion/PageTransition";
 import { api } from "../api/client";
 import { useAuth, type Role } from "../auth/AuthContext";
 import { NOTIFICATIONS_REFRESH } from "../lib/appEvents";
 
-const linkStyle = ({ isActive }: { isActive: boolean }) => ({
-  textDecoration: "none",
-  padding: "8px 10px",
-  borderRadius: 10,
-  border: "1px solid transparent",
-  color: "inherit",
-  background: isActive ? "#e8eefc" : "transparent",
-  whiteSpace: "nowrap" as const,
-});
-
 type NavItem = { to: string; label: string; end?: boolean; roles: Role[]; className?: string };
 
+/** 顶部导航 ≤7 项；教师批改/实验管理从教学台子导航进入 */
 const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "主界面", end: true, roles: ["STUDENT", "TEACHER", "ADMIN"] },
-  { to: "/enrollment", label: "选课系统", roles: ["STUDENT", "ADMIN"] },
+  { to: "/enrollment", label: "选课", roles: ["STUDENT", "ADMIN"] },
   { to: "/teaching", label: "教学台", roles: ["TEACHER", "ADMIN"] },
-  { to: "/my-homework", label: "我的作业", roles: ["STUDENT", "ADMIN"] },
-  { to: "/my-labs", label: "我的实验", roles: ["STUDENT", "ADMIN"] },
-  { to: "/teaching/homework", label: "作业批改", roles: ["TEACHER", "ADMIN"] },
-  { to: "/teaching/labs", label: "实验管理", roles: ["TEACHER", "ADMIN"] },
-  { to: "/messages", label: "站内消息", roles: ["STUDENT", "TEACHER", "ADMIN"], className: "nav-messages" },
+  { to: "/my-homework", label: "我的作业", roles: ["STUDENT"] },
+  { to: "/my-labs", label: "我的实验", roles: ["STUDENT"] },
+  { to: "/messages", label: "消息", roles: ["STUDENT", "TEACHER", "ADMIN"], className: "nav-messages" },
   { to: "/profile", label: "个人中心", roles: ["STUDENT", "TEACHER", "ADMIN"] },
-  { to: "/admin/users", label: "用户管理", roles: ["ADMIN"] },
+  { to: "/admin/users", label: "用户", roles: ["ADMIN"] },
 ];
 
 export default function Shell() {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -108,28 +100,48 @@ export default function Shell() {
 
           {user ? (
             <nav className="app-header__nav row" aria-label="站点导航">
-              {visibleNav.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  style={linkStyle}
-                  className={item.className}
-                >
-                  {item.label}
-                  {item.to === "/messages" && unreadCount > 0 ? (
-                    <span className="nav-badge" aria-label={`${unreadCount} 条未读`}>
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </span>
-                  ) : null}
-                </NavLink>
-              ))}
+              <LayoutGroup id="app-nav">
+                {visibleNav.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) =>
+                      ["nav-link", isActive ? "nav-link--active" : "", item.className ?? ""]
+                        .filter(Boolean)
+                        .join(" ")
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {isActive ? (
+                          <motion.span
+                            className="nav-link__pill"
+                            layoutId="nav-active-pill"
+                            transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                          />
+                        ) : null}
+                        <span>{item.label}</span>
+                        {item.to === "/messages" && unreadCount > 0 ? (
+                          <span className="nav-badge" aria-label={`${unreadCount} 条未读`}>
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                          </span>
+                        ) : null}
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </LayoutGroup>
             </nav>
           ) : null}
         </div>
       </header>
-      <main>
-        <Outlet />
+      <main className="app-main">
+        <AnimatePresence mode="wait">
+          <PageTransition routeKey={location.pathname}>
+            <Outlet />
+          </PageTransition>
+        </AnimatePresence>
       </main>
     </div>
   );

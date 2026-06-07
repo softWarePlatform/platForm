@@ -66,10 +66,6 @@ export default function PracticeTagFilterPanel({
         ) : null}
       </div>
 
-      <p className="enroll-filter-hint muted" style={{ margin: "0 0 10px" }}>
-        {PRACTICE_TAG_MATCH_HINTS[mode]}
-      </p>
-
       <div className="enroll-filter-body">
         <button
           type="button"

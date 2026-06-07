@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import FormSection from "../layout/FormSection";
 import type { HomeworkAttachmentRow, HomeworkFormValues, RubricItem } from "./homeworkFormTypes";
 import { isAllowedHomeworkFile } from "./homeworkFormApi";
 
@@ -55,102 +56,88 @@ export default function HomeworkFormFields({
   }
 
   return (
-    <>
-      <div className="field">
-        <label>
-          作业标题 <span className="muted">（必填，1–100 字）</span>
-        </label>
-        <input
-          value={values.title}
-          onChange={(e) => set({ title: e.target.value })}
-          maxLength={100}
-          required
-        />
-        <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-          {values.title.length}/100
-        </div>
-      </div>
-
-      <div>
-        <div style={{ fontWeight: 700, marginBottom: 6 }}>作业描述（Markdown）</div>
-        <p className="muted" style={{ margin: "0 0 8px", fontSize: 13 }}>
-          支持标题、列表、代码块、表格等；图片请通过附件上传。
-        </p>
-        <div
-          className="grid"
-          style={{ gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "stretch" }}
-        >
-          <textarea
-            rows={12}
-            value={values.descriptionMd}
-            onChange={(e) => set({ descriptionMd: e.target.value })}
-            style={{ fontFamily: "ui-monospace, monospace", fontSize: 13 }}
-            placeholder="## 要求&#10;- 提交 PDF 报告&#10;- 附源代码 zip"
+    <div className="homework-form-fields">
+      <FormSection title="基本信息">
+        <div className="field">
+          <label>
+            作业标题 <span className="field-label-muted">1–100 字</span>
+          </label>
+          <input
+            value={values.title}
+            onChange={(e) => set({ title: e.target.value })}
+            maxLength={100}
+            required
           />
-          <div
-            className="card"
-            style={{ padding: 12, overflow: "auto", minHeight: 200, fontSize: 14, lineHeight: 1.65 }}
-          >
-            <ReactMarkdown>{values.descriptionMd || "（预览）"}</ReactMarkdown>
+          <div className="field-foot">{values.title.length}/100</div>
+        </div>
+
+        <div>
+          <label className="field-label">作业描述</label>
+          <div className="md-editor">
+            <textarea
+              className="md-editor__input"
+              rows={10}
+              value={values.descriptionMd}
+              onChange={(e) => set({ descriptionMd: e.target.value })}
+              placeholder="## 要求&#10;- 提交 PDF 报告&#10;- 附源代码 zip"
+            />
+            <div className="md-preview">
+              <ReactMarkdown>{values.descriptionMd || "（预览）"}</ReactMarkdown>
+            </div>
           </div>
         </div>
-      </div>
+      </FormSection>
 
-      <div
-        className="grid"
-        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}
-      >
-        <div className="field">
-          <label>截止时间</label>
-          <input
-            type="datetime-local"
-            value={values.dueAt}
-            onChange={(e) => set({ dueAt: e.target.value })}
-          />
+      <FormSection title="时间与对象">
+        <div className="field-row">
+          <div className="field">
+            <label>截止时间</label>
+            <input
+              type="datetime-local"
+              value={values.dueAt}
+              onChange={(e) => set({ dueAt: e.target.value })}
+            />
+          </div>
+          <div className="field">
+            <label>发布对象</label>
+            <select
+              className="dash-select"
+              value={values.audience}
+              onChange={(e) => {
+                const audience = e.target.value as "all" | "class";
+                set({ audience, targetClassId: audience === "all" ? "" : values.targetClassId });
+              }}
+            >
+              <option value="all">全课程</option>
+              <option value="class">指定班级</option>
+            </select>
+            {values.audience === "class" ? (
+              classes.length > 0 ? (
+                <select
+                  className="dash-select"
+                  style={{ marginTop: 8 }}
+                  value={values.targetClassId}
+                  onChange={(e) => set({ targetClassId: e.target.value })}
+                  required
+                >
+                  <option value="">选择班级</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="field-foot">
+                  <Link to={`/courses/${courseId}/manage`}>课程管理</Link> 建班
+                </div>
+              )
+            ) : null}
+          </div>
         </div>
-        <div className="field">
-          <label>发布对象</label>
-          <select
-            className="dash-select"
-            value={values.audience}
-            onChange={(e) => {
-              const audience = e.target.value as "all" | "class";
-              set({ audience, targetClassId: audience === "all" ? "" : values.targetClassId });
-            }}
-          >
-            <option value="all">全课程</option>
-            <option value="class">指定班级</option>
-          </select>
-          {values.audience === "class" ? (
-            classes.length > 0 ? (
-              <select
-                className="dash-select"
-                style={{ marginTop: 8 }}
-                value={values.targetClassId}
-                onChange={(e) => set({ targetClassId: e.target.value })}
-                required
-              >
-                <option value="">选择班级</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                请先在 <Link to={`/courses/${courseId}/manage`}>课程管理</Link> 建班。
-              </div>
-            )
-          ) : null}
-        </div>
-      </div>
+      </FormSection>
 
-      <div className="card grid" style={{ boxShadow: "none", gap: 10 }}>
-        <div style={{ fontWeight: 700 }}>附件资料</div>
-        <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-          .pdf / .doc / .docx / .zip / .rar，单文件 ≤20MB，最多 10 个（{totalAttachments}/10）
-        </p>
+      <FormSection title={`附件（${totalAttachments}/10）`}>
         {onPendingFilesChange ? (
           <label className="btn" style={{ width: "fit-content", cursor: "pointer" }}>
             添加附件
@@ -166,41 +153,42 @@ export default function HomeworkFormFields({
             />
           </label>
         ) : null}
-        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
-          {existingAttachments.map((a) => (
-            <li key={a.id} className="row spread" style={{ marginBottom: 4 }}>
-              <span>
-                {a.fileName} ({(a.sizeBytes / 1024).toFixed(0)} KB)
-              </span>
-              {onDeleteAttachment ? (
-                <button type="button" className="btn" onClick={() => onDeleteAttachment(a.id)}>
-                  删除
-                </button>
-              ) : null}
-            </li>
-          ))}
-          {pendingFiles.map((f, i) => (
-            <li key={`${f.name}-${i}`} className="row spread" style={{ marginBottom: 4 }}>
-              <span className="muted">{f.name}（待上传）</span>
-              {onPendingFilesChange ? (
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() =>
-                    onPendingFilesChange(pendingFiles.filter((_, j) => j !== i))
-                  }
-                >
-                  移除
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      </div>
+        {(existingAttachments.length > 0 || pendingFiles.length > 0) ? (
+          <ul className="file-list">
+            {existingAttachments.map((a) => (
+              <li key={a.id} className="file-list__item">
+                <span>
+                  {a.fileName} <span className="muted">({(a.sizeBytes / 1024).toFixed(0)} KB)</span>
+                </span>
+                {onDeleteAttachment ? (
+                  <button type="button" className="btn btn--sm" onClick={() => onDeleteAttachment(a.id)}>
+                    删除
+                  </button>
+                ) : null}
+              </li>
+            ))}
+            {pendingFiles.map((f, i) => (
+              <li key={`${f.name}-${i}`} className="file-list__item">
+                <span className="muted">{f.name}（待上传）</span>
+                {onPendingFilesChange ? (
+                  <button
+                    type="button"
+                    className="btn btn--sm"
+                    onClick={() => onPendingFilesChange(pendingFiles.filter((_, j) => j !== i))}
+                  >
+                    移除
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="form-section__empty">暂无附件</p>
+        )}
+      </FormSection>
 
-      <div className="card grid" style={{ boxShadow: "none", gap: 10 }}>
-        <div style={{ fontWeight: 700 }}>迟交规则</div>
-        <label className="row">
+      <FormSection title="迟交">
+        <label className="check-row">
           <input
             type="checkbox"
             checked={values.allowLate}
@@ -209,21 +197,19 @@ export default function HomeworkFormFields({
           <span>允许迟交</span>
         </label>
         {values.allowLate ? (
-          <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div className="field-row">
             <div className="field">
-              <label>每日扣减（占最高分 %）</label>
+              <label>每日扣减（%）</label>
               <input
                 type="number"
                 min={0}
                 max={100}
                 value={values.latePenaltyPercentPerDay}
-                onChange={(e) =>
-                  set({ latePenaltyPercentPerDay: Number(e.target.value) || 0 })
-                }
+                onChange={(e) => set({ latePenaltyPercentPerDay: Number(e.target.value) || 0 })}
               />
             </div>
             <div className="field">
-              <label>超过天数按 0 分计</label>
+              <label>超过天数计 0 分</label>
               <input
                 type="number"
                 min={1}
@@ -234,11 +220,10 @@ export default function HomeworkFormFields({
             </div>
           </div>
         ) : null}
-      </div>
+      </FormSection>
 
-      <div className="card grid" style={{ boxShadow: "none", gap: 10 }}>
-        <div style={{ fontWeight: 700 }}>重做与提交方式</div>
-        <label className="row">
+      <FormSection title="重做与提交">
+        <label className="check-row">
           <input
             type="checkbox"
             checked={values.allowRedo}
@@ -247,34 +232,32 @@ export default function HomeworkFormFields({
           <span>允许重做</span>
         </label>
         {values.allowRedo ? (
-          <div className="field">
-            <label>最多重做次数</label>
-            <select
-              className="dash-select"
-              value={values.maxRedoOption}
-              onChange={(e) =>
-                set({ maxRedoOption: e.target.value as HomeworkFormValues["maxRedoOption"] })
-              }
-            >
-              <option value="1">1 次</option>
-              <option value="3">3 次</option>
-              <option value="5">5 次</option>
-              <option value="unlimited">无限次</option>
-            </select>
-          </div>
-        ) : null}
-        {values.allowRedo ? (
           <>
-            <label className="row">
+            <div className="field">
+              <label>最多重做次数</label>
+              <select
+                className="dash-select"
+                value={values.maxRedoOption}
+                onChange={(e) =>
+                  set({ maxRedoOption: e.target.value as HomeworkFormValues["maxRedoOption"] })
+                }
+              >
+                <option value="1">1 次</option>
+                <option value="3">3 次</option>
+                <option value="5">5 次</option>
+                <option value="unlimited">无限次</option>
+              </select>
+            </div>
+            <label className="check-row">
               <input
                 type="checkbox"
                 checked={values.redoReasonRequired}
                 onChange={(e) => set({ redoReasonRequired: e.target.checked })}
               />
-              <span>重做申请理由必填</span>
+              <span>重做理由必填</span>
             </label>
             <div className="field">
-              <label>重做后成绩策略</label>
+              <label>重做后成绩</label>
               <select
                 className="dash-select"
                 value={values.redoGradePolicy}
@@ -289,41 +272,36 @@ export default function HomeworkFormFields({
           </>
         ) : null}
         <div className="field">
-          <label>学生作答方式</label>
-          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <label>作答方式</label>
+          <div className="segmented">
             {[
-              { value: "RICH_TEXT", label: "文本输入" },
-              { value: "FILE", label: "仅文件" },
-              { value: "RICH_TEXT_OR_FILE", label: "文本 + 文件" },
+              { value: "RICH_TEXT", label: "文本" },
+              { value: "FILE", label: "文件" },
+              { value: "RICH_TEXT_OR_FILE", label: "文本+文件" },
             ].map((opt) => {
               const active = values.answerMode === opt.value;
               return (
                 <button
                   key={opt.value}
                   type="button"
-                  className={`btn ${active ? "primary" : ""}`.trim()}
-                  onClick={() =>
-                    set({ answerMode: opt.value as HomeworkFormValues["answerMode"] })
-                  }
+                  className={`segmented__btn${active ? " segmented__btn--active" : ""}`}
+                  onClick={() => set({ answerMode: opt.value as HomeworkFormValues["answerMode"] })}
                 >
                   {opt.label}
                 </button>
               );
             })}
           </div>
-          <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-            选择后会决定学生端显示文本框、文件上传，或两者同时显示。
-          </div>
         </div>
-        <label className="row">
+        <label className="check-row">
           <input
             type="checkbox"
             checked={values.allowMultipleSubmits}
             onChange={(e) => set({ allowMultipleSubmits: e.target.checked })}
           />
-          <span>允许多次提交（截止前可覆盖）</span>
+          <span>允许多次提交</span>
         </label>
-        <label className="row">
+        <label className="check-row">
           <input
             type="checkbox"
             checked={values.requireAttachment}
@@ -331,47 +309,40 @@ export default function HomeworkFormFields({
           />
           <span>附件必传</span>
         </label>
-        <div className="field">
-          <label>提交类型</label>
-          <select
-            className="dash-select"
-            value={values.submissionType}
-            onChange={(e) =>
-              set({ submissionType: e.target.value as "INDIVIDUAL" | "GROUP" })
-            }
-          >
-            <option value="INDIVIDUAL">个人作业</option>
-            <option value="GROUP">小组作业</option>
-          </select>
-        </div>
-        {values.submissionType === "GROUP" ? (
+        <div className="field-row">
           <div className="field">
-            <label>小组人数上限</label>
-            <input
-              type="number"
-              min={2}
-              max={50}
-              value={values.maxGroupSize}
-              onChange={(e) => set({ maxGroupSize: Number(e.target.value) || 2 })}
-            />
+            <label>提交类型</label>
+            <select
+              className="dash-select"
+              value={values.submissionType}
+              onChange={(e) => set({ submissionType: e.target.value as "INDIVIDUAL" | "GROUP" })}
+            >
+              <option value="INDIVIDUAL">个人</option>
+              <option value="GROUP">小组</option>
+            </select>
           </div>
-        ) : null}
-      </div>
+          {values.submissionType === "GROUP" ? (
+            <div className="field">
+              <label>小组人数上限</label>
+              <input
+                type="number"
+                min={2}
+                max={50}
+                value={values.maxGroupSize}
+                onChange={(e) => set({ maxGroupSize: Number(e.target.value) || 2 })}
+              />
+            </div>
+          ) : null}
+        </div>
+      </FormSection>
 
-      <div className="card grid" style={{ boxShadow: "none", gap: 10 }}>
-        <div style={{ fontWeight: 700 }}>评分标准</div>
-        <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-          可设置分项维度（总分建议为 100），或上传评分标准文件。
-        </p>
+      <FormSection title="评分标准">
         {values.rubric.map((r, i) => (
-          <div key={i} className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <div key={i} className="rubric-row">
             <input
-              placeholder="维度名称"
+              placeholder="维度"
               value={r.name}
-              onChange={(e) =>
-                set({ rubric: updateRubric(values.rubric, i, { name: e.target.value }) })
-              }
-              style={{ flex: 1, minWidth: 120 }}
+              onChange={(e) => set({ rubric: updateRubric(values.rubric, i, { name: e.target.value }) })}
             />
             <input
               type="number"
@@ -381,16 +352,13 @@ export default function HomeworkFormFields({
               value={r.maxScore}
               onChange={(e) =>
                 set({
-                  rubric: updateRubric(values.rubric, i, {
-                    maxScore: Number(e.target.value) || 0,
-                  }),
+                  rubric: updateRubric(values.rubric, i, { maxScore: Number(e.target.value) || 0 }),
                 })
               }
-              style={{ width: 88 }}
             />
             <button
               type="button"
-              className="btn"
+              className="btn btn--sm"
               onClick={() => set({ rubric: values.rubric.filter((_, j) => j !== i) })}
             >
               删除
@@ -399,15 +367,15 @@ export default function HomeworkFormFields({
         ))}
         <button
           type="button"
-          className="btn"
+          className="btn btn--sm"
           onClick={() => set({ rubric: [...values.rubric, { name: "", maxScore: 0 }] })}
         >
-          添加评分维度
+          添加维度
         </button>
         {onPendingRubricFileChange ? (
           <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <label className="btn" style={{ cursor: "pointer", margin: 0 }}>
-              上传评分标准文件
+            <label className="btn btn--sm" style={{ cursor: "pointer", margin: 0 }}>
+              上传评分文件
               <input
                 type="file"
                 accept=".pdf,.doc,.docx,.zip,.rar"
@@ -421,28 +389,21 @@ export default function HomeworkFormFields({
               />
             </label>
             {rubricFileName ? <span className="muted">已上传：{rubricFileName}</span> : null}
-            {pendingRubricFile ? (
-              <span className="muted">待上传：{pendingRubricFile.name}</span>
-            ) : null}
+            {pendingRubricFile ? <span className="muted">待上传：{pendingRubricFile.name}</span> : null}
           </div>
         ) : null}
-      </div>
+      </FormSection>
 
       {showPublishCheckbox ? (
-        <label className="row" style={{ alignItems: "flex-start", gap: 8 }}>
+        <label className="publish-toggle">
           <input
             type="checkbox"
             checked={values.publishNow}
             onChange={(e) => set({ publishNow: e.target.checked })}
-            style={{ marginTop: 3 }}
           />
-          <span className="muted" style={{ lineHeight: 1.6 }}>
-            <strong style={{ color: "var(--text)" }}>保存后立即发布给学生</strong>
-            <br />
-            不勾选则保存为草稿；可在列表中再点「发布作业」。
-          </span>
+          <span>保存后立即发布</span>
         </label>
       ) : null}
-    </>
+    </div>
   );
 }

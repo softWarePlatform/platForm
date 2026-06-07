@@ -91,12 +91,6 @@ export default function Courses({ enrollmentMode = false }: { enrollmentMode?: b
           />
         </div>
       </div>
-      <div className="muted" style={{ marginTop: 8 }}>
-        {enrollmentMode
-          ? "选课后将同步到主界面课表与「我的课程」。仅展示已发布课程。"
-          : "仅展示已发布课程；教师可在「教学台」管理未发布内容。"}
-      </div>
-
       {error ? <div className="err">{error}</div> : null}
       {loading ? <div className="muted" style={{ marginTop: 16 }}>加载中…</div> : null}
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../api/client";
+import { useConfirm } from "../ui/ConfirmDialog";
 
 type LabFile = {
   id: string;
@@ -23,6 +24,7 @@ function formatSize(n: number) {
 }
 
 export default function LabAttachmentsPanel({ labId, isTeacher }: Props) {
+  const { confirm } = useConfirm();
   const fileRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<LabFile[]>([]);
   const [title, setTitle] = useState("");
@@ -69,16 +71,14 @@ export default function LabAttachmentsPanel({ labId, isTeacher }: Props) {
   }
 
   async function remove(fileId: string) {
-    if (!confirm("确定删除该附件？")) return;
+    const ok = await confirm({ title: "删除附件", message: "确定删除该附件？", danger: true });
+    if (!ok) return;
     await api.delete(`/labs/${labId}/files/${fileId}`);
     await load();
   }
 
   return (
     <div className="lab-attachments">
-      <div className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
-        指导书、数据文件等（可下载）
-      </div>
       {files.length === 0 ? (
         <p className="muted" style={{ fontSize: 13, margin: "0 0 8px" }}>
           暂无附件

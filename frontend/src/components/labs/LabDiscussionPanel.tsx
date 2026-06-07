@@ -102,7 +102,7 @@ export default function LabDiscussionPanel({ courseId, labId }: Props) {
             <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.55 }}>{p.body}</p>
           </div>
         ))}
-        {posts.length === 0 ? <div className="muted">暂无帖子，点击「我要提问」发帖。</div> : null}
+        {posts.length === 0 ? <div className="muted">暂无帖子</div> : null}
       </div>
 
       <DiscussionPostModal

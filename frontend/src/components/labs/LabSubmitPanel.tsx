@@ -67,9 +67,6 @@ function JudgeTimerPanel({ elapsedSec }: { elapsedSec: number }) {
       <div className="lab-judge-timer__bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
         <div className="lab-judge-timer__fill" style={{ width: `${pct}%` }} />
       </div>
-      <p className="muted lab-judge-timer__hint">
-        计时仅表示等待评测结果的时间；超过 {JUDGE_TIMEOUT_SEC} 秒将自动提示异常。
-      </p>
     </div>
   );
 }
@@ -92,7 +89,7 @@ function TestCaseResultItem({ detail, index }: { detail: TestCaseDetail; index: 
       </summary>
       <div className="lab-tc-result-body">
         {detail.hidden ? (
-          <div className="muted">隐藏用例不展示输入输出，仅显示是否通过。</div>
+          <div className="muted">隐藏用例</div>
         ) : (
           <>
             {detail.input !== undefined ? (
@@ -276,20 +273,10 @@ export default function LabSubmitPanel({
 
   return (
     <div className="grid" style={{ gap: 14 }}>
-      <div className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>
-        批改模式：
-        <strong>{cfg.judgeMode === "MANUAL" ? "教师手动批改" : "自动评测"}</strong>
-        ；允许语言：{cfg.allowedLanguages.join("、")}；允许扩展名：
-        {cfg.allowedFileExtensions.join(" ")}
-      </div>
-
       {pendingReturn ? (
         <div className="practice-ai-notice" style={{ borderColor: "#fcd34d", background: "#fffbeb" }}>
           <strong>教师已打回本次提交</strong>
           <p style={{ margin: "6px 0 0", fontSize: 13 }}>{pendingReturn}</p>
-          <p className="muted" style={{ margin: "6px 0 0", fontSize: 12 }}>
-            请修改后重新上传提交。
-          </p>
         </div>
       ) : null}
 
@@ -402,13 +389,7 @@ export default function LabSubmitPanel({
             </div>
           </div>
 
-          {isJudging && testDetails.length === 0 ? (
-            <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-              正在等待评测机返回结果，请查看上方计时条。
-            </p>
-          ) : status === "PENDING_REVIEW" ? (
-            <div className="muted" style={{ fontSize: 13 }}>已提交，等待教师批改。</div>
-          ) : testDetails.length > 0 ? (
+          {isJudging && testDetails.length === 0 ? null : status === "PENDING_REVIEW" ? null : testDetails.length > 0 ? (
             testDetails.map((d, i) => <TestCaseResultItem key={d.testCaseId ?? i} detail={d} index={i} />)
           ) : feedback?.feedback?.error ? (
             <div className="err" style={{ fontSize: 13 }}>{feedback.feedback.error}</div>

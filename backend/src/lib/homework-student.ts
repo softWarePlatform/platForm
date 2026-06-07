@@ -35,6 +35,15 @@ export function computeLateMeta(hw: Homework, at: Date = new Date()) {
   return { isLate: true, lateDays, canSubmit: true, lateHint: hint };
 }
 
+/** 是否已正式提交（含 seed 遗留：有内容且已批改但未写 submittedAt） */
+export function isSubmissionFinalized(sub: HomeworkSubmission | null): boolean {
+  if (!sub) return false;
+  if (sub.returnReason && !sub.locked) return false;
+  return Boolean(
+    sub.locked || sub.submittedAt || (sub.graded && Boolean(sub.content?.trim())),
+  );
+}
+
 export function remainingRedoCount(hw: Homework, sub: HomeworkSubmission | null): number | null {
   if (!hw.allowRedo) return null;
   if (hw.maxRedoCount === -1) return null;
@@ -52,18 +61,23 @@ export function computeStudentStatus(
   if (pendingRedo?.status === "PENDING") return "REDO_PENDING";
   if (sub?.returnReason && !sub.locked) return "RETURNED";
 
-  const hasSubmit = Boolean(sub?.submittedAt && sub.content.trim());
-  const hasDraft = Boolean(sub?.draftContent?.trim() || sub?.content?.trim());
+  const finalized = isSubmissionFinalized(sub);
+  const hasDraft = Boolean(
+    sub?.draftContent?.trim() || (!finalized && sub?.content?.trim()),
+  );
+
+  if (finalized) {
+    if (sub?.graded) return "LOCKED";
+    return sub?.locked || sub?.submittedAt ? "SUBMITTED" : "LOCKED";
+  }
 
   if (sub?.locked) return "LOCKED";
 
-  if (hasSubmit && !sub?.graded) return "SUBMITTED";
-
   const late = computeLateMeta(hw, now);
-  if (!hasSubmit && !hasDraft && hw.dueAt && now > hw.dueAt && !late.canSubmit) {
+  if (!hasDraft && hw.dueAt && now > hw.dueAt && !late.canSubmit) {
     return "OVERDUE";
   }
-  if (!hasSubmit && !hasDraft) return "NOT_STARTED";
+  if (!hasDraft) return "NOT_STARTED";
   return "IN_PROGRESS";
 }
 

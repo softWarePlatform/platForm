@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import { api } from "../../api/client";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
+import { useToast } from "../../components/ui/Toast";
 import CourseSectionHead from "./CourseSectionHead";
 import { formatCorrectAnswer, formatResultDetail } from "./practice/practiceFormat";
 import {
@@ -41,6 +43,8 @@ const FEEDBACK_TYPES = Object.entries(FEEDBACK_TYPE_LABEL).map(([value, label]) 
 export default function PracticeSession() {
   const { courseId = "", sessionId = "" } = useParams();
   const navigate = useNavigate();
+  const { confirm } = useConfirm();
+  const { success } = useToast();
   const [session, setSession] = useState<{
     id: string;
     status: string;
@@ -87,7 +91,12 @@ export default function PracticeSession() {
   }
 
   async function deleteRecord() {
-    if (!confirm("确定删除该练习记录吗？删除后不可恢复。")) return;
+    const ok = await confirm({
+      title: "删除练习记录",
+      message: "确定删除该练习记录吗？删除后不可恢复。",
+      danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     setErr(null);
     try {
@@ -140,7 +149,7 @@ export default function PracticeSession() {
       description: fbDesc.trim(),
     });
     setFbDesc("");
-    alert("反馈已提交");
+    success("反馈已提交");
   }
 
   function goToQuestion(i: number) {
@@ -154,16 +163,7 @@ export default function PracticeSession() {
         ← 返回练习
       </Link>
 
-      <CourseSectionHead
-        title={graded ? "练习结果" : "进行练习"}
-        description={
-          graded
-            ? "查看得分、参考答案与题目解析"
-            : session
-              ? `第 ${idx + 1} / ${session.items.length} 题，完成后请提交整份练习`
-              : "加载中"
-        }
-      />
+      <CourseSectionHead title={graded ? "练习结果" : "进行练习"} />
 
       {graded && session ? (
         <p className="practice-score-summary" style={{ marginTop: 12 }}>

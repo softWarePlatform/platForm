@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../api/client";
+import { useConfirm } from "../../../components/ui/ConfirmDialog";
 import { useCourse } from "../CourseContext";
 import CourseSectionHead from "../CourseSectionHead";
 import { refreshAfterAnnouncementRead } from "../../../lib/appEvents";
@@ -26,6 +27,7 @@ type ListResponse = {
 };
 
 export default function CourseAnnouncements() {
+  const { confirm } = useConfirm();
   const { courseId, isTeacher, user, setErr } = useCourse();
   const [list, setList] = useState<AnnouncementRow[]>([]);
   const [page, setPage] = useState(1);
@@ -115,7 +117,12 @@ export default function CourseAnnouncements() {
   }
 
   async function remove(row: AnnouncementRow) {
-    if (!confirm("删除后不可恢复，确定删除吗？")) return;
+    const ok = await confirm({
+      title: "删除公告",
+      message: "删除后不可恢复，确定删除吗？",
+      danger: true,
+    });
+    if (!ok) return;
     await api.delete(`/announcements/${row.id}`);
     await load();
   }
@@ -171,14 +178,7 @@ export default function CourseAnnouncements() {
   return (
     <div>
       <div className="spread" style={{ alignItems: "flex-start", marginBottom: 8 }}>
-        <CourseSectionHead
-          title="课程公告"
-          description={
-            isTeacher
-              ? "发布、置顶与编辑公告；发布后选课学生会收到站内通知。"
-              : "查看课程通知；未读公告在列表中加粗显示，可标记重要公告便于查找。"
-          }
-        />
+        <CourseSectionHead title="课程公告" />
         <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
           {!isTeacher && unreadCount > 0 ? (
             <button type="button" className="btn" onClick={() => void markAllRead()}>

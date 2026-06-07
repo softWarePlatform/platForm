@@ -17,6 +17,7 @@ import {
 import {
   computeLateMeta,
   computeStudentStatus,
+  isSubmissionFinalized,
   remainingRedoCount,
   STATUS_LABELS,
   statusBadgeClass,
@@ -62,12 +63,13 @@ function serializeStudentView(
   const status = computeStudentStatus(hw, sub, pendingRedo);
   const late = computeLateMeta(hw);
   const redoLeft = remainingRedoCount(hw, sub);
+  const finalized = isSubmissionFinalized(sub);
   return {
     status,
     statusLabel: STATUS_LABELS[status],
     statusClass: statusBadgeClass(status),
-    canEdit: !sub?.locked && status !== "REDO_PENDING" && late.canSubmit,
-    canSubmit: !sub?.locked && status !== "REDO_PENDING" && late.canSubmit,
+    canEdit: !finalized && status !== "REDO_PENDING" && late.canSubmit,
+    canSubmit: !finalized && status !== "REDO_PENDING" && late.canSubmit,
     lateHint: late.lateHint,
     returnReason: sub?.returnReason ?? null,
     redoRemaining: redoLeft,
@@ -75,7 +77,7 @@ function serializeStudentView(
     score: sub?.released ? sub.score : null,
     feedback: sub?.released ? sub.feedback : null,
     draftContent: sub?.draftContent ?? "",
-    content: sub?.locked || sub?.submittedAt ? sub.content : "",
+    content: finalized ? (sub?.content ?? "") : "",
     requirementsReadAt: sub?.requirementsReadAt ?? null,
     submittedAt: sub?.submittedAt ?? null,
     locked: Boolean(sub?.locked),

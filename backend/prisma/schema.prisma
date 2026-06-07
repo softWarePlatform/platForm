@@ -83,6 +83,7 @@ model User {
   name         String
   role         Role     @default(STUDENT)
   avatarUrl    String?
+  signature    String?
   emailVerifiedAt DateTime?
   emailVerifyToken String?
   emailVerifyExpiresAt DateTime?

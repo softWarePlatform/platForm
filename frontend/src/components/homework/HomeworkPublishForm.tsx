@@ -39,15 +39,15 @@ export default function HomeworkPublishForm({ courseId, onCreated, setErr }: Pro
     e.preventDefault();
     const trimmed = values.title.trim();
     if (!trimmed) {
-      setErr("???????");
+      setErr("请填写作业标题");
       return;
     }
     if (trimmed.length > 100) {
-      setErr("?????? 100 ???");
+      setErr("标题不能超过 100 个字符");
       return;
     }
     if (values.audience === "class" && !values.targetClassId) {
-      setErr("?????????");
+      setErr("请选择班级");
       return;
     }
     setErr(null);
@@ -68,24 +68,14 @@ export default function HomeworkPublishForm({ courseId, onCreated, setErr }: Pro
         typeof e2 === "object" && e2 !== null && "response" in e2
           ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
           : null;
-      setErr(msg ?? "??????");
+      setErr(msg ?? "保存失败");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <form className="card grid homework-publish-form" onSubmit={(e) => void onSubmit(e)}>
-      <div className="spread" style={{ alignItems: "flex-start" }}>
-        <div>
-          <div style={{ fontWeight: 900 }}>{"\u53d1\u5e03\u4f5c\u4e1a"}</div>
-          <p className="muted" style={{ margin: "6px 0 0", fontSize: 13, lineHeight: 1.6 }}>
-            {"\u586b\u5199\u4f5c\u4e1a\u8981\u6c42\u3001\u9644\u4ef6\u4e0e\u8fdf\u4ea4/\u91cd\u505a\u89c4\u5219\uff1b\u9ed8\u8ba4\u4fdd\u5b58\u4e3a\u8349\u7a3f\u3002"}
-          </p>
-        </div>
-        {createOk ? <span className="save-ok">{"\u5df2\u4fdd\u5b58"}</span> : null}
-      </div>
-
+    <form className="homework-publish-form" onSubmit={(e) => void onSubmit(e)}>
       <HomeworkFormFields
         courseId={courseId}
         values={values}
@@ -97,10 +87,11 @@ export default function HomeworkPublishForm({ courseId, onCreated, setErr }: Pro
         onPendingRubricFileChange={setPendingRubricFile}
       />
 
-      <div className="row" style={{ gap: 12 }}>
+      <div className="form-actions form-actions--bar">
         <button className="btn primary" type="submit" disabled={busy}>
-          {busy ? "\u4fdd\u5b58\u4e2d\u2026" : "\u4fdd\u5b58\u4f5c\u4e1a"}
+          {busy ? "保存中…" : "保存作业"}
         </button>
+        {createOk ? <span className="save-ok">已保存</span> : null}
       </div>
     </form>
   );

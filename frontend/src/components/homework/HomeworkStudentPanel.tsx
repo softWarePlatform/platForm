@@ -93,7 +93,7 @@ export default function HomeworkStudentPanel({ homework: h }: Props) {
 
       {h.rubricFileName ? (
         <div className="muted" style={{ fontSize: 13 }}>
-          评分标准文件：{h.rubricFileName}（请向教师索取或于课程资料中查看）
+          评分标准：{h.rubricFileName}
         </div>
       ) : null}
     </div>

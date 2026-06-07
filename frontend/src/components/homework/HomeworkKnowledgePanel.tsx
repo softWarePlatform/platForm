@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { getApiError } from "../../api/errors";
+import { useToast } from "../ui/Toast";
 import {
   askKnowledgeGap,
   fetchKnowledgeGap,
@@ -18,6 +20,7 @@ const LEVEL_LABEL = { weak: "薄弱", fair: "一般", good: "良好" } as const;
 type Props = { homeworkId: string; visible: boolean };
 
 export default function HomeworkKnowledgePanel({ homeworkId, visible }: Props) {
+  const { success, info } = useToast();
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -149,13 +152,10 @@ export default function HomeworkKnowledgePanel({ homeworkId, visible }: Props) {
           try {
             const n = await generateWrongBook(homeworkId);
             setErr(null);
-            alert(n > 0 ? `已加入错题本 ${n} 条` : "暂无薄弱项可加入错题本");
+            if (n > 0) success(`已加入错题本 ${n} 条`);
+            else info("暂无薄弱项可加入错题本");
           } catch (e: unknown) {
-            const msg =
-              typeof e === "object" && e !== null && "response" in e
-                ? (e as { response?: { data?: { error?: string } } }).response?.data?.error
-                : null;
-            setErr(msg ?? "生成失败");
+            setErr(getApiError(e, "生成失败"));
           } finally {
             setBusy(false);
           }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client";
+import { useToast } from "../ui/Toast";
 
 type Problem = {
   labId: string;
@@ -32,6 +33,7 @@ export default function LabSetStudentSubmissionsModal({
   studentName,
   onClose,
 }: Props) {
+  const { success, error: toastError, info } = useToast();
   const [problems, setProblems] = useState<Problem[]>([]);
   const [scores, setScores] = useState<Record<string, string>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
@@ -67,13 +69,15 @@ export default function LabSetStudentSubmissionsModal({
   async function returnSubmission(submissionId: string, labId: string) {
     const reason = returnReasons[labId]?.trim();
     if (!reason) {
-      alert("请填写打回原因");
+      info("请填写打回原因");
       return;
     }
     setSaving(submissionId);
     try {
       await api.patch(`/submissions/${submissionId}/return`, { returnReason: reason });
-      alert("已打回，学生将收到通知");
+      success("已打回，学生将收到通知");
+    } catch {
+      toastError("打回失败");
     } finally {
       setSaving(null);
     }
@@ -84,7 +88,7 @@ export default function LabSetStudentSubmissionsModal({
   async function grade(submissionId: string, labId: string) {
     const score = Number(scores[labId]);
     if (!Number.isFinite(score) || score < 0 || score > 100) {
-      alert("请输入 0～100 的分数");
+      info("请输入 0～100 的分数");
       return;
     }
     setSaving(submissionId);
@@ -94,7 +98,9 @@ export default function LabSetStudentSubmissionsModal({
         teacherComment: comments[labId] || null,
         status: "ACCEPTED",
       });
-      alert("已保存");
+      success("已保存");
+    } catch {
+      toastError("保存失败");
     } finally {
       setSaving(null);
     }

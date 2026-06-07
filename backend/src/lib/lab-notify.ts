@@ -18,7 +18,7 @@ export async function notifyLabSetPublished(opts: {
       type: "LAB_PUBLISHED",
       title: `新实验发布：${opts.labSetTitle}`,
       body: `课程「${opts.courseTitle}」发布了实验集「${opts.labSetTitle}」，请及时查看并完成。`,
-      linkPath: `/courses/${opts.courseId}/lab-sets/${opts.labSetId}`,
+      linkPath: `/courses/${opts.courseId}/labs/sets/${opts.labSetId}`,
       labSetId: opts.labSetId,
     })),
   });

@@ -1,24 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { getApiError } from "../../../api/errors";
 import { api } from "../../../api/client";
 import HomeworkEditForm from "../../../components/homework/HomeworkEditForm";
 import HomeworkStudentSubmit from "../../../components/homework/HomeworkStudentSubmit";
 import HomeworkStudentPanel from "../../../components/homework/HomeworkStudentPanel";
 import HomeworkTeacherGradingPanel from "../../../components/homework/HomeworkTeacherGradingPanel";
+import EmptyState from "../../../components/layout/EmptyState";
+import { FormSkeleton } from "../../../components/layout/PageSkeleton";
+import { useConfirm } from "../../../components/ui/ConfirmDialog";
+import { useToast } from "../../../components/ui/Toast";
 import { useCourse } from "../CourseContext";
 
 type ClassRow = { id: string; name: string };
 
-function apiErrorMessage(e: unknown, fallback: string) {
-  if (typeof e === "object" && e !== null && "response" in e) {
-    return (e as { response?: { data?: { error?: string } } }).response?.data?.error ?? fallback;
-  }
-  return fallback;
-}
-
 export default function CourseHomeworkDetail() {
   const navigate = useNavigate();
   const { homeworkId = "" } = useParams();
+  const { confirm } = useConfirm();
+  const { success: toastSuccess } = useToast();
   const {
     courseId,
     isTeacher,
@@ -27,6 +27,7 @@ export default function CourseHomeworkDetail() {
     displayHomework,
     setErr,
     refreshSideData,
+    course,
   } = useCourse();
 
   const [classes, setClasses] = useState<ClassRow[]>([]);
@@ -49,49 +50,55 @@ export default function CourseHomeworkDetail() {
     };
   }, [courseId, isTeacher]);
 
-  const homework = displayHomework.find((h: any) => h.id === homeworkId);
+  const homework = displayHomework.find((h: { id: string }) => h.id === homeworkId);
 
-  if (err) return <div className="err">{err}</div>;
-  if (!homework) return <div className="muted">作业不存在或未加载。</div>;
+  if (!homework) {
+    if (!course) return <FormSkeleton />;
+    return <EmptyState title="作业不存在或未加载" />;
+  }
 
   async function deleteHomework() {
-    const ok = window.confirm(`确定删除作业「${homework!.title}」？此操作不可恢复。`);
+    const ok = await confirm({
+      title: "删除作业",
+      message: `确定删除作业「${homework!.title}」？此操作不可恢复。`,
+      confirmLabel: "删除",
+      danger: true,
+    });
     if (!ok) return;
     setDeleteBusy(true);
     setErr(null);
     try {
       await api.delete(`/homework/${homework!.id}`);
       await refreshSideData();
+      toastSuccess("已删除作业");
       navigate(`/courses/${courseId}/homework`, { replace: true });
     } catch (e: unknown) {
-      setErr(apiErrorMessage(e, "删除失败"));
+      setErr(getApiError(e, "删除失败"));
     } finally {
       setDeleteBusy(false);
     }
   }
 
   return (
-    <div className="card" style={{ marginTop: 12, boxShadow: "none" }}>
-      <div className="row spread" style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+    <div className="homework-detail">
+      {err ? <div className="page-alert err">{err}</div> : null}
+      <div className="homework-detail__head row spread">
         <div>
-          <h3 style={{ margin: 0 }}>{homework.title}</h3>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <h3 className="homework-detail__title">{homework.title}</h3>
+          <div className="muted homework-detail__meta">
             截止：{homework.dueAt ? new Date(homework.dueAt).toLocaleString() : "未设置"}
           </div>
-          <div className="muted" style={{ marginTop: 4 }}>
-            {homework.targetClass ? `面向班级：${homework.targetClass.name}` : "面向全课程"}
+          <div className="muted homework-detail__meta">
+            {homework.targetClass ? `面向班级：${homework.targetClass.name}` : "面向全课"}
             {isTeacher ? (homework.published ? " · 已发布" : " · 未发布") : null}
           </div>
         </div>
-        <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+        <div className="row homework-detail__actions">
           <Link className="btn" to={`/courses/${courseId}/homework`}>
             返回列表
           </Link>
           {isTeacher ? (
             <>
-              <Link className="btn" to={`/teaching/homework/${homework.id}`}>
-                批改页
-              </Link>
               <button className="btn" type="button" onClick={() => setEditing((v) => !v)}>
                 {editing ? "收起编辑" : "编辑要求"}
               </button>
@@ -99,8 +106,13 @@ export default function CourseHomeworkDetail() {
                 className="btn"
                 type="button"
                 onClick={async () => {
-                  await api.patch(`/homework/${homework.id}/publish`, { published: !homework.published });
-                  await refreshSideData();
+                  try {
+                    await api.patch(`/homework/${homework.id}/publish`, { published: !homework.published });
+                    await refreshSideData();
+                    toastSuccess(homework.published ? "已撤回发布" : "已发布作业");
+                  } catch (e: unknown) {
+                    setErr(getApiError(e, "操作失败"));
+                  }
                 }}
               >
                 {homework.published ? "撤回发布" : "发布作业"}
@@ -109,13 +121,18 @@ export default function CourseHomeworkDetail() {
                 className="btn primary"
                 type="button"
                 onClick={async () => {
-                  await api.patch(`/homework/${homework.id}/release-grades`, {});
-                  await refreshSideData();
+                  try {
+                    await api.patch(`/homework/${homework.id}/release-grades`, {});
+                    await refreshSideData();
+                    toastSuccess("已发布批改成绩");
+                  } catch (e: unknown) {
+                    setErr(getApiError(e, "发布失败"));
+                  }
                 }}
               >
                 发布已批改成绩
               </button>
-              <button className="btn" type="button" disabled={deleteBusy} onClick={() => void deleteHomework()}>
+              <button className="btn btn--danger" type="button" disabled={deleteBusy} onClick={() => void deleteHomework()}>
                 {deleteBusy ? "删除中…" : "删除作业"}
               </button>
             </>
@@ -124,7 +141,7 @@ export default function CourseHomeworkDetail() {
       </div>
 
       {isTeacher && editing ? (
-        <div style={{ marginTop: 12 }}>
+        <div className="homework-detail__section">
           <HomeworkEditForm
             courseId={courseId}
             homework={homework}
@@ -139,7 +156,7 @@ export default function CourseHomeworkDetail() {
         </div>
       ) : null}
 
-      <div style={{ marginTop: 16 }}>
+      <div className="homework-detail__section">
         <HomeworkStudentPanel homework={homework} />
       </div>
 
@@ -149,9 +166,7 @@ export default function CourseHomeworkDetail() {
 
       {isTeacher ? (
         <HomeworkTeacherGradingPanel homeworkId={homework.id} setErr={setErr} />
-      ) : (
-        <div className="muted" style={{ marginTop: 12 }}>学生可在此查看完整要求并提交作业。</div>
-      )}
+      ) : null}
     </div>
   );
 }

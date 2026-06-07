@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getApiError } from "../../api/errors";
+import { FormSkeleton } from "../layout/PageSkeleton";
+import { useConfirm } from "../ui/ConfirmDialog";
+import { useToast } from "../ui/Toast";
 import HomeworkStudentPanel from "./HomeworkStudentPanel";
 import HomeworkKnowledgePanel from "./HomeworkKnowledgePanel";
 import {
@@ -23,6 +27,8 @@ type Props = {
 const draftKey = (id: string) => `hw-draft:${id}`;
 
 export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }: Props) {
+  const { confirm } = useConfirm();
+  const { success: toastSuccess } = useToast();
   const [view, setView] = useState<StudentHomeworkView | null>(null);
   const [loading, setLoading] = useState(true);
   const [content, setContent] = useState("");
@@ -45,11 +51,7 @@ export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }
         data.student.status !== "NOT_STARTED" || Boolean(data.student.draftContent),
       );
     } catch (e: unknown) {
-      const msg =
-        typeof e === "object" && e !== null && "response" in e
-          ? (e as { response?: { data?: { error?: string } } }).response?.data?.error
-          : null;
-      setErr(msg ?? "加载作业状态失败");
+      setErr(getApiError(e, "加载作业状态失败"));
     } finally {
       setLoading(false);
     }
@@ -90,18 +92,16 @@ export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }
         content: showText ? content : undefined,
         requirementsRead: true,
       });
-      setSuccess(
-        res.lateHint ? `${res.message ?? "提交成功"}（${res.lateHint}）` : (res.message ?? "提交成功"),
-      );
+      const msg = res.lateHint
+        ? `${res.message ?? "提交成功"}（${res.lateHint}）`
+        : (res.message ?? "提交成功");
+      setSuccess(msg);
+      toastSuccess(msg);
       localStorage.removeItem(draftKey(h.id));
       await load();
       await onRefresh();
     } catch (e2: unknown) {
-      const msg =
-        typeof e2 === "object" && e2 !== null && "response" in e2
-          ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
-          : null;
-      setErr(msg ?? "提交失败");
+      setErr(getApiError(e2, "提交失败"));
     } finally {
       setBusy(false);
     }
@@ -170,9 +170,7 @@ export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }
         <>
           <HomeworkStudentPanel homework={h} />
           {loading ? (
-            <div className="muted" style={{ marginTop: 8 }}>
-              加载中…
-            </div>
+            <FormSkeleton />
           ) : (
             <form className="grid" style={{ marginTop: 10, gap: 10 }} onSubmit={onSubmit}>
               {st?.locked ? (
@@ -271,10 +269,6 @@ export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }
                   <button className="btn primary" type="submit" disabled={busy}>
                     {busy ? "提交中…" : "正式提交"}
                   </button>
-                ) : st?.locked ? (
-                  <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-                    已提交，等待批改中，内容已锁定。
-                  </p>
                 ) : null}
                 {st?.canEdit ? (
                   <button
@@ -282,7 +276,11 @@ export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }
                     type="button"
                     disabled={busy}
                     onClick={async () => {
-                      const ok = window.confirm("确定删除当前作业提交吗？删除后可重新编辑/重新提交。");
+                      const ok = await confirm({
+                        title: "删除作业提交",
+                        message: "确定删除当前作业提交吗？删除后可重新编辑/重新提交。",
+                        danger: true,
+                      });
                       if (!ok) return;
                       setBusy(true);
                       setErr(null);
@@ -291,12 +289,9 @@ export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }
                         localStorage.removeItem(draftKey(h.id));
                         await load();
                         await onRefresh();
+                        toastSuccess("已删除提交");
                       } catch (e2: unknown) {
-                        const msg =
-                          typeof e2 === "object" && e2 !== null && "response" in e2
-                            ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
-                            : null;
-                        setErr(msg ?? "删除失败");
+                        setErr(getApiError(e2, "删除失败"));
                       } finally {
                         setBusy(false);
                       }
@@ -339,11 +334,7 @@ export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }
                     await load();
                     await onRefresh();
                   } catch (e2: unknown) {
-                    const msg =
-                      typeof e2 === "object" && e2 !== null && "response" in e2
-                        ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
-                        : null;
-                    setErr(msg ?? "申请失败");
+                    setErr(getApiError(e2, "申请失败"));
                   } finally {
                     setBusy(false);
                   }
@@ -352,18 +343,6 @@ export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }
                 申请重做
               </button>
             </div>
-          ) : null}
-
-          {st?.redoExhausted ? (
-            <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-              已达最大重做次数
-            </p>
-          ) : null}
-
-          {st?.pendingRedo ? (
-            <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-              重做申请待审批…
-            </p>
           ) : null}
 
           <HomeworkKnowledgePanel homeworkId={h.id} visible={Boolean(st?.released)} />

@@ -258,10 +258,8 @@ export default function LabProblemCreateModal({
 
         {phase === "done" && !isEdit ? (
           <div className="grid" style={{ marginTop: 14, gap: 12 }}>
-            <div className="muted" style={{ fontSize: 14 }}>
-              题目 ID：<code>{createdLabId}</code>。公开用例已写入后可到实验管理页继续添加隐藏用例。学生端逐用例测评结果仍通过{" "}
-              <code>/submissions/:id/feedback</code> 的 <code>details</code> 返回；下表为教师聚合统计接口{" "}
-              <code>GET /labs/:id/teacher-metrics</code>。
+            <div style={{ fontSize: 14 }}>
+              题目 ID：<code>{createdLabId}</code>
             </div>
             {metricsLoading ? <div className="muted">加载统计中…</div> : null}
             {metricsErr ? <div className="err">{metricsErr}</div> : null}
@@ -453,11 +451,7 @@ export default function LabProblemCreateModal({
                   ))}
                 </div>
               </>
-            ) : (
-              <div className="muted" style={{ marginTop: 14, fontSize: 13, lineHeight: 1.6 }}>
-                测试用例与附件请在题目页底部「教师」面板维护；此处仅修改题面与初始代码。
-              </div>
-            )}
+            ) : null}
 
             <div className="row" style={{ marginTop: 16, justifyContent: "flex-end", gap: 8 }}>
               <button type="button" className="btn" disabled={saving} onClick={() => { reset(); onClose(); }}>

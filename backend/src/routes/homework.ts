@@ -21,6 +21,7 @@ import { UPLOAD_ROOT, saveHomeworkFile } from "../lib/uploads.js";
 import {
   computeLateMeta,
   computeStudentStatus,
+  isSubmissionFinalized,
   remainingRedoCount,
   STATUS_LABELS,
 } from "../lib/homework-student.js";
@@ -1006,8 +1007,9 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
   );
 
   app.get("/homework/mine", { preHandler: authRequired("STUDENT", "ADMIN") }, async (req) => {
+    const userId = req.auth!.sub;
     const rows = await prisma.homeworkSubmission.findMany({
-      where: { userId: req.auth!.sub },
+      where: { userId },
       include: {
         homework: {
           include: {
@@ -1022,7 +1024,66 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
       score: r.released ? r.score : null,
       feedback: r.released ? r.feedback : null,
     }));
-    return { submissions: sanitized };
+
+    const enrollments = await prisma.enrollment.findMany({
+      where: { userId },
+      select: { courseId: true, classId: true },
+    });
+    const courseIds = enrollments.map((e) => e.courseId);
+    const classByCourse = new Map(enrollments.map((e) => [e.courseId, e.classId]));
+
+    const homeworkList = courseIds.length
+      ? await prisma.homework.findMany({
+          where: {
+            courseId: { in: courseIds },
+            published: true,
+          },
+          include: {
+            course: { select: { id: true, title: true } },
+          },
+          orderBy: [{ dueAt: "asc" }, { title: "asc" }],
+        })
+      : [];
+
+    const visibleHomework = homeworkList.filter((hw) => {
+      if (!hw.targetClassId) return true;
+      return hw.targetClassId === classByCourse.get(hw.courseId);
+    });
+
+    const subByHw = new Map(rows.map((r) => [r.homeworkId, r]));
+    const redoRows = visibleHomework.length
+      ? await prisma.homeworkRedoRequest.findMany({
+          where: {
+            userId,
+            homeworkId: { in: visibleHomework.map((h) => h.id) },
+            status: "PENDING",
+          },
+        })
+      : [];
+    const redoByHw = new Map(redoRows.map((r) => [r.homeworkId, r]));
+
+    const assignments = visibleHomework.map((hw) => {
+      const sub = subByHw.get(hw.id) ?? null;
+      const pendingRedo = redoByHw.get(hw.id) ?? null;
+      const status = computeStudentStatus(hw, sub, pendingRedo);
+      const late = computeLateMeta(hw);
+      return {
+        id: hw.id,
+        title: hw.title,
+        dueAt: hw.dueAt,
+        courseId: hw.courseId,
+        courseTitle: hw.course.title,
+        myStatus: status,
+        myStatusLabel: STATUS_LABELS[status],
+        canSubmit:
+          !isSubmissionFinalized(sub) && status !== "REDO_PENDING" && late.canSubmit,
+        lateHint: late.lateHint,
+      };
+    });
+
+    const pending = assignments.filter((a) => a.canSubmit);
+
+    return { submissions: sanitized, assignments, pending };
   });
 };
 

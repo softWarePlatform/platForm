@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
+import { useToast } from "../components/ui/Toast";
+import EmptyState from "../components/layout/EmptyState";
+import PageHeader from "../components/layout/PageHeader";
+import PageShell from "../components/layout/PageShell";
+import StatusBadge from "../components/layout/StatusBadge";
 import { refreshAfterAnnouncementRead, refreshNotificationBadge } from "../lib/appEvents";
 
 type NotificationRow = {
@@ -15,7 +20,7 @@ type NotificationRow = {
 };
 
 function notificationTypeLabel(type?: string): string | null {
-  if (type === "LAB_REMINDER") return "实验提醒";
+  if (type === "LAB_REMINDER") return "实验";
   if (type === "DISCUSSION") return "讨论";
   if (type === "ANNOUNCEMENT") return "公告";
   return null;
@@ -23,6 +28,7 @@ function notificationTypeLabel(type?: string): string | null {
 
 export default function Messages() {
   const navigate = useNavigate();
+  const { info } = useToast();
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,7 +53,7 @@ export default function Messages() {
       await api.patch(`/notifications/${n.id}/read`).catch(() => {});
     }
     if (n.announcementDeleted) {
-      alert("公告已删除");
+      info("公告已删除");
       await load();
       refreshNotificationBadge();
       return;
@@ -68,46 +74,51 @@ export default function Messages() {
     refreshNotificationBadge();
   }
 
+  const unread = items.filter((n) => !n.read).length;
+
   return (
-    <div className="container" style={{ paddingTop: 20, paddingBottom: 32 }}>
-      <div className="spread" style={{ marginBottom: 16 }}>
-        <div>
-          <h1 style={{ margin: "0 0 6px" }}>站内消息</h1>
-          <p className="muted" style={{ margin: 0 }}>
-            课程公告、资料更新、实验开始前/截止前提醒等通知将显示在这里。
-          </p>
-        </div>
-        {items.some((n) => !n.read) ? (
-          <button type="button" className="btn" onClick={markAllRead}>
-            全部标为已读
-          </button>
-        ) : null}
-      </div>
+    <PageShell narrow>
+      <PageHeader
+        title="站内消息"
+        lead={unread > 0 ? `${unread} 条未读` : "全部已读"}
+        actions={
+          unread > 0 ? (
+            <button type="button" className="btn" onClick={() => void markAllRead()}>
+              全部已读
+            </button>
+          ) : null
+        }
+      />
 
       {loading ? (
-        <div className="muted">加载中…</div>
+        <div className="panel-loading muted">加载中…</div>
       ) : items.length === 0 ? (
-        <div className="card course-section-empty">暂无消息</div>
+        <EmptyState title="暂无消息" />
       ) : (
-        <ul className="notification-list card" style={{ padding: 0, overflow: "hidden" }}>
-          {items.map((n) => (
-            <li key={n.id}>
-              <button
-                type="button"
-                className={`notification-list__item${n.read ? "" : " notification-list__item--unread"}`}
-                onClick={() => open(n)}
-              >
-                <div className="notification-list__title">{n.title}</div>
-                <div className="muted notification-list__time">
-                  {notificationTypeLabel(n.type) ? `${notificationTypeLabel(n.type)} · ` : ""}
-                  {new Date(n.createdAt).toLocaleString()}
-                  {n.announcementDeleted ? " · 公告已删除" : ""}
-                </div>
-              </button>
-            </li>
-          ))}
+        <ul className="notification-list panel">
+          {items.map((n) => {
+            const typeLabel = notificationTypeLabel(n.type);
+            return (
+              <li key={n.id}>
+                <button
+                  type="button"
+                  className={`notification-list__item${n.read ? "" : " notification-list__item--unread"}`}
+                  onClick={() => void open(n)}
+                >
+                  <div className="notification-list__row">
+                    <span className="notification-list__title">{n.title}</span>
+                    {typeLabel ? <StatusBadge tone="brand">{typeLabel}</StatusBadge> : null}
+                  </div>
+                  <div className="notification-list__time">
+                    {new Date(n.createdAt).toLocaleString()}
+                    {n.announcementDeleted ? " · 已删除" : ""}
+                  </div>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
-    </div>
+    </PageShell>
   );
 }

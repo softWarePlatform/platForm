@@ -7,6 +7,36 @@ import { hashPassword, verifyPassword } from "../lib/password.js";
 import { signToken } from "../lib/jwt.js";
 import { authRequired, optionalAuth } from "../lib/authGuard.js";
 
+const userPublicSelect = {
+  id: true,
+  email: true,
+  name: true,
+  role: true,
+  avatarUrl: true,
+  signature: true,
+  emailVerifiedAt: true,
+} as const;
+
+function toPublicUser(user: {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  avatarUrl: string | null;
+  signature?: string | null;
+  emailVerifiedAt: Date | null;
+}) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    avatarUrl: user.avatarUrl,
+    signature: user.signature ?? null,
+    emailVerified: !!user.emailVerifiedAt,
+  };
+}
+
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
@@ -62,14 +92,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
 
     return {
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        avatarUrl: user.avatarUrl,
-        emailVerified: !!user.emailVerifiedAt,
-      },
+      user: toPublicUser(user),
     };
   });
 
@@ -77,15 +100,10 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     if (!req.auth) return reply.code(401).send({ error: "未登录" });
     const user = await prisma.user.findUnique({
       where: { id: req.auth.sub },
-      select: { id: true, email: true, name: true, role: true, avatarUrl: true, emailVerifiedAt: true },
+      select: userPublicSelect,
     });
     if (!user) return reply.code(404).send({ error: "用户不存在" });
-    return {
-      user: {
-        ...user,
-        emailVerified: !!user.emailVerifiedAt,
-      },
-    };
+    return { user: toPublicUser(user) };
   });
 
   app.patch(
@@ -95,16 +113,25 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       const schema = z.object({
         name: z.string().min(1).optional(),
         avatarUrl: z.string().url().nullable().optional(),
+        signature: z.string().max(120).nullable().optional(),
       });
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) return reply.code(400).send({ error: "参数无效" });
 
+      const data: { name?: string; avatarUrl?: string | null; signature?: string | null } = {};
+      if (parsed.data.name !== undefined) data.name = parsed.data.name;
+      if (parsed.data.avatarUrl !== undefined) data.avatarUrl = parsed.data.avatarUrl;
+      if (parsed.data.signature !== undefined) {
+        const s = parsed.data.signature?.trim() ?? "";
+        data.signature = s.length > 0 ? s : null;
+      }
+
       const user = await prisma.user.update({
         where: { id: req.auth!.sub },
-        data: parsed.data,
-        select: { id: true, email: true, name: true, role: true, avatarUrl: true, emailVerifiedAt: true },
+        data,
+        select: userPublicSelect,
       });
-      return { user: { ...user, emailVerified: !!user.emailVerifiedAt } };
+      return { user: toPublicUser(user) };
     },
   );
 

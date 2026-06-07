@@ -1,5 +1,7 @@
-﻿import { FormEvent, useState } from "react";
+import { FormEvent, useState } from "react";
+import { getApiError } from "../../api/errors";
 import { api } from "../../api/client";
+import { useConfirm } from "../ui/ConfirmDialog";
 import HomeworkFormFields from "./HomeworkFormFields";
 import {
   attachmentDownloadUrl,
@@ -37,6 +39,7 @@ type Props = {
 };
 
 export default function HomeworkEditForm({ courseId, homework, classes, onCancel, onSaved, setErr }: Props) {
+  const { confirm } = useConfirm();
   const [values, setValues] = useState<HomeworkFormValues>(() => homeworkToFormValues(homework));
   const [attachments, setAttachments] = useState<HomeworkAttachmentRow[]>(homework.attachments ?? []);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -61,7 +64,10 @@ export default function HomeworkEditForm({ courseId, homework, classes, onCancel
     const nextDue = values.dueAt ? new Date(values.dueAt) : null;
     const prevDue = homework.dueAt ? new Date(homework.dueAt) : null;
     if (nextDue && prevDue && nextDue < prevDue) {
-      const ok = window.confirm("提前截止时间可能影响学生已规划的安排，是否继续？");
+      const ok = await confirm({
+        title: "提前截止时间",
+        message: "提前截止时间可能影响学生已规划的安排，是否继续？",
+      });
       if (!ok) return;
     }
     setErr(null);
@@ -74,33 +80,22 @@ export default function HomeworkEditForm({ courseId, homework, classes, onCancel
       setPendingRubricFile(null);
       await onSaved();
     } catch (e2: unknown) {
-      const msg =
-        typeof e2 === "object" && e2 !== null && "response" in e2
-          ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
-          : null;
-      setErr(msg ?? "保存失败");
+      setErr(getApiError(e2, "保存失败"));
     } finally {
       setBusy(false);
     }
   }
 
   async function deleteAttachment(id: string) {
-    if (!window.confirm("删除该附件？")) return;
+    const ok = await confirm({ title: "删除附件", message: "确定删除该附件？", danger: true });
+    if (!ok) return;
     await api.delete(`/homework/${homework.id}/attachments/${id}`);
     setAttachments((list) => list.filter((a) => a.id !== id));
   }
 
   return (
-    <form
-      className="card grid"
-      style={{ marginTop: 10, boxShadow: "none", background: "var(--surface-2, #f8fafc)" }}
-      onSubmit={(e) => void onSubmit(e)}
-    >
-      <div style={{ fontWeight: 700 }}>编辑作业要求</div>
-      <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-        保存后学生会看到「作业要求已更新」提示（若修改了描述、截止、规则等）。
-      </p>
-
+    <form className="homework-publish-form form-sheet" onSubmit={(e) => void onSubmit(e)}>
+      <h3 className="inline-section-title">编辑作业</h3>
       <HomeworkFormFields
         courseId={courseId}
         values={values}
@@ -128,7 +123,7 @@ export default function HomeworkEditForm({ courseId, homework, classes, onCancel
         </div>
       ) : null}
 
-      <div className="row" style={{ gap: 8 }}>
+      <div className="form-actions form-actions--bar">
         <button className="btn primary" type="submit" disabled={busy}>
           {busy ? "保存中…" : "保存修改"}
         </button>

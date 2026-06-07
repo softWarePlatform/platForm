@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { api } from "../../api/client";
+import EmptyState from "../../components/layout/EmptyState";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 import type { MaterialRow, MaterialVersionRow, MaterialsListResponse } from "./types";
 import {
   FILE_TYPE_OPTIONS,
@@ -17,6 +19,7 @@ type Props = {
 };
 
 export default function MaterialsPanel({ courseId, isTeacher, onError }: Props) {
+  const { confirm } = useConfirm();
   const [data, setData] = useState<MaterialsListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [folder, setFolder] = useState("");
@@ -222,7 +225,12 @@ export default function MaterialsPanel({ courseId, isTeacher, onError }: Props) 
   }
 
   async function deleteMaterial(m: MaterialRow) {
-    if (!confirm(`确定删除「${m.title}」及其全部版本吗？`)) return;
+    const ok = await confirm({
+      title: "删除资料",
+      message: `确定删除「${m.title}」及其全部版本吗？`,
+      danger: true,
+    });
+    if (!ok) return;
     await api.delete(`/courses/${courseId}/materials/${m.id}`);
     void load();
   }
@@ -397,10 +405,6 @@ export default function MaterialsPanel({ courseId, isTeacher, onError }: Props) 
               通知学生
             </label>
           </div>
-          <p className="muted" style={{ margin: "0 0 10px", fontSize: 12 }}>
-            当前目录：{folder || "根目录"} · 普通文件 ≤50MB，视频 ≤200MB · 支持批量拖拽
-            {uploadForm.replaceGroupId ? " · 正在上传新版本" : ""}
-          </p>
           <div className="row" style={{ gap: 8 }}>
             <input
               ref={fileInputRef}
@@ -438,7 +442,7 @@ export default function MaterialsPanel({ courseId, isTeacher, onError }: Props) 
       </div>
 
       {materials.length === 0 && !loading ? (
-        <div className="course-section-empty">暂无资料</div>
+        <EmptyState title="暂无资料" />
       ) : (
         <div className="materials-table">
           {materials.map((m) => (

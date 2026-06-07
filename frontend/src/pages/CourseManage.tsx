@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import { useConfirm } from "../components/ui/ConfirmDialog";
 import CourseEnrollmentFields, {
   enrollmentFromCourse,
   enrollmentToPayload,
@@ -21,6 +22,7 @@ function toLocalInput(iso: string | null | undefined): string {
 }
 
 export default function CourseManage() {
+  const { confirm } = useConfirm();
   const { courseId } = useParams();
   const [course, setCourse] = useState<any>(null);
   const [startAt, setStartAt] = useState("");
@@ -29,7 +31,7 @@ export default function CourseManage() {
   const [enrollment, setEnrollment] = useState<CourseEnrollmentDraft | null>(null);
   const enrollmentOptions = useEnrollmentFieldOptions();
   const [kgText, setKgText] = useState("");
-  const [materials, setMaterials] = useState<any[]>([]);
+  const [, setMaterials] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [newClassName, setNewClassName] = useState("");
@@ -144,9 +146,6 @@ export default function CourseManage() {
       <div className="grid" style={{ marginTop: 16, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
         <form className="card grid" onSubmit={saveScheduleAndEnrollment}>
           <div style={{ fontWeight: 800 }}>选课系统 · 时间与地点</div>
-          <p className="muted" style={{ margin: 0, lineHeight: 1.6, fontSize: 13 }}>
-            以下信息将展示在选课系统，并同步到主界面课表。
-          </p>
           {enrollment ? (
             <CourseEnrollmentFields
               value={enrollment}
@@ -174,9 +173,6 @@ export default function CourseManage() {
 
         <div className="card grid">
           <div style={{ fontWeight: 800 }}>课程资料</div>
-          <p className="muted" style={{ margin: 0, fontSize: 13, lineHeight: 1.6 }}>
-            在课程资料页管理目录、可见范围、置顶、版本与批量上传；当前共 {materials.length} 个文件。
-          </p>
           <Link to={`/courses/${courseId}/materials`} className="btn primary" style={{ width: "fit-content" }}>
             打开资料管理
           </Link>
@@ -185,9 +181,6 @@ export default function CourseManage() {
 
       <div className="card grid" style={{ marginTop: 16 }}>
         <div style={{ fontWeight: 800 }}>知识图谱（JSON）</div>
-        <div className="muted" style={{ lineHeight: 1.6 }}>
-          点击下方可依据课程简介与实验标题自动生成简易图谱；也可手工编辑 JSON 后保存。
-        </div>
         <div className="row">
           <button type="button" className="btn primary" onClick={() => generateGraph(true)}>
             自动生成并保存
@@ -242,7 +235,12 @@ export default function CourseManage() {
                   type="button"
                   className="btn"
                   onClick={async () => {
-                    if (!confirm("删除班级？学生将变为未分班。")) return;
+                    const ok = await confirm({
+                      title: "删除班级",
+                      message: "删除班级？学生将变为未分班。",
+                      danger: true,
+                    });
+                    if (!ok) return;
                     await api.delete(`/courses/${courseId}/classes/${c.id}`);
                     await reload();
                   }}
@@ -256,9 +254,6 @@ export default function CourseManage() {
 
         <div className="card">
           <div style={{ fontWeight: 800 }}>学生分班</div>
-          <div className="muted" style={{ marginTop: 8 }}>
-            为每位选课学生指定班级（可选）。
-          </div>
           <div className="grid" style={{ marginTop: 12 }}>
             {students.map((s: any) => (
               <div key={s.id} className="row spread" style={{ borderTop: "1px solid var(--border)", paddingTop: 8 }}>

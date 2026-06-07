@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
+import { getApiError } from "../../../api/errors";
 import { api } from "../../../api/client";
+import { useConfirm } from "../../../components/ui/ConfirmDialog";
+import { useToast } from "../../../components/ui/Toast";
 import CreateLabSetModal from "../../../components/labs/CreateLabSetModal";
 import LabSetListPanel from "../../../features/labs/LabSetListPanel";
 import LabExplorerSets from "../../../features/labs/explorer/LabExplorerSets";
@@ -12,6 +15,8 @@ import type {
 } from "../../../features/labs/labSetTypes";
 
 export default function CourseLabs() {
+  const { confirm } = useConfirm();
+  const { success } = useToast();
   const { courseId, isTeacher, setErr, refreshSideData } = useCourse();
   const [createOpen, setCreateOpen] = useState(false);
   const mode = isTeacher ? "teacher" : "student";
@@ -34,19 +39,22 @@ export default function CourseLabs() {
       problemCount > 0
         ? `将删除本集下 ${problemCount} 道题及全部测试用例与学生提交，且不可恢复。`
         : "将删除本实验集（当前无题目），不可恢复。";
-    if (!confirm(`确定删除实验集「${title}」？${extra}`)) return;
+    const ok = await confirm({
+      title: "删除实验集",
+      message: `确定删除实验集「${title}」？${extra}`,
+      confirmLabel: "删除",
+      danger: true,
+    });
+    if (!ok) return;
     setErr(null);
     try {
       await api.delete(`/courses/${cId}/lab-sets/${labSetId}`, {
         params: problemCount > 0 ? { force: 1 } : {},
       });
       await Promise.all([reload(), refreshSideData()]);
+      success("已删除实验集");
     } catch (e2: unknown) {
-      const msg =
-        typeof e2 === "object" && e2 !== null && "response" in e2
-          ? (e2 as { response?: { data?: { error?: string } } }).response?.data?.error
-          : null;
-      setErr(msg ?? "删除失败");
+      setErr(getApiError(e2, "删除失败"));
     }
   }
 
@@ -62,28 +70,20 @@ export default function CourseLabs() {
 
   return (
     <div>
-      <CourseSectionHead
-        title="实验管理"
-        description={
-          isTeacher
-            ? "按状态查看本课实验集与学生完成情况；可新建实验集、管理题目与评测配置。"
-            : "每次作业一行展示进度；点进作业查看各题 AC / WA。"
-        }
-      />
+      <CourseSectionHead title="实验" actions={newLabSetButton} />
 
       {isTeacher ? (
         <LabSetListPanel
-          mode="teacher"
-          groups={teacherGroups}
-          loading={loading}
-          err={overviewErr}
-          showCourseName={false}
-          emptyHint="暂无实验集，点击「新建实验集」开始布置。"
-          headerRight={newLabSetButton}
-          onDelete={handleDelete}
-        />
+            mode="teacher"
+            groups={teacherGroups}
+            loading={loading}
+            err={overviewErr}
+            showCourseName={false}
+            emptyHint="暂无实验集"
+            onDelete={handleDelete}
+          />
       ) : (
-        <LabExplorerSets embedded courseIdProp={courseId} setsLinkPrefix={`/courses/${courseId}/lab-sets`} />
+        <LabExplorerSets embedded courseIdProp={courseId} setsLinkPrefix={`/courses/${courseId}/labs/sets`} />
       )}
 
       {isTeacher && courseId ? (

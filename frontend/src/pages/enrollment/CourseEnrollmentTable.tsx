@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 import type { CatalogCourse } from "./enrollmentTypes";
 
 type Props = {
@@ -220,6 +221,7 @@ function SectionActions({
   onWaitlist: (courseId: string) => void;
   onLeaveWaitlist: (courseId: string) => void;
 }) {
+  const { confirm } = useConfirm();
   const classId = sec.sectionId !== c.id ? sec.sectionId : undefined;
 
   if (sec.isSelected || c.isEnrolled) {
@@ -267,8 +269,11 @@ function SectionActions({
       disabled={busy || !open || (sec.scheduleConflict && !c.isEnrolled)}
       title={sec.scheduleConflict ? "\u4e0e\u5df2\u9009\u8bfe\u8868\u51b2\u7a81" : undefined}
       onClick={() => {
-        if (!globalThis.confirm("\u786e\u8ba4\u9009\u8bfe\uff1f")) return;
-        onEnroll(c.id, classId);
+        void (async () => {
+          const ok = await confirm({ title: "选课", message: "确认选课？" });
+          if (!ok) return;
+          onEnroll(c.id, classId);
+        })();
       }}
     >
       {"\u9009\u8bfe"}

@@ -134,11 +134,7 @@ export default function EnrollmentFilterPanel({
             </button>
           ))}
         </div>
-      ) : (
-        <div className="enroll-filter-hint muted">
-          {"\u9ed8\u8ba4\u4e0d\u9650\uff1b\u591a\u4e2a\u677f\u5757\u6761\u4ef6\u540c\u65f6\u751f\u6548\uff08\u987b\u540c\u65f6\u6ee1\u8db3\u6027\u8d28\u3001\u7c7b\u522b\u3001\u5b66\u9662\uff09"}
-        </div>
-      )}
+      ) : null}
 
       {hasAny ? (
         <div className="enroll-filter-applied">

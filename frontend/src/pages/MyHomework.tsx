@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import EmptyState from "../components/layout/EmptyState";
+import MetaChips from "../components/layout/MetaChips";
+import PageHeader from "../components/layout/PageHeader";
+import PageShell from "../components/layout/PageShell";
+import StatusBadge from "../components/layout/StatusBadge";
 
-/** 对应 GET /grades/me 的 courses[] 项 */
 type MyCourseGrade = {
   courseId: string;
   courseTitle: string;
@@ -15,14 +20,42 @@ type MyCourseGrade = {
   weights?: { lab?: number; homework?: number };
 };
 
+type AssignmentRow = {
+  id: string;
+  title: string;
+  dueAt: string | null;
+  courseId: string;
+  courseTitle: string;
+  myStatus: string;
+  myStatusLabel: string;
+  canSubmit: boolean;
+  lateHint?: string | null;
+};
+
+type SubmissionRow = {
+  id: string;
+  content: string;
+  graded: boolean;
+  released: boolean;
+  score: number | null;
+  homework: { title: string; course: { title: string } };
+};
+
 function pctWeight(w: unknown): string {
   const n = Number(w);
   if (!Number.isFinite(n)) return "—";
   return `${Math.round(n * 100)}%`;
 }
 
+function assignmentTone(a: AssignmentRow): "ok" | "warn" | "muted" {
+  if (a.canSubmit) return "warn";
+  if (a.myStatus === "LOCKED" || a.myStatus === "SUBMITTED") return "ok";
+  return "muted";
+}
+
 export default function MyHomework() {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<SubmissionRow[]>([]);
+  const [pending, setPending] = useState<AssignmentRow[]>([]);
   const [grades, setGrades] = useState<MyCourseGrade[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
@@ -36,6 +69,7 @@ export default function MyHomework() {
         ]);
         if (!cancelled) {
           setItems(hw.data.submissions ?? []);
+          setPending(hw.data.pending ?? []);
           setGrades((gr.data.courses ?? []) as MyCourseGrade[]);
         }
       } catch {
@@ -47,14 +81,14 @@ export default function MyHomework() {
     };
   }, []);
 
-  return (
-    <div className="container">
-      <h2 style={{ marginTop: 10 }}>我的作业</h2>
-      {err ? <div className="err">{err}</div> : null}
+  const finalized = items.filter((s) => s.content?.trim());
 
-      <div className="card" style={{ marginTop: 14 }}>
-        <div className="row spread" style={{ alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ fontWeight: 800 }}>课程总评与排名</div>
+  return (
+    <PageShell>
+      <PageHeader
+        title="我的作业"
+        lead={`${pending.length} 项待提交 · ${finalized.length} 条已提交`}
+        actions={
           <button
             className="btn"
             type="button"
@@ -65,78 +99,106 @@ export default function MyHomework() {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                const cd = res.headers["content-disposition"] as string | undefined;
-                let name = "我的成绩册.csv";
-                if (cd?.includes("filename*=")) {
-                  const m = cd.match(/filename\*=UTF-8''(.+)/);
-                  if (m?.[1]) {
-                    try {
-                      name = decodeURIComponent(m[1].replace(/;$/, ""));
-                    } catch {
-                      /* ignore */
-                    }
-                  }
-                }
-                a.download = name;
+                a.download = "我的成绩册.csv";
                 a.click();
                 URL.revokeObjectURL(url);
               } catch {
-                /* 忽略 */
+                /* ignore */
               }
             }}
           >
-            导出成绩册 CSV
+            导出 CSV
           </button>
-        </div>
-        <div className="muted" style={{ marginTop: 6, fontSize: 13 }}>
-          CSV 含各课实验权重、作业权重、实验均分、作业均分、总评、排名、选课人数，以及各实验最高分与各作业分项（未发布成绩不显示具体分数）。
-        </div>
-        <div className="grid" style={{ marginTop: 10 }}>
-          {grades.map((g) => (
-            <div key={g.courseId} className="row spread" style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-              <div>
-                <div style={{ fontWeight: 700 }}>{g.courseTitle}</div>
-                <div className="muted" style={{ marginTop: 4 }}>
-                  成绩权重：实验 {pctWeight(g.weights?.lab)} · 作业 {pctWeight(g.weights?.homework)}
-                </div>
-                <div className="muted" style={{ marginTop: 4 }}>
-                  实验均分：{g.summary?.labAverage == null ? "—" : Number(g.summary.labAverage).toFixed(1)} · 作业均分：
-                  {g.summary?.homeworkAverage == null ? "—" : Number(g.summary.homeworkAverage).toFixed(1)}
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontWeight: 800 }}>
-                  总评：{g.summary?.totalScore == null ? "—" : Number(g.summary.totalScore).toFixed(1)}
-                </div>
-                <div className="muted" style={{ marginTop: 4 }}>
-                  排名：{g.rank ?? "—"}
-                  {g.classSize != null ? ` · 班级规模：${g.classSize} 人` : ""}
-                </div>
-              </div>
-            </div>
-          ))}
-          {grades.length === 0 ? <div className="muted">暂无可用总评</div> : null}
-        </div>
-      </div>
+        }
+      />
 
-      <div className="grid" style={{ marginTop: 16 }}>
-        {items.map((s) => (
-          <div key={s.id} className="card">
-            <div style={{ fontWeight: 900 }}>{s.homework.title}</div>
-            <div className="muted" style={{ marginTop: 8 }}>
-              课程：{s.homework.course.title} · 更新：{new Date(s.updatedAt).toLocaleString()}
+      {err ? <div className="page-alert err">{err}</div> : null}
+
+      <section className="panel panel--accent" style={{ marginBottom: 16 }}>
+        <div className="panel__head">
+          <h2 className="panel__title">待完成作业</h2>
+        </div>
+        <div className="panel__body">
+          {pending.length === 0 ? (
+            <EmptyState title="暂无待提交作业">
+              <p className="muted">已布置且仍可提交的作业会显示在这里。</p>
+            </EmptyState>
+          ) : (
+            <div className="entity-card-grid">
+              {pending.map((a) => (
+                <Link
+                  key={a.id}
+                  className="entity-card entity-card--link"
+                  to={`/courses/${a.courseId}/homework/${a.id}`}
+                >
+                  <div className="entity-card__head">
+                    <h3 className="entity-card__title">{a.title}</h3>
+                    <StatusBadge tone={assignmentTone(a)}>{a.myStatusLabel}</StatusBadge>
+                  </div>
+                  <div className="entity-card__sub">{a.courseTitle}</div>
+                  <MetaChips
+                    items={[
+                      a.dueAt ? `截止 ${new Date(a.dueAt).toLocaleDateString()}` : "无截止",
+                      a.lateHint ? "可迟交" : "进行中",
+                    ]}
+                  />
+                </Link>
+              ))}
             </div>
-            <div style={{ marginTop: 12, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{s.content}</div>
-            <div className="spread" style={{ marginTop: 12 }}>
-              <span className="muted">
-                {!s.graded ? "待批改" : s.released ? `得分：${s.score ?? "-"}` : "已批改，待教师发布成绩"}
-              </span>
-              <span className="muted">{s.released && s.feedback ? `反馈：${s.feedback}` : ""}</span>
+          )}
+        </div>
+      </section>
+
+      <section className="panel" style={{ marginBottom: 16 }}>
+        <div className="panel__head">
+          <h2 className="panel__title">课程总评</h2>
+        </div>
+        <div className="panel__body">
+          {grades.length === 0 ? (
+            <EmptyState title="暂无总评" />
+          ) : (
+            <div className="entity-card-grid">
+              {grades.map((g) => (
+                <article key={g.courseId} className="entity-card">
+                  <h3 className="entity-card__title">{g.courseTitle}</h3>
+                  <MetaChips
+                    items={[
+                      `总评 ${g.summary?.totalScore == null ? "—" : Number(g.summary.totalScore).toFixed(1)}`,
+                      `排名 ${g.rank ?? "—"}`,
+                      `实验 ${pctWeight(g.weights?.lab)}`,
+                      `作业 ${pctWeight(g.weights?.homework)}`,
+                    ]}
+                  />
+                </article>
+              ))}
             </div>
-          </div>
-        ))}
-        {items.length === 0 ? <div className="muted">暂无提交记录</div> : null}
-      </div>
-    </div>
+          )}
+        </div>
+      </section>
+
+      {finalized.length === 0 ? (
+        <EmptyState title="暂无已提交记录" />
+      ) : (
+        <div className="entity-card-grid">
+          {finalized.map((s) => (
+            <article key={s.id} className="entity-card">
+              <div className="entity-card__head">
+                <h3 className="entity-card__title">{s.homework.title}</h3>
+                <StatusBadge tone={s.released ? "ok" : s.graded ? "warn" : "muted"}>
+                  {!s.graded ? "待批改" : s.released ? "已发布" : "待发布"}
+                </StatusBadge>
+              </div>
+              <div className="entity-card__sub">{s.homework.course.title}</div>
+              <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                {s.content}
+              </p>
+              {s.released && s.score != null ? (
+                <MetaChips items={[`得分 ${s.score}`]} />
+              ) : null}
+            </article>
+          ))}
+        </div>
+      )}
+    </PageShell>
   );
 }

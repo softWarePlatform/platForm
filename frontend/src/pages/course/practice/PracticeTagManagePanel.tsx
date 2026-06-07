@@ -20,9 +20,6 @@ export default function PracticeTagManagePanel({ tags, onCreateTag, createBusy }
   return (
     <div className="card grid practice-tag-manage">
       <div style={{ fontWeight: 700 }}>知识点标签管理</div>
-      <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-        教师在此新建标签；出题或导入时为题目选择标签。
-      </p>
       <form className="row" onSubmit={(e) => void handleCreate(e)} style={{ gap: 8, flexWrap: "wrap" }}>
         <input
           className="field"
@@ -37,7 +34,7 @@ export default function PracticeTagManagePanel({ tags, onCreateTag, createBusy }
       </form>
       <div className="practice-tag-manage__list">
         {tags.length === 0 ? (
-          <span className="muted">暂无标签，请先新建</span>
+          <span className="muted">暂无标签</span>
         ) : (
           tags.map((t) => (
             <span key={t} className="practice-badge">

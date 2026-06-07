@@ -1,70 +1,52 @@
 import { Link } from "react-router-dom";
 import HomeworkPublishForm from "../../../components/homework/HomeworkPublishForm";
+import EmptyState from "../../../components/layout/EmptyState";
+import StatusBadge from "../../../components/layout/StatusBadge";
 import { useCourse } from "../CourseContext";
 import CourseSectionHead from "../CourseSectionHead";
 
 export default function CourseHomework() {
-  const {
-    courseId,
-    isTeacher,
-    err,
-    displayHomework,
-    setErr,
-    refreshSideData,
-  } = useCourse();
+  const { courseId, isTeacher, err, displayHomework, setErr, refreshSideData } = useCourse();
 
   return (
     <div>
-      <CourseSectionHead
-        title="作业管理"
-        description={isTeacher ? "发布作业、批改提交、发布成绩。" : "查看作业要求并提交作答。"}
-      />
-      {err ? <div className="err" style={{ marginTop: 12 }}>{err}</div> : null}
-      <div>
-          {isTeacher ? (
-            <div style={{ marginTop: 12, paddingBottom: 16, borderBottom: "1px solid var(--border)" }}>
-              <HomeworkPublishForm courseId={courseId} onCreated={refreshSideData} setErr={setErr} />
-            </div>
-          ) : null}
-          <div style={{ marginTop: isTeacher ? 16 : 12, fontWeight: 800 }}>
-            {isTeacher ? "已布置作业" : "作业列表"}
-          </div>
-          <div className="grid" style={{ marginTop: 10 }}>
-            {displayHomework.map((h: any) => (
-              <Link
-                key={h.id}
-                className="card"
-                to={
-                  isTeacher
-                    ? `/teaching/homework/${h.id}`
-                    : `/courses/${courseId}/homework/${h.id}`
-                }
-                style={{
-                  display: "block",
-                  padding: 14,
-                  textDecoration: "none",
-                  color: "inherit",
-                  boxShadow: "none",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <div className="row spread" style={{ alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{h.title}</div>
-                    <div className="muted" style={{ marginTop: 4 }}>
-                      截止：{h.dueAt ? new Date(h.dueAt).toLocaleString() : "未设置"}
-                    </div>
-                  </div>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    点击进入详情
-                  </div>
-                </div>
-              </Link>
-            ))}
-            {displayHomework.length === 0 ? <div className="muted">暂无作业</div> : null}
-          </div>
-      </div>
+      <CourseSectionHead title="作业" />
+
+      {err ? <div className="page-alert err">{err}</div> : null}
+
+      {isTeacher ? (
+        <div className="form-sheet" style={{ marginBottom: 28 }}>
+          <HomeworkPublishForm courseId={courseId} onCreated={refreshSideData} setErr={setErr} />
+        </div>
+      ) : null}
+
+      {displayHomework.length > 0 ? (
+        <h3 className="inline-section-title">已布置</h3>
+      ) : null}
+
+      {displayHomework.length === 0 ? (
+        <EmptyState title="暂无作业" />
+      ) : (
+        <div className="entity-card-grid">
+          {displayHomework.map((h: any) => (
+            <Link
+              key={h.id}
+              className="entity-card entity-card--link"
+              to={`/courses/${courseId}/homework/${h.id}`}
+            >
+              <div className="entity-card__head">
+                <h3 className="entity-card__title">{h.title}</h3>
+                <StatusBadge tone={h.published !== false ? "ok" : "muted"}>
+                  {h.published !== false ? "已发布" : "草稿"}
+                </StatusBadge>
+              </div>
+              <div className="entity-card__sub">
+                {h.dueAt ? `截止 ${new Date(h.dueAt).toLocaleDateString()}` : "无截止"}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-

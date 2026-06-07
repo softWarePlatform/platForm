@@ -24,7 +24,6 @@ export default function PracticeTutorChat({
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [meta, setMeta] = useState<{ source?: string; model?: string | null } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const prevItemId = useRef(itemId);
@@ -34,7 +33,6 @@ export default function PracticeTutorChat({
       setTurns(initialMessages);
       setErr(null);
       setNotice(null);
-      setMeta(null);
       setInput("");
     }
   }, [itemId, initialMessages]);
@@ -60,7 +58,6 @@ export default function PracticeTutorChat({
       setTurns(next);
       onMessagesChange?.(next);
       setNotice(data.notice ?? null);
-      setMeta({ source: data.source, model: data.model });
     } catch (e: unknown) {
       const msg =
         typeof e === "object" && e !== null && "response" in e
@@ -81,7 +78,6 @@ export default function PracticeTutorChat({
       setTurns([]);
       onMessagesChange?.([]);
       setNotice(null);
-      setMeta(null);
     } catch (e: unknown) {
       const msg =
         typeof e === "object" && e !== null && "response" in e
@@ -96,11 +92,7 @@ export default function PracticeTutorChat({
   return (
     <div className="practice-tutor">
       <div ref={scrollRef} className="practice-tutor__thread">
-        {turns.length === 0 ? (
-          <p className="muted practice-tutor__empty">
-            可向 AI 辅导提问，支持多轮追问。辅导不会直接给出本题最终答案。
-          </p>
-        ) : (
+        {turns.length === 0 ? null : (
           turns.map((t, i) => (
             <div
               key={i}
@@ -121,12 +113,6 @@ export default function PracticeTutorChat({
 
       {err ? <p className="err practice-tutor__err">{err}</p> : null}
       {notice ? <p className="practice-ai-notice">{notice}</p> : null}
-      {meta?.source === "llm" && meta.model ? (
-        <p className="muted" style={{ fontSize: 12, margin: 0 }}>
-          由 {meta.model} 生成
-        </p>
-      ) : null}
-
       <div className="row practice-tutor__quick" style={{ gap: 8, flexWrap: "wrap" }}>
         <button
           type="button"

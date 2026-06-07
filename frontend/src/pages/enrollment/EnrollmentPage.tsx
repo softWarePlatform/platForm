@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { getApiError } from "../../api/errors";
 import { api } from "../../api/client";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
+import { useToast } from "../../components/ui/Toast";
 import { useAuth } from "../../auth/AuthContext";
 import WeeklySchedule from "../../features/dashboard/WeeklySchedule";
 import type { DashboardPayload } from "../../features/dashboard/types";
@@ -37,6 +40,8 @@ const EMPTY_SEARCH: SearchFields = {
 };
 
 export default function EnrollmentPage() {
+  const { confirm } = useConfirm();
+  const { success } = useToast();
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
 
@@ -185,8 +190,7 @@ export default function EnrollmentPage() {
       await fn();
       await refreshAll();
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setError(msg ?? "\u64cd\u4f5c\u5931\u8d25");
+      setError(getApiError(e, "\u64cd\u4f5c\u5931\u8d25"));
     } finally {
       setBusyId(null);
     }
@@ -196,8 +200,12 @@ export default function EnrollmentPage() {
     onEnroll: (id: string, classId?: string) =>
       void runAction(id, () => api.post(`/enrollment/courses/${id}/enroll`, { classId })),
     onDrop: (id: string) => {
-      if (!globalThis.confirm("\u786e\u8ba4\u9000\u8bfe\uff1f")) return;
-      void runAction(id, () => api.delete(`/enrollment/courses/${id}/enroll`));
+      void (async () => {
+        const ok = await confirm({ title: "退课", message: "确认退课？" });
+        if (!ok) return;
+        await runAction(id, () => api.delete(`/enrollment/courses/${id}/enroll`));
+        success("已退课");
+      })();
     },
     onWaitlist: (id: string) => void runAction(id, () => api.post(`/enrollment/courses/${id}/waitlist`)),
     onLeaveWaitlist: (id: string) =>

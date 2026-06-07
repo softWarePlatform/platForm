@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { getApiError } from "../api/errors";
 import { api } from "../api/client";
 import { useAuth, type Role } from "../auth/AuthContext";
 
@@ -22,20 +23,17 @@ export default function Register() {
       setSession(data.token, data.user);
       nav("/");
     } catch (err: unknown) {
-      const msg =
-        typeof err === "object" && err !== null && "response" in err
-          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-          : null;
-      setError(msg ?? "注册失败");
+      setError(getApiError(err, "注册失败"));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="container" style={{ maxWidth: 520 }}>
-      <div className="card" style={{ marginTop: 28 }}>
-        <h2 style={{ marginTop: 0 }}>注册</h2>
+    <div className="auth-page">
+      <div className="container auth-card">
+        <div className="card">
+          <h2>注册</h2>
         <form className="grid" onSubmit={onSubmit}>
           <div className="field">
             <label>姓名</label>
@@ -70,6 +68,7 @@ export default function Register() {
             已有账号？<Link to="/login">去登录</Link>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

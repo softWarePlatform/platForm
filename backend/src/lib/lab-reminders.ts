@@ -103,7 +103,7 @@ export function buildLabReminderCopy(
 }
 
 function linkPath(courseId: string, labSetId: string): string {
-  return `/courses/${courseId}/lab-sets/${labSetId}`;
+  return `/courses/${courseId}/labs/sets/${labSetId}`;
 }
 
 function toActiveDto(

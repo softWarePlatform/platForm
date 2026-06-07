@@ -58,8 +58,12 @@
    练习模块：迁移 20260520120000_practice_module 会创建题库/练习会话等表；seed 为「程序设计基础」
    课程注入演示题。登录学生后进入课程 → 练习，可智能组卷/按标签/错题/自定义练习。
 
-   演示账号见终端输出；管理员 admin@demo.local，教师 teacher@demo.local，学生 student@demo.local、
-   li@demo.local、wang@demo.local，密码均为 Demo123456。
+   演示账号见终端输出（db:seed 会先清空业务数据再写入）：
+   · 管理员 admin@demo.local
+   · 教师 teacher@demo.local … teacher5@demo.local（5 人）
+   · 学生 student@demo.local、student02@demo.local … student20@demo.local（20 人）
+   · 密码均为 Demo123456
+   · 12 门课（CS101–CS502、MA101、EN101），每课 2 作业 + 3 实验集 + 资料/题解文件 + 智能练习题库
 
 4）一键启动前端 + 后端（在项目根目录 platForm，勿在子目录）
 
@@ -82,6 +86,7 @@
    上传文件默认保存在 backend/uploads；Worker 已对齐该目录。若自定义 UPLOAD_DIR，请在 backend/.env
    中设置且 backend 与 judge-worker 读取同一份 .env：
 
+   推荐在项目根目录 platForm 执行；backend 目录也已支持 npm run dev:full（会转发到根目录）：
    npm run dev:full
 
    或另开终端：npm run dev:worker

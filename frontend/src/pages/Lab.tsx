@@ -111,7 +111,7 @@ export default function Lab() {
             返回课程
           </Link>
           {lab.labSet?.id ? (
-            <Link to={`/courses/${courseId}/lab-sets/${lab.labSet.id}`} className="muted">
+            <Link to={`/courses/${courseId}/labs/sets/${lab.labSet.id}`} className="muted">
               返回实验集
             </Link>
           ) : null}

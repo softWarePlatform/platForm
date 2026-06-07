@@ -13,6 +13,12 @@ type Props = {
   accessLabel?: string;
 };
 
+const MARK_LABEL: Record<Exclude<LabGridTone, "red">, string> = {
+  gray: "待",
+  yellow: "进",
+  green: "✓",
+};
+
 export default function LabAssignmentBar({
   to,
   tone,
@@ -24,13 +30,16 @@ export default function LabAssignmentBar({
   accessLabel,
 }: Props) {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-  const allAc = tone === "green";
+  const hasScore = score !== "—";
 
-  const bar = (
+  return (
     <Link
       to={to}
-      className={`lab-assign-bar lab-assign-bar--${tone}${allAc ? " lab-assign-bar--all-ac" : ""} lab-pressable`}
+      className={`lab-assign-bar lab-assign-bar--${tone} lab-pressable`}
     >
+      <span className={`lab-assign-bar__mark lab-assign-bar__mark--${tone}`} aria-hidden>
+        {MARK_LABEL[tone]}
+      </span>
       <div className="lab-assign-bar__main">
         <div className="lab-assign-bar__title-row">
           <span className="lab-assign-bar__title">{title}</span>
@@ -44,6 +53,14 @@ export default function LabAssignmentBar({
           <span>
             {done}/{total} 题
           </span>
+          {tone === "yellow" && total > 0 ? (
+            <>
+              <span className="lab-assign-bar__dot" aria-hidden>
+                ·
+              </span>
+              <span>{pct}%</span>
+            </>
+          ) : null}
           {accessLabel ? (
             <>
               <span className="lab-assign-bar__dot" aria-hidden>
@@ -53,24 +70,21 @@ export default function LabAssignmentBar({
             </>
           ) : null}
         </div>
-        {total > 0 ? (
+        {tone === "yellow" && total > 0 ? (
           <div className="lab-assign-bar__progress" aria-hidden>
             <div className="lab-assign-bar__progress-fill" style={{ width: `${pct}%` }} />
           </div>
         ) : null}
       </div>
       <div className="lab-assign-bar__side">
-        <span className="lab-assign-bar__score">{score}</span>
+        <div className="lab-assign-bar__score-badge">
+          <span className="lab-assign-bar__score">{score}</span>
+          {hasScore ? <span className="lab-assign-bar__score-label">分</span> : null}
+        </div>
         <span className="lab-assign-bar__chevron" aria-hidden>
           ›
         </span>
       </div>
     </Link>
   );
-
-  if (allAc) {
-    return <div className="lab-assign-bar-shimmer">{bar}</div>;
-  }
-
-  return bar;
 }
