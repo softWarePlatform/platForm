@@ -1,0 +1,19 @@
+{
+  "labId": "00000000-0000-4000-8000-000000000011",
+  "title": "实验二：A+B（Python）",
+  "language": "python",
+  "cases": [
+    {
+      "input": "3 5\n",
+      "expected": "8",
+      "hidden": false,
+      "weight": 1
+    },
+    {
+      "input": "10 20\n",
+      "expected": "30",
+      "hidden": true,
+      "weight": 1
+    }
+  ]
+}

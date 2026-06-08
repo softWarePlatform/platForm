@@ -1,0 +1,5 @@
+-- 实验集时间窗：开始时间、补交、非窗口访问模式
+ALTER TABLE "LabSet" ADD COLUMN "startAt" TIMESTAMP(3);
+ALTER TABLE "LabSet" ADD COLUMN "allowMakeup" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "LabSet" ADD COLUMN "makeupDueAt" TIMESTAMP(3);
+ALTER TABLE "LabSet" ADD COLUMN "outsideAccessMode" TEXT NOT NULL DEFAULT 'BLOCK';
