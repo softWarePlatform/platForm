@@ -34,7 +34,7 @@ export default function AdminDashboard() {
         const { data } = await api.get<DashboardData>("/admin/dashboard");
         if (!cancelled) setData(data);
       } catch {
-        if (!cancelled) setError("当前仅展示前端静态布局，后台概览接口暂不可用。");
+        if (!cancelled) setError("后台概览接口暂不可用。");
       }
     })();
     return () => {
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <AdminLayout title="管理控制台" subtitle={`超级管理员 · 演示管理台 · ${data.semester ?? "2026 - 2027 春学期"}`}>
+    <AdminLayout title="管理控制台" subtitle={`超级管理员 · ${data.semester ?? "2026 - 2027 春学期"}`}>
       {error ? <div className="page-alert page-alert--warn">{error}</div> : null}
 
       <div className={styles.stats}>

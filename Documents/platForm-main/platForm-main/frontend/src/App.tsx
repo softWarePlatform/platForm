@@ -36,6 +36,9 @@ import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserLogs from "./pages/admin/AdminUserLogs";
+import AdminClass from "./pages/admin/AdminClass";
+import AdminLogs from "./pages/admin/AdminLogs";
 import Help from "./pages/Help";
 
 function RequireAuth({ children }: { children: ReactElement }) {
@@ -204,7 +207,7 @@ export default function App() {
           path="/admin"
           element={
             <RequireRole roles={["ADMIN"]}>
-              <AdminDashboard />
+               <AdminDashboard />
             </RequireRole>
           }
         />
@@ -213,6 +216,30 @@ export default function App() {
           element={
             <RequireRole roles={["ADMIN"]}>
               <AdminUsers />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/users/:userId/logs"
+          element={
+            <RequireRole roles={["ADMIN"]}>
+              <AdminUserLogs />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/class"
+          element={
+            <RequireRole roles={["ADMIN"]}>
+              <AdminClass />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/logs"
+          element={
+            <RequireRole roles={["ADMIN"]}>
+              <AdminLogs />
             </RequireRole>
           }
         />
