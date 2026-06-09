@@ -1,0 +1,475 @@
+/* 与主界面 styles.css 共用 :root 变量（--bg / --brand / --radius 等） */
+.enroll-page {
+  min-height: calc(100vh - 57px);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.enroll-main-nav {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 8px var(--content-gutter) 0;
+}
+
+.enroll-main-nav-inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.enroll-nav-item {
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--muted);
+  border-radius: 10px;
+  border-bottom: none;
+  font-weight: 600;
+  margin: 6px 0;
+}
+
+.enroll-nav-item:hover {
+  color: var(--brand-dark);
+  background: #e8eefc;
+}
+
+.enroll-nav-item.active {
+  color: var(--brand-dark);
+  background: #e8eefc;
+  font-weight: 700;
+}
+
+.enroll-sub-nav {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 10px var(--content-gutter);
+}
+
+.enroll-sub-nav-inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.enroll-body {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 24px var(--content-gutter) 32px;
+}
+
+.enroll-status-bar {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+}
+
+.enroll-status-bar strong {
+  color: var(--brand-dark);
+}
+
+.enroll-recommend-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--brand);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.enroll-recommend-panel h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.enroll-recommend-panel p {
+  color: var(--muted);
+}
+
+.enroll-filter-panel,
+.enroll-search-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.enroll-filter-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.enroll-filter-title {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--text);
+  flex-shrink: 0;
+  min-width: 2.5em;
+}
+
+.enroll-filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+
+.enroll-filter-tab {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.enroll-filter-tab:hover {
+  border-color: #c7d2fe;
+  color: var(--brand-dark);
+}
+
+.enroll-filter-tab.active {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: white;
+}
+
+.enroll-filter-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.enroll-filter-option {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: 10px;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  max-width: 100%;
+}
+
+.enroll-filter-option:hover {
+  border-color: #c7d2fe;
+}
+
+.enroll-filter-option.selected {
+  border-color: var(--brand);
+  background: #e8eefc;
+  color: var(--brand-dark);
+  font-weight: 600;
+}
+
+.enroll-filter-hint {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.enroll-filter-tab-badge {
+  display: inline-block;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.enroll-filter-tab.active .enroll-filter-tab-badge {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.enroll-filter-clear-all {
+  margin-left: auto;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: white;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.enroll-filter-applied {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.enroll-filter-applied-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.enroll-filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 4px 10px;
+  border-radius: 999px;
+  background: #e8eefc;
+  color: var(--brand-dark);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.enroll-filter-tag button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--brand-dark);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.enroll-search-title {
+  font-weight: 800;
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+.enroll-search-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.enroll-search-grid label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.enroll-search-grid input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  outline: none;
+  background: white;
+  box-sizing: border-box;
+}
+
+.enroll-search-grid input:focus {
+  border-color: var(--brand);
+}
+
+.enroll-table-wrap {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.enroll-course-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.enroll-course-table th {
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 14px;
+  white-space: nowrap;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.enroll-course-table th:last-child {
+  border-right: none;
+}
+
+.enroll-course-row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+
+.enroll-course-row:hover {
+  background: #f8fafc;
+}
+
+.enroll-course-row td {
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+
+.enroll-course-row.expanded {
+  background: #e8eefc;
+}
+
+.enroll-expand-icon {
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+  color: var(--brand-dark);
+  font-size: 11px;
+}
+
+.enroll-section-wrap {
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border);
+}
+
+.enroll-section-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 0;
+}
+
+.enroll-section-table th {
+  background: #f1f5f9;
+  color: var(--text);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+
+.enroll-section-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.enroll-section-table tr:last-child td {
+  border-bottom: none;
+}
+
+.enroll-link-btn {
+  background: none;
+  border: none;
+  color: var(--brand-dark);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.enroll-link-btn:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.enroll-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+.enroll-tag.warn {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.enroll-tag.ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.enroll-tag.info {
+  background: #e8eefc;
+  color: var(--brand-dark);
+}
+
+.enroll-empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.enroll-err {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius);
+  color: var(--danger);
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.enroll-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.enroll-log-table th {
+  background: #f1f5f9;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.enroll-log-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* 选课系统内嵌主界面课表（复用 WeeklySchedule） */
+.enroll-timetable-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.enroll-timetable-panel .schedule-grid {
+  min-width: 720px;
+}
