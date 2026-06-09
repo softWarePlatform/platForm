@@ -1,0 +1,11 @@
+/* 设计系统扩展 token（与 styles.css :root 合并使用） */
+:root {
+  --content-max: 1200px;
+  --content-wide: 1480px;
+  --content-gutter: 20px;
+  --surface-card: #ffffff;
+  --surface-muted: var(--surface-section);
+  --focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.22);
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.22s ease;
+}

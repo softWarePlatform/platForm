@@ -1,0 +1,462 @@
+/* 教学台活力版 — 复用主界面 dash-* 设计语言，不修改主界面组件 */
+
+.teach-page .page-shell__inner {
+  padding-top: 4px;
+}
+
+.teach-home {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.teach-welcome {
+  margin-bottom: -4px;
+}
+
+/* —— 子导航 —— */
+.teach-subnav-wrap {
+  margin-top: -6px;
+}
+
+.teach-subnav {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border-radius: calc(var(--radius-lg) + 4px);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(223, 227, 234, 0.9);
+  box-shadow: 0 4px 18px rgba(28, 35, 51, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.teach-subnav.subnav {
+  margin-top: 0;
+}
+
+.teach-subnav .subnav__link {
+  font-weight: 600;
+}
+
+.teach-subnav .subnav__link--active {
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.12);
+}
+
+/* —— 课程区 —— */
+.teach-courses-panel {
+  padding: 20px 18px 22px;
+}
+
+.teach-course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.teach-course-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: calc(var(--radius-lg) + 2px);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(223, 227, 234, 0.9);
+  box-shadow: 0 4px 16px rgba(28, 35, 51, 0.05);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.teach-course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 36px rgba(79, 70, 229, 0.12);
+}
+
+.teach-course-card__body {
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.teach-course-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.teach-course-card__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.teach-course-card__code {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  vertical-align: middle;
+}
+
+.teach-course-card__meta {
+  margin: 8px 0 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.teach-course-card__schedule {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.teach-course-card__progress-head {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.teach-course-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* —— 新建课程折叠面板 —— */
+.teach-create-details {
+  padding: 0;
+  overflow: hidden;
+}
+
+.teach-create-details > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 18px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  user-select: none;
+}
+
+.teach-create-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.teach-create-details > summary::after {
+  content: "展开";
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.teach-create-details[open] > summary::after {
+  content: "收起";
+}
+
+.teach-create-details__body {
+  padding: 0 18px 20px;
+  border-top: 1px solid var(--border-light);
+}
+
+.teach-create-details__body .form-actions {
+  margin-top: 8px;
+}
+
+/* —— 作业卡片 —— */
+.teach-homework-panel {
+  padding: 20px 18px 22px;
+}
+
+.teach-homework-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.teach-homework-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: calc(var(--radius-lg) + 2px);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(223, 227, 234, 0.9);
+  box-shadow: 0 4px 16px rgba(28, 35, 51, 0.05);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.teach-homework-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(124, 58, 237, 0.12);
+}
+
+.teach-cover-art {
+  height: 96px;
+}
+
+.teach-homework-card__body {
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.teach-homework-card__course {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--brand);
+  letter-spacing: 0.02em;
+}
+
+.teach-homework-card__title {
+  margin: 6px 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.teach-homework-card__class {
+  margin: 4px 0 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.teach-homework-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.teach-homework-card__due {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.teach-homework-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.teach-homework-card__stats:has(.teach-mini-stat--amber) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.teach-mini-stat {
+  text-align: center;
+  padding: 8px 6px;
+  border-radius: 10px;
+  background: var(--surface-tint);
+}
+
+.teach-mini-stat strong {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.teach-mini-stat span {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.teach-mini-stat--blue {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+}
+
+.teach-mini-stat--purple {
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+}
+
+.teach-mini-stat--teal {
+  background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+}
+
+.teach-mini-stat--amber {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+}
+
+.teach-homework-card__cta {
+  margin-top: 14px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* —— 实验卡片（教学台 vivid） —— */
+.teach-labs-panel {
+  padding: 16px 18px 20px;
+}
+
+.teach-lab-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: calc(var(--radius-lg) + 2px);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(223, 227, 234, 0.9);
+  box-shadow: 0 4px 16px rgba(28, 35, 51, 0.05);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.teach-lab-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(13, 148, 136, 0.12);
+}
+
+.teach-lab-card__body {
+  padding: 14px 14px 16px;
+}
+
+.teach-lab-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.teach-lab-card__title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.teach-lab-card__course {
+  margin: 4px 0 0;
+  font-size: var(--text-xs);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.teach-lab-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.teach-lab-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--surface-tint);
+  color: var(--text-secondary);
+}
+
+.teach-lab-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* —— 实验分组标题 —— */
+.teach-list-group {
+  margin-bottom: 18px;
+}
+
+.teach-list-group:last-child {
+  margin-bottom: 0;
+}
+
+.teach-list-group__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.teach-list-group__toggle:hover {
+  background: var(--brand-soft);
+}
+
+.teach-list-group__count {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.teach-lab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.teach-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.teach-toolbar .teach-subnav-wrap {
+  margin-top: 0;
+}
+
+.teach-toolbar__hint {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .teach-stats.dash-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .teach-homework-card__stats:has(.teach-mini-stat--amber) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .teach-course-grid,
+  .teach-homework-grid,
+  .teach-lab-grid {
+    grid-template-columns: 1fr;
+  }
+}
