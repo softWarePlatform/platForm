@@ -250,10 +250,89 @@ const authRoutes: FastifyPluginAsync = async (app) => {
         role: true,
         createdAt: true,
         emailVerifiedAt: true,
+        disabledAt: true,
       },
       take: 500,
     });
     return { users };
+  });
+
+  app.patch("/admin/users/:id/freeze", { preHandler: authRequired("ADMIN") }, async (req, reply) => {
+    const params = z.object({ id: z.string().uuid() });
+    const body = z.object({ frozen: z.boolean() });
+    const parsedParams = params.safeParse(req.params);
+    const parsedBody = body.safeParse(req.body);
+    if (!parsedParams.success || !parsedBody.success) return reply.code(400).send({ error: "参数无效" });
+
+    const user = await prisma.user.findUnique({ where: { id: parsedParams.data.id } });
+    if (!user) return reply.code(404).send({ error: "用户不存在" });
+    if (user.id === req.auth!.sub) return reply.code(400).send({ error: "不能冻结自己" });
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { disabledAt: parsedBody.data.frozen ? new Date() : null },
+      select: { id: true, disabledAt: true },
+    });
+
+    return { user: updated };
+  });
+
+  app.patch("/admin/users/:id/role", { preHandler: authRequired("ADMIN") }, async (req, reply) => {
+    const params = z.object({ id: z.string().uuid() });
+    const body = z.object({ role: z.enum(["STUDENT", "TEACHER", "ADMIN"]) });
+    const parsedParams = params.safeParse(req.params);
+    const parsedBody = body.safeParse(req.body);
+    if (!parsedParams.success || !parsedBody.success) return reply.code(400).send({ error: "参数无效" });
+
+    const user = await prisma.user.findUnique({ where: { id: parsedParams.data.id } });
+    if (!user) return reply.code(404).send({ error: "用户不存在" });
+    if (user.id === req.auth!.sub && parsedBody.data.role !== "ADMIN") {
+      return reply.code(400).send({ error: "不能将自己降级" });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { role: parsedBody.data.role },
+      select: { id: true, role: true },
+    });
+
+    return { user: updated };
+  });
+
+  app.post("/admin/users/:id/reset-password", { preHandler: authRequired("ADMIN") }, async (req, reply) => {
+    const params = z.object({ id: z.string().uuid() });
+    const body = z.object({ newPassword: z.string().min(8).optional() });
+    const parsedParams = params.safeParse(req.params);
+    const parsedBody = body.safeParse(req.body ?? {});
+    if (!parsedParams.success || !parsedBody.success) return reply.code(400).send({ error: "参数无效" });
+
+    const user = await prisma.user.findUnique({ where: { id: parsedParams.data.id } });
+    if (!user) return reply.code(404).send({ error: "用户不存在" });
+
+    const newPassword = parsedBody.data.newPassword ?? randomBytes(6).toString("hex");
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: await hashPassword(newPassword),
+        passwordResetToken: null,
+        passwordResetExpiresAt: null,
+      },
+    });
+
+    return { ok: true, tempPassword: parsedBody.data.newPassword ? undefined : newPassword };
+  });
+
+  app.delete("/admin/users/:id", { preHandler: authRequired("ADMIN") }, async (req, reply) => {
+    const params = z.object({ id: z.string().uuid() });
+    const parsedParams = params.safeParse(req.params);
+    if (!parsedParams.success) return reply.code(400).send({ error: "参数无效" });
+    if (parsedParams.data.id === req.auth!.sub) return reply.code(400).send({ error: "不能删除自己" });
+
+    const user = await prisma.user.findUnique({ where: { id: parsedParams.data.id } });
+    if (!user) return reply.code(404).send({ error: "用户不存在" });
+
+    await prisma.user.delete({ where: { id: user.id } });
+    return { ok: true };
   });
 };
 

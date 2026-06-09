@@ -89,6 +89,7 @@ model User {
   emailVerifyExpiresAt DateTime?
   passwordResetToken String?
   passwordResetExpiresAt DateTime?
+  disabledAt   DateTime?
   createdAt    DateTime @default(now())
 
   coursesTeaching       Course[]               @relation("TeacherCourses")
