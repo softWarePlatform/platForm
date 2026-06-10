@@ -15,6 +15,8 @@ import {
   joinWaitlist,
   leaveWaitlist,
 } from "../lib/enrollment-service.js";
+import { notifyCourseStaffAndAdmins } from "../lib/role-feedback.js";
+import { emitNotificationToUser } from "../lib/notification-events.js";
 
 function handleEnrollmentError(reply: any, e: unknown) {
   const err = e as Error & { statusCode?: number };
@@ -207,6 +209,14 @@ const enrollmentRoutes: FastifyPluginAsync = async (app) => {
         const enrollment = await enrollStudent(req.auth!.sub, courseId, {
           classId: body.data.classId,
         });
+        await notifyCourseStaffAndAdmins({
+          courseId,
+          actorUserId: req.auth!.sub,
+          type: "ENROLLMENT",
+          title: "学生选课",
+          body: "有学生加入了课程",
+          linkPath: `/teacher/courses/${courseId}/manage`,
+        });
         return { enrollment, ok: true };
       } catch (e) {
         return handleEnrollmentError(reply, e);
@@ -221,6 +231,14 @@ const enrollmentRoutes: FastifyPluginAsync = async (app) => {
       const { courseId } = req.params as { courseId: string };
       try {
         await dropStudent(req.auth!.sub, courseId);
+        await notifyCourseStaffAndAdmins({
+          courseId,
+          actorUserId: req.auth!.sub,
+          type: "ENROLLMENT",
+          title: "学生退课",
+          body: "有学生退出了课程",
+          linkPath: `/teacher/courses/${courseId}/manage`,
+        });
         return { ok: true };
       } catch (e) {
         return handleEnrollmentError(reply, e);
@@ -235,6 +253,14 @@ const enrollmentRoutes: FastifyPluginAsync = async (app) => {
       const { courseId } = req.params as { courseId: string };
       try {
         await joinWaitlist(req.auth!.sub, courseId);
+        await notifyCourseStaffAndAdmins({
+          courseId,
+          actorUserId: req.auth!.sub,
+          type: "ENROLLMENT",
+          title: "学生加入候补",
+          body: "有学生加入了课程候补名单",
+          linkPath: `/teacher/courses/${courseId}/manage`,
+        });
         return { ok: true };
       } catch (e) {
         return handleEnrollmentError(reply, e);
@@ -364,6 +390,24 @@ const enrollmentRoutes: FastifyPluginAsync = async (app) => {
           operatorId: req.auth!.sub,
           skipWindowCheck: true,
         });
+        await prisma.siteNotification.create({
+          data: {
+            userId: body.data.userId,
+            type: "ENROLLMENT",
+            title: "管理员已为你加课",
+            body: "管理员已将你加入课程。",
+            linkPath: `/student/courses/${body.data.courseId}/announcements`,
+          },
+        });
+        emitNotificationToUser(body.data.userId);
+        await notifyCourseStaffAndAdmins({
+          courseId: body.data.courseId,
+          actorUserId: req.auth!.sub,
+          type: "ENROLLMENT",
+          title: "管理员加课",
+          body: "管理员调整了课程名单。",
+          linkPath: `/teacher/courses/${body.data.courseId}/manage`,
+        });
         return { enrollment, ok: true };
       } catch (e) {
         return handleEnrollmentError(reply, e);
@@ -383,6 +427,24 @@ const enrollmentRoutes: FastifyPluginAsync = async (app) => {
         await dropStudent(body.data.userId, body.data.courseId, {
           operatorId: req.auth!.sub,
           skipWindowCheck: true,
+        });
+        await prisma.siteNotification.create({
+          data: {
+            userId: body.data.userId,
+            type: "ENROLLMENT",
+            title: "管理员已为你退课",
+            body: "管理员已将你移出课程。",
+            linkPath: "/enrollment",
+          },
+        });
+        emitNotificationToUser(body.data.userId);
+        await notifyCourseStaffAndAdmins({
+          courseId: body.data.courseId,
+          actorUserId: req.auth!.sub,
+          type: "ENROLLMENT",
+          title: "管理员退课",
+          body: "管理员调整了课程名单。",
+          linkPath: `/teacher/courses/${body.data.courseId}/manage`,
         });
         return { ok: true };
       } catch (e) {

@@ -5,5 +5,6 @@ import { useAuth } from "../auth/AuthContext";
 export default function CoursesRedirect() {
   const { user } = useAuth();
   if (user?.role === "TEACHER") return <Navigate to="/teaching" replace />;
+  if (user?.role === "ADMIN") return <Navigate to="/admin" replace />;
   return <Navigate to="/enrollment" replace />;
 }

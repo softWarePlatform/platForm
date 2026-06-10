@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "./prisma.js";
+import { emitNotificationToUsers } from "./notification-events.js";
 
 export const MATERIAL_VISIBILITY = ["ALL", "CLASS", "TEACHER_ONLY"] as const;
 export type MaterialVisibility = (typeof MATERIAL_VISIBILITY)[number];
@@ -140,6 +141,7 @@ export async function notifyStudentsOfMaterial(
       materialId,
     })),
   });
+  emitNotificationToUsers(enrollments.map((e) => e.userId));
 }
 
 export function newMaterialGroupId(): string {

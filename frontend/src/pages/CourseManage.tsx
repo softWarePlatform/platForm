@@ -1,7 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 import { useConfirm } from "../components/ui/ConfirmDialog";
+import { coursePathForRole } from "../lib/coursePaths";
 import CourseEnrollmentFields, {
   enrollmentFromCourse,
   enrollmentToPayload,
@@ -22,6 +24,7 @@ function toLocalInput(iso: string | null | undefined): string {
 }
 
 export default function CourseManage() {
+  const { user } = useAuth();
   const { confirm } = useConfirm();
   const { courseId } = useParams();
   const [course, setCourse] = useState<any>(null);
@@ -130,12 +133,15 @@ export default function CourseManage() {
     );
   }
 
+  const courseHomePath = coursePathForRole(courseId!, "announcements", user?.role);
+  const courseMaterialsPath = coursePathForRole(courseId!, "materials", user?.role);
+
   return (
     <div className="container">
       <div className="spread" style={{ marginTop: 12 }}>
         <div>
           <div className="muted">
-            <Link to={`/courses/${courseId}/announcements`}>← 返回课程</Link>
+            <Link to={courseHomePath}>← 返回课程</Link>
           </div>
           <h2 style={{ margin: "8px 0 0" }}>课程管理 · {course.title}</h2>
         </div>
@@ -173,7 +179,7 @@ export default function CourseManage() {
 
         <div className="card grid">
           <div style={{ fontWeight: 800 }}>课程资料</div>
-          <Link to={`/courses/${courseId}/materials`} className="btn primary" style={{ width: "fit-content" }}>
+          <Link to={courseMaterialsPath} className="btn primary" style={{ width: "fit-content" }}>
             打开资料管理
           </Link>
         </div>

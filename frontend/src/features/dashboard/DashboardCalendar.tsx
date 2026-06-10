@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { coursePathForRole } from "../../lib/coursePaths";
 import type { DashboardCourse, DashboardDeadline } from "./types";
 
 type Props = {
@@ -57,7 +58,7 @@ export default function DashboardCalendar({ courses, deadlines }: Props) {
             id: `c-${c.id}-${slot.dayOfWeek}-${slot.periodStart}-t`,
             ...base,
             tone: "blue",
-            link: `/courses/${c.id}`,
+            link: coursePathForRole(c.id, "announcements", "STUDENT"),
           });
         }
         if (slot.dayOfWeek === tomorrowDow) {
@@ -65,7 +66,7 @@ export default function DashboardCalendar({ courses, deadlines }: Props) {
             id: `c-${c.id}-${slot.dayOfWeek}-${slot.periodStart}-m`,
             ...base,
             tone: "teal",
-            link: `/courses/${c.id}`,
+            link: coursePathForRole(c.id, "announcements", "STUDENT"),
           });
         }
       }
@@ -88,7 +89,7 @@ export default function DashboardCalendar({ courses, deadlines }: Props) {
         sub: d.courseTitle,
         time: due.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
         tone: d.type === "labSet" ? "purple" : "amber",
-        link: `/courses/${d.courseId}/${d.type === "labSet" ? "labs" : "homework"}`,
+        link: coursePathForRole(d.courseId, d.type === "labSet" ? "labs" : `homework/${d.id}`, "STUDENT"),
       };
       if (due >= todayStart && due < tomorrowStart) todayDeadlines.push(item);
       else if (due >= tomorrowStart && due < dayAfter) tomorrowDeadlines.push(item);

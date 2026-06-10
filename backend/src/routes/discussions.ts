@@ -5,6 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/authGuard.js";
+import { emitNotificationToUsers } from "../lib/notification-events.js";
 import { readStoredFileAbs, saveDiscussionAttachment } from "../lib/uploads.js";
 
 /** 列表查询结果（与 schema 字段一致，避免 Prisma Client 未刷新时 include 推断报错） */
@@ -150,6 +151,7 @@ async function notifyMentions(opts: {
       linkPath: opts.linkPath,
     })),
   });
+  emitNotificationToUsers(unique);
 }
 
 const postInclude = {

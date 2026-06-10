@@ -6,6 +6,7 @@ import MetaChips from "../components/layout/MetaChips";
 import PageHeader from "../components/layout/PageHeader";
 import PageShell from "../components/layout/PageShell";
 import StatusBadge from "../components/layout/StatusBadge";
+import { coursePathForRole } from "../lib/coursePaths";
 
 type MyCourseGrade = {
   courseId: string;
@@ -34,11 +35,12 @@ type AssignmentRow = {
 
 type SubmissionRow = {
   id: string;
+  homeworkId: string;
   content: string;
   graded: boolean;
   released: boolean;
   score: number | null;
-  homework: { title: string; course: { title: string } };
+  homework: { id: string; title: string; courseId: string; course: { id: string; title: string } };
 };
 
 function pctWeight(w: unknown): string {
@@ -128,8 +130,8 @@ export default function MyHomework() {
               {pending.map((a) => (
                 <Link
                   key={a.id}
-                  className="entity-card entity-card--link"
-                  to={`/courses/${a.courseId}/homework/${a.id}`}
+                  className="entity-card entity-card--link homework-student-card"
+                  to={coursePathForRole(a.courseId, `homework/${a.id}`, "STUDENT")}
                 >
                   <div className="entity-card__head">
                     <h3 className="entity-card__title">{a.title}</h3>
@@ -181,7 +183,11 @@ export default function MyHomework() {
       ) : (
         <div className="entity-card-grid">
           {finalized.map((s) => (
-            <article key={s.id} className="entity-card">
+            <Link
+              key={s.id}
+              className="entity-card entity-card--link homework-student-card homework-student-card--done"
+              to={coursePathForRole(s.homework.course.id ?? s.homework.courseId, `homework/${s.homework.id ?? s.homeworkId}`, "STUDENT")}
+            >
               <div className="entity-card__head">
                 <h3 className="entity-card__title">{s.homework.title}</h3>
                 <StatusBadge tone={s.released ? "ok" : s.graded ? "warn" : "muted"}>
@@ -195,7 +201,7 @@ export default function MyHomework() {
               {s.released && s.score != null ? (
                 <MetaChips items={[`得分 ${s.score}`]} />
               ) : null}
-            </article>
+            </Link>
           ))}
         </div>
       )}

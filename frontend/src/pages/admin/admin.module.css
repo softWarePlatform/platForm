@@ -492,6 +492,21 @@
   font-size: 12px;
 }
 
+.statusOk {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.statusWarn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusMuted {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .adminLogTableWrap {
   overflow: auto;
 }

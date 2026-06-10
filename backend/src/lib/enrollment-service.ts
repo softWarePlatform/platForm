@@ -1,5 +1,6 @@
 import type { EnrollmentLogAction, EnrollmentPeriod, Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
+import { emitNotificationToUser } from "./notification-events.js";
 import { currentSemester } from "./semester.js";
 import { parseScheduleSlotsJson, slotsConflict, type ScheduleSlot } from "./scheduleSlots.js";
 import { offeringCollegeLabel } from "./enrollment-filters.js";
@@ -145,6 +146,7 @@ async function notifyUser(userId: string, title: string, body: string, linkPath:
   await prisma.siteNotification.create({
     data: { userId, type: "ENROLLMENT", title, body, linkPath },
   });
+  emitNotificationToUser(userId);
 }
 
 export async function promoteWaitlistForCourse(courseId: string) {

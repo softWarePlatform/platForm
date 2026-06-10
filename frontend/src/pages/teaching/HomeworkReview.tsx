@@ -10,6 +10,7 @@ import PageHeader from "../../components/layout/PageHeader";
 import PageShell from "../../components/layout/PageShell";
 import StatusBadge from "../../components/layout/StatusBadge";
 import TeachingSubnav from "../../components/layout/TeachingSubnav";
+import { coursePathForRole } from "../../lib/coursePaths";
 
 export default function HomeworkTeacherReview() {
   const navigate = useNavigate();
@@ -93,7 +94,7 @@ export default function HomeworkTeacherReview() {
     try {
       await api.delete(`/homework/${homeworkId}`);
       toastSuccess("已删除作业");
-      navigate(`/courses/${meta.courseId}/homework`, { replace: true });
+      navigate(coursePathForRole(meta.courseId, "homework", "TEACHER"), { replace: true });
     } catch (e: unknown) {
       setErr(getApiError(e, "删除失败"));
     } finally {
@@ -172,7 +173,7 @@ export default function HomeworkTeacherReview() {
               <StatusBadge tone={meta.published ? "ok" : "muted"}>
                 {meta.published ? "已发布" : "草稿"}
               </StatusBadge>
-              <Link className="btn btn--sm" to={`/courses/${meta.courseId}/homework`}>
+              <Link className="btn btn--sm" to={coursePathForRole(meta.courseId, "homework", "TEACHER")}>
                 课程作业
               </Link>
               <button className="btn btn--sm" type="button" onClick={() => void load()}>

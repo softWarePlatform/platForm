@@ -108,8 +108,8 @@ export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }
   }
 
   return (
-    <div style={{ marginTop: 10 }}>
-      <div className="row spread" style={{ flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
+    <div className="homework-submit-panel">
+      <div className="homework-submit-panel__head row spread">
         <div>
           {statusLabel ? (
             <span className={`hw-status hw-status--${(h.myStatus ?? st?.status ?? "default").toLowerCase()}`}>
@@ -172,7 +172,7 @@ export default function HomeworkStudentSubmit({ homework: h, onRefresh, setErr }
           {loading ? (
             <FormSkeleton />
           ) : (
-            <form className="grid" style={{ marginTop: 10, gap: 10 }} onSubmit={onSubmit}>
+            <form className="homework-submit-form grid" onSubmit={onSubmit}>
               {st?.locked ? (
                 <div
                   className="card"
