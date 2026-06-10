@@ -11,7 +11,7 @@ type Props = {
 const MENU = [
   { to: "/admin", label: "控制台", end: true },
   { to: "/admin/users", label: "用户管理" },
-  { to: "/admin/class", label: "班级目录" },
+  { to: "/admin/classserve", label: "班级目录" },
   { to: "/admin/logs", label: "管理员操作日志" },
   { to: "/teaching", label: "课程运维" },
   { to: "/profile", label: "个人中心" },

@@ -594,15 +594,6 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
       language: body.data.language,
       judgeConfig,
     });
-    await prisma.siteNotification.create({
-      data: {
-        userId: req.auth!.sub,
-        type: "AUDIT",
-        title: `实验提交：${lab.title}`,
-        body: "已提交代码实验",
-        linkPath: `/courses/${lab.courseId}/labs/${lab.id}`,
-      },
-    });
 
     return { submissionId: submission.id, status: submission.status };
   });
@@ -653,15 +644,6 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
           fileName: origName,
           fileBuf,
           judgeConfig,
-        });
-        await prisma.siteNotification.create({
-          data: {
-            userId: req.auth!.sub,
-            type: "AUDIT",
-            title: `实验文件提交：${lab.title}`,
-            body: `已上传文件 ${origName}`,
-            linkPath: `/courses/${lab.courseId}/labs/${lab.id}`,
-          },
         });
         return { submissionId: submission.id, status: submission.status };
       } catch (e) {

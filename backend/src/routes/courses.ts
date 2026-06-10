@@ -12,7 +12,7 @@ import {
 import { courseEnrollmentFieldsSchema } from "../lib/course-enrollment-schema.js";
 import { getEnrollmentFilterOptions } from "../lib/enrollment-labels.js";
 import { currentSemester } from "../lib/semester.js";
-import { enrollStudent, dropStudent } from "../lib/enrollment-service.js";
+import { enrollStudent, writeEnrollmentLog } from "../lib/enrollment-service.js";
 
 function withScheduleSlots<T extends { id: string; scheduleSlotsJson: string | null }>(course: T) {
   return {
@@ -150,13 +150,13 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
             semesterKey: body.data.semesterKey ?? sem.key,
           },
         });
-        await prisma.siteNotification.create({
+        await prisma.enrollmentLog.create({
           data: {
             userId: req.auth!.sub,
-            type: "AUDIT",
-            title: `创建课程：${course.title}`,
-            body: course.published ? "课程已发布" : "课程尚未发布",
-            linkPath: `/courses/${course.id}/manage`,
+            courseId: course.id,
+            action: "COURSE_CREATE",
+            operatorId: req.auth!.sub,
+            note: `创建课程「${course.title}」`,
           },
         });
         return { course: withScheduleSlots(course) };
@@ -380,15 +380,6 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
       try {
         const enrollment = await enrollStudent(req.auth!.sub, id, {
           classId: body.data.classId,
-        });
-        await prisma.siteNotification.create({
-          data: {
-            userId: req.auth!.sub,
-            type: "AUDIT",
-            title: `选择课程：${id}`,
-            body: "您已成功选课",
-            linkPath: `/courses/${id}`,
-          },
         });
         return { enrollment };
       } catch (e) {

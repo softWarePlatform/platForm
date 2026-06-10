@@ -33,14 +33,10 @@ type CourseRow = {
   id: string;
   title: string;
   courseCode?: string | null;
-  capacity: number;
-  teacher: { id: string; name: string };
+  teacher?: { id: string; name: string };
 };
 
 type FieldOptions = {
-  courseNatures?: Record<string, string>;
-  subjectCategories?: Record<string, string>;
-  offeringColleges?: Array<{ code: string; label: string }>;
   phases?: Record<string, string>;
 };
 
@@ -48,7 +44,18 @@ function fmt(value?: string | null) {
   return value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "-";
 }
 
-export default function AdminClass() {
+function TimeCard({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <article className={styles.metricCard}>
+      <div className={styles.metricLabel}>{label}</div>
+      <div className={styles.metricValue} style={accent ? { color: accent } : undefined}>
+        {value}
+      </div>
+    </article>
+  );
+}
+
+export default function AdminClassServe() {
   const [period, setPeriod] = useState<EnrollmentPeriod | null>(null);
   const [semester, setSemester] = useState<Semester | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -69,7 +76,10 @@ export default function AdminClass() {
   });
   const [manualForm, setManualForm] = useState({ userId: "", courseId: "", action: "enroll" as "enroll" | "drop" });
 
-  const activePhaseLabel = useMemo(() => options.phases?.[period?.phase ?? "FORMAL"] ?? period?.phase ?? "-", [options, period]);
+  const activePhaseLabel = useMemo(
+    () => options.phases?.[period?.phase ?? "FORMAL"] ?? period?.phase ?? "-",
+    [options, period],
+  );
 
   const loadData = async () => {
     setLoading(true);
@@ -79,7 +89,7 @@ export default function AdminClass() {
         api.get<PeriodResponse>("/enrollment/period"),
         api.get<{ users?: UserRow[] }>("/admin/users"),
         api.get<{ courses?: CourseRow[] }>("/courses/mine"),
-        api.get<FieldOptions>("/courses/enrollment-field-options"),
+        api.get<FieldOptions>("/enrollment/status"),
       ]);
       setPeriod(periodRes.data.period);
       setSemester(periodRes.data.semester);
@@ -143,150 +153,118 @@ export default function AdminClass() {
 
   return (
     <AdminLayout title="班级目录" subtitle="当前学期选课阶段、时段与特殊加退课">
+      <div className={styles.classserveHero}>
+        <div>
+          <div className={styles.heroEyebrow}>Enrollment Control Center</div>
+          <h2 className={styles.heroTitle}>班级目录 · 选课运营中心</h2>
+          <p className={styles.heroDesc}>
+            在这里统一管理本学期选课阶段、开放窗口与特殊加退课操作，适合超管/教务快速处理异常情况。
+          </p>
+        </div>
+        <div className={styles.heroBadgeWrap}>
+          <div className={styles.heroBadgeLabel}>当前学期</div>
+          <div className={styles.heroBadgeValue}>{semester?.label ?? "-"}</div>
+          <div className={styles.heroBadgeMeta}>阶段：{activePhaseLabel}</div>
+        </div>
+      </div>
+
       {err ? <div className="page-alert page-alert--warn">{err}</div> : null}
       {msg ? <div className="page-alert page-alert--success">{msg}</div> : null}
       {loading ? <div className="page-alert">加载中...</div> : null}
 
-      <section className={styles.card}>
-        <h2 className={styles.sectionTitle}>当前学期选课阶段与时段</h2>
-        <div className={styles.cardGrid}>
-          <div className={styles.card}>
-            <div className={styles.quickTitle}>学期</div>
-            <div className={styles.quickDesc}>{semester?.label ?? "-"}</div>
+      <section className={styles.panel}>
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3 className={styles.sectionTitle}>当前学期选课阶段与时段</h3>
+            <p className={styles.sectionSubtitle}>实时查看当前配置，便于教务快速确认状态。</p>
           </div>
-          <div className={styles.card}>
-            <div className={styles.quickTitle}>当前阶段</div>
-            <div className={styles.quickDesc}>{activePhaseLabel}</div>
-          </div>
-          <div className={styles.card}>
-            <div className={styles.quickTitle}>开放时间</div>
-            <div className={styles.quickDesc}>{fmt(period?.openAt)}</div>
-          </div>
-          <div className={styles.card}>
-            <div className={styles.quickTitle}>截止时间</div>
-            <div className={styles.quickDesc}>{fmt(period?.closeAt)}</div>
-          </div>
-          <div className={styles.card}>
-            <div className={styles.quickTitle}>确认截止时间</div>
-            <div className={styles.quickDesc}>{fmt(period?.confirmDeadline)}</div>
-          </div>
+        </div>
+        <div className={styles.metricsGrid}>
+          <TimeCard label="学期" value={semester?.label ?? "-"} accent="#1d4ed8" />
+          <TimeCard label="当前阶段" value={activePhaseLabel} accent="#0f766e" />
+          <TimeCard label="开放时间" value={fmt(period?.openAt)} />
+          <TimeCard label="截止时间" value={fmt(period?.closeAt)} />
+          <TimeCard label="确认截止时间" value={fmt(period?.confirmDeadline)} />
         </div>
       </section>
 
-      <section className={styles.card} style={{ marginTop: 16 }}>
-        <h2 className={styles.sectionTitle}>设置选课阶段与时段</h2>
-        <div className={styles.cardGrid}>
+      <section className={styles.panel} style={{ marginTop: 16 }}>
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3 className={styles.sectionTitle}>设置选课阶段与时段</h3>
+            <p className={styles.sectionSubtitle}>修改后会立即影响前台选课窗口。</p>
+          </div>
+          <span className={styles.sectionTag}>仅管理员可见</span>
+        </div>
+        <div className={styles.formGrid}>
           <label className={styles.field}>
             <span>学期名称</span>
-            <input
-              className="input"
-              value={periodForm.label}
-              onChange={(e) => setPeriodForm((prev) => ({ ...prev, label: e.target.value }))}
-            />
+            <input className="input" value={periodForm.label} onChange={(e) => setPeriodForm((p) => ({ ...p, label: e.target.value }))} />
           </label>
           <label className={styles.field}>
             <span>选课阶段</span>
-            <select
-              className="input"
-              value={periodForm.phase}
-              onChange={(e) => setPeriodForm((prev) => ({ ...prev, phase: e.target.value as EnrollmentPeriod["phase"] }))}
-            >
-              {Object.entries(options.phases ?? { PRESELECT: "预选", FORMAL: "正选", ADD_DROP: "补退选", CLOSED: "关闭" }).map(
-                ([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ),
-              )}
+            <select className="input" value={periodForm.phase} onChange={(e) => setPeriodForm((p) => ({ ...p, phase: e.target.value as EnrollmentPeriod["phase"] }))}>
+              {Object.entries(options.phases ?? { PRESELECT: "预选", FORMAL: "正选", ADD_DROP: "补退选", CLOSED: "关闭" }).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
             </select>
           </label>
           <label className={styles.field}>
             <span>开放时间</span>
-            <input
-              className="input"
-              type="datetime-local"
-              value={periodForm.openAt ? periodForm.openAt.slice(0, 16) : ""}
-              onChange={(e) => setPeriodForm((prev) => ({ ...prev, openAt: e.target.value }))}
-            />
+            <input className="input" type="datetime-local" value={periodForm.openAt ? periodForm.openAt.slice(0, 16) : ""} onChange={(e) => setPeriodForm((p) => ({ ...p, openAt: e.target.value }))} />
           </label>
           <label className={styles.field}>
             <span>截止时间</span>
-            <input
-              className="input"
-              type="datetime-local"
-              value={periodForm.closeAt ? periodForm.closeAt.slice(0, 16) : ""}
-              onChange={(e) => setPeriodForm((prev) => ({ ...prev, closeAt: e.target.value }))}
-            />
+            <input className="input" type="datetime-local" value={periodForm.closeAt ? periodForm.closeAt.slice(0, 16) : ""} onChange={(e) => setPeriodForm((p) => ({ ...p, closeAt: e.target.value }))} />
           </label>
           <label className={styles.field}>
             <span>确认截止时间</span>
-            <input
-              className="input"
-              type="datetime-local"
-              value={periodForm.confirmDeadline ? periodForm.confirmDeadline.slice(0, 16) : ""}
-              onChange={(e) => setPeriodForm((prev) => ({ ...prev, confirmDeadline: e.target.value }))}
-            />
+            <input className="input" type="datetime-local" value={periodForm.confirmDeadline ? periodForm.confirmDeadline.slice(0, 16) : ""} onChange={(e) => setPeriodForm((p) => ({ ...p, confirmDeadline: e.target.value }))} />
           </label>
         </div>
-        <div style={{ marginTop: 16 }}>
+        <div className={styles.actionRow}>
           <button className="btn primary" type="button" onClick={() => void savePeriod()} disabled={savingPeriod}>
             {savingPeriod ? "保存中..." : "保存选课配置"}
           </button>
         </div>
       </section>
 
-      <section className={styles.card} style={{ marginTop: 16 }}>
-        <h2 className={styles.sectionTitle}>特殊情况手动加退课</h2>
-        <div className={styles.cardGrid}>
+      <section className={styles.panel} style={{ marginTop: 16 }}>
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3 className={styles.sectionTitle}>特殊情况手动加退课</h3>
+            <p className={styles.sectionSubtitle}>用于处理审批后的异常加退课请求。</p>
+          </div>
+        </div>
+        <div className={styles.formGrid}>
           <label className={styles.field}>
             <span>学生</span>
-            <select
-              className="input"
-              value={manualForm.userId}
-              onChange={(e) => setManualForm((prev) => ({ ...prev, userId: e.target.value }))}
-            >
+            <select className="input" value={manualForm.userId} onChange={(e) => setManualForm((p) => ({ ...p, userId: e.target.value }))}>
               <option value="">请选择学生</option>
               {users.filter((u) => u.role === "STUDENT").map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name} · {u.email}
-                </option>
+                <option key={u.id} value={u.id}>{u.name} · {u.email}</option>
               ))}
             </select>
           </label>
           <label className={styles.field}>
             <span>课程</span>
-            <select
-              className="input"
-              value={manualForm.courseId}
-              onChange={(e) => setManualForm((prev) => ({ ...prev, courseId: e.target.value }))}
-            >
+            <select className="input" value={manualForm.courseId} onChange={(e) => setManualForm((p) => ({ ...p, courseId: e.target.value }))}>
               <option value="">请选择课程</option>
               {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.courseCode ? `${c.courseCode} · ` : ""}{c.title} · {c.teacher.name}
-                </option>
+                <option key={c.id} value={c.id}>{c.courseCode ? `${c.courseCode} · ` : ""}{c.title} · {c.teacher?.name ?? ""}</option>
               ))}
             </select>
           </label>
           <label className={styles.field}>
             <span>动作</span>
-            <select
-              className="input"
-              value={manualForm.action}
-              onChange={(e) => setManualForm((prev) => ({ ...prev, action: e.target.value as "enroll" | "drop" }))}
-            >
+            <select className="input" value={manualForm.action} onChange={(e) => setManualForm((p) => ({ ...p, action: e.target.value as "enroll" | "drop" }))}>
               <option value="enroll">手动加课</option>
               <option value="drop">手动退课</option>
             </select>
           </label>
         </div>
-        <div style={{ marginTop: 16 }}>
-          <button
-            className="btn primary"
-            type="button"
-            onClick={() => void submitManual()}
-            disabled={actionLoading || !manualForm.userId || !manualForm.courseId}
-          >
+        <div className={styles.actionRow}>
+          <button className="btn primary" type="button" onClick={() => void submitManual()} disabled={actionLoading || !manualForm.userId || !manualForm.courseId}>
             {actionLoading ? "处理中..." : "提交操作"}
           </button>
         </div>

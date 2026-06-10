@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
 import { getApiError } from "../../api/errors";
 import { api } from "../../api/client";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
@@ -19,14 +18,6 @@ type LabelMaps = {
   subjectCategories: Record<string, string>;
   courseNatures: Record<string, string>;
   offeringColleges: Record<string, string>;
-};
-
-type EnrollmentPeriodForm = {
-  label: string;
-  phase: "PRESELECT" | "FORMAL" | "ADD_DROP" | "CLOSED";
-  openAt: string;
-  closeAt: string;
-  confirmDeadline: string;
 };
 
 const LOG_LABELS: Record<string, string> = {
@@ -52,20 +43,11 @@ export default function EnrollmentPage() {
   const { confirm } = useConfirm();
   const { success } = useToast();
   const { user } = useAuth();
-  const location = useLocation();
   const isAdmin = user?.role === "ADMIN";
-  const isAdminEnrollPage = location.pathname.startsWith("/admin/enrollment");
 
-  const [mainTab, setMainTab] = useState<MainTab>(isAdminEnrollPage ? "admin" : "recommend");
+  const [mainTab, setMainTab] = useState<MainTab>("recommend");
   const [enrollWindow, setEnrollWindow] = useState<EnrollWindow | null>(null);
   const [labels, setLabels] = useState<LabelMaps | null>(null);
-  const [periodForm, setPeriodForm] = useState<EnrollmentPeriodForm>({
-    label: "",
-    phase: "FORMAL",
-    openAt: "",
-    closeAt: "",
-    confirmDeadline: "",
-  });
 
   const [recommendation, setRecommendation] = useState<ClassRecommendation | null>(null);
   const [recLoading, setRecLoading] = useState(true);
@@ -79,10 +61,6 @@ export default function EnrollmentPage() {
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [adminBusy, setAdminBusy] = useState(false);
-  const [adminActionBusy, setAdminActionBusy] = useState<string | null>(null);
-  const [adminUserId, setAdminUserId] = useState("");
-  const [adminCourseId, setAdminCourseId] = useState("");
 
   const [logs, setLogs] = useState<
     Array<{
@@ -99,6 +77,7 @@ export default function EnrollmentPage() {
 
   const selectedCourses = useMemo(() => courses.filter((c) => c.isEnrolled), [courses]);
 
+  /** 前端二次校验：三模块 AND（与后端一致，防止 query 序列化异常） */
   const catalogCourses = useMemo(() => {
     return courses.filter((c) => {
       if (natures.length && !natures.includes(c.courseNature)) return false;
@@ -115,26 +94,6 @@ export default function EnrollmentPage() {
     setEnrollWindow(data.window);
     setLabels(data.labels);
   }, []);
-
-  const loadPeriod = useCallback(async () => {
-    if (!isAdmin) return;
-    const { data } = await api.get("/enrollment/period");
-    const period = data.period;
-    if (period) {
-      setPeriodForm({
-        label: period.label ?? data.semester.label,
-        phase: period.phase,
-        openAt: new Date(period.openAt).toISOString().slice(0, 16),
-        closeAt: new Date(period.closeAt).toISOString().slice(0, 16),
-        confirmDeadline: period.confirmDeadline ? new Date(period.confirmDeadline).toISOString().slice(0, 16) : "",
-      });
-    } else {
-      const now = new Date();
-      const open = new Date(now.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 16);
-      const close = new Date(now.getTime() + 7 * 24 * 3600 * 1000).toISOString().slice(0, 16);
-      setPeriodForm({ label: data.semester.label, phase: "FORMAL", openAt: open, closeAt: close, confirmDeadline: "" });
-    }
-  }, [isAdmin]);
 
   const loadDashboard = useCallback(async () => {
     setDashboardLoading(true);
@@ -189,11 +148,8 @@ export default function EnrollmentPage() {
 
   useEffect(() => {
     loadStatus().catch(() => {});
-    if (!isAdminEnrollPage) {
-      loadRecommendations().catch(() => {});
-    }
-    loadPeriod().catch(() => {});
-  }, [loadStatus, loadRecommendations, loadPeriod, isAdminEnrollPage]);
+    loadRecommendations().catch(() => {});
+  }, [loadStatus, loadRecommendations]);
 
   useEffect(() => {
     if (mainTab === "catalog" || mainTab === "selected") {
@@ -224,7 +180,6 @@ export default function EnrollmentPage() {
       loadRecommendations(),
       loadCatalog(),
       loadDashboard(),
-      loadPeriod(),
     ]);
   };
 
@@ -238,62 +193,6 @@ export default function EnrollmentPage() {
       setError(getApiError(e, "\u64cd\u4f5c\u5931\u8d25"));
     } finally {
       setBusyId(null);
-    }
-  };
-
-  const savePeriod = async () => {
-    setAdminBusy(true);
-    setError(null);
-    try {
-      await api.put("/enrollment/period", {
-        label: periodForm.label,
-        phase: periodForm.phase,
-        openAt: periodForm.openAt,
-        closeAt: periodForm.closeAt,
-        confirmDeadline: periodForm.confirmDeadline || null,
-      });
-      success("选课时段已保存");
-      await refreshAll();
-    } catch (e) {
-      setError(getApiError(e, "保存失败"));
-    } finally {
-      setAdminBusy(false);
-    }
-  };
-
-  const adminEnroll = async () => {
-    if (!adminUserId || !adminCourseId) {
-      setError("请填写用户ID和课程ID");
-      return;
-    }
-    setAdminActionBusy("enroll");
-    try {
-      await api.post("/enrollment/admin/enroll", { userId: adminUserId, courseId: adminCourseId });
-      success("已手动加课");
-      await refreshAll();
-    } catch (e) {
-      setError(getApiError(e, "手动加课失败"));
-    } finally {
-      setAdminActionBusy(null);
-    }
-  };
-
-  const adminDrop = async () => {
-    if (!adminUserId || !adminCourseId) {
-      setError("请填写用户ID和课程ID");
-      return;
-    }
-    const ok = await confirm({ title: "手动退课", message: "确认执行手动退课吗？", danger: true });
-    if (!ok) return;
-    setAdminActionBusy("drop");
-    try {
-      await api.post("/enrollment/admin/drop", { userId: adminUserId, courseId: adminCourseId });
-      success("已手动退课");
-      await refreshAll();
-    } catch (e) {
-      setError(getApiError(e, "手动退课失败"));
-    } finally {
-      setAdminActionBusy(null);
     }
   };
 
@@ -325,18 +224,14 @@ export default function EnrollmentPage() {
     <div className="enroll-page">
       <nav className="enroll-main-nav">
         <div className="enroll-main-nav-inner">
-          {(isAdminEnrollPage
-            ? ([
-                ["admin", "\u7ba1\u7406\u914d\u7f6e"],
-                ["logs", "\u9000\u8bfe\u65e5\u5fd7"],
-              ] as const)
-            : ([
-                ["recommend", "\u73ed\u7ea7\u8bfe\u8868\u63a8\u8350\u8bfe\u7a0b"],
-                ["catalog", "\u5168\u6821\u8bfe\u7a0b\u67e5\u8be2"],
-                ["selected", "\u5df2\u9009\u8bfe\u7a0b"],
-                ["timetable", "\u6211\u7684\u8bfe\u8868"],
-                ["logs", "\u9000\u8bfe\u65e5\u5fd7"],
-              ] as const)
+          {(
+            [
+              ["recommend", "\u73ed\u7ea7\u8bfe\u8868\u63a8\u8350\u8bfe\u7a0b"],
+              ["catalog", "\u5168\u6821\u8bfe\u7a0b\u67e5\u8be2"],
+              ["selected", "\u5df2\u9009\u8bfe\u7a0b"],
+              ["timetable", "\u6211\u7684\u8bfe\u8868"],
+              ["logs", "\u9000\u8bfe\u65e5\u5fd7"],
+            ] as const
           ).map(([key, label]) => (
             <button
               key={key}
@@ -378,76 +273,7 @@ export default function EnrollmentPage() {
 
         {error ? <div className="enroll-err">{error}</div> : null}
 
-        {isAdminEnrollPage ? (
-          <div className="card-stack" style={{ display: "grid", gap: 16 }}>
-            <section className="enroll-recommend-panel">
-              <h3>当前学期选课阶段与时段</h3>
-              <p style={{ marginTop: 8, color: "#475569" }}>
-                保存后会立即生效，正在选课的学生将实时看到阶段与时间变化。请确认时间配置无误，避免影响全站选课。
-              </p>
-              <div className="form-grid" style={{ marginTop: 12 }}>
-                <label className="form-field">
-                  <span>学期名称</span>
-                  <input value={periodForm.label} onChange={(e) => setPeriodForm((p) => ({ ...p, label: e.target.value }))} />
-                </label>
-                <label className="form-field">
-                  <span>阶段</span>
-                  <select value={periodForm.phase} onChange={(e) => setPeriodForm((p) => ({ ...p, phase: e.target.value as EnrollmentPeriodForm["phase"] }))}>
-                    <option value="PRESELECT">预选课</option>
-                    <option value="FORMAL">正选</option>
-                    <option value="ADD_DROP">补退选</option>
-                    <option value="CLOSED">已关闭</option>
-                  </select>
-                </label>
-                <label className="form-field">
-                  <span>开始时间</span>
-                  <input type="datetime-local" value={periodForm.openAt} onChange={(e) => setPeriodForm((p) => ({ ...p, openAt: e.target.value }))} />
-                </label>
-                <label className="form-field">
-                  <span>结束时间</span>
-                  <input type="datetime-local" value={periodForm.closeAt} onChange={(e) => setPeriodForm((p) => ({ ...p, closeAt: e.target.value }))} />
-                </label>
-                <label className="form-field">
-                  <span>确认截止时间（可选）</span>
-                  <input type="datetime-local" value={periodForm.confirmDeadline} onChange={(e) => setPeriodForm((p) => ({ ...p, confirmDeadline: e.target.value }))} />
-                </label>
-              </div>
-              <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <button type="button" className="btn primary" onClick={savePeriod} disabled={adminBusy}>
-                  {adminBusy ? "保存中…" : "保存并立即生效"}
-                </button>
-                <span className="muted" style={{ alignSelf: "center" }}>
-                  修改会立即影响前台选课状态，请谨慎操作。
-                </span>
-              </div>
-            </section>
-
-            <section className="enroll-recommend-panel">
-              <h3>特殊情况手动加退课</h3>
-              <p style={{ marginTop: 8, color: "#475569" }}>
-                适用于补录、修正或紧急处理。执行后会立即写入选课记录与日志。
-              </p>
-              <div className="form-grid" style={{ marginTop: 12 }}>
-                <label className="form-field">
-                  <span>用户ID</span>
-                  <input value={adminUserId} onChange={(e) => setAdminUserId(e.target.value)} placeholder="输入用户 UUID" />
-                </label>
-                <label className="form-field">
-                  <span>课程ID</span>
-                  <input value={adminCourseId} onChange={(e) => setAdminCourseId(e.target.value)} placeholder="输入课程 UUID" />
-                </label>
-              </div>
-              <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <button type="button" className="btn primary" onClick={adminEnroll} disabled={adminActionBusy === "enroll"}>
-                  {adminActionBusy === "enroll" ? "加课中…" : "手动加课"}
-                </button>
-                <button type="button" className="btn danger" onClick={adminDrop} disabled={adminActionBusy === "drop"}>
-                  {adminActionBusy === "drop" ? "退课中…" : "手动退课"}
-                </button>
-              </div>
-            </section>
-          </div>
-        ) : mainTab === "recommend" && recommendation ? (
+        {mainTab === "recommend" && recommendation ? (
           <section className="enroll-recommend-panel">
             <h3>
               {"\u73ed\u7ea7\u8bfe\u8868\u63a8\u8350 \u00b7 "}
@@ -460,7 +286,9 @@ export default function EnrollmentPage() {
               {" \u4eba"}
             </p>
           </section>
-        ) : mainTab === "catalog" && labels ? (
+        ) : null}
+
+        {mainTab === "catalog" && labels ? (
           <>
             <EnrollmentFilterPanel
               options={labels}
@@ -473,7 +301,9 @@ export default function EnrollmentPage() {
             />
             <EnrollmentSearchBar value={search} onChange={setSearch} />
           </>
-        ) : mainTab === "logs" ? (
+        ) : null}
+
+        {mainTab === "logs" ? (
           <div className="enroll-table-wrap">
             {logsLoading ? (
               <div className="enroll-empty">{"\u52a0\u8f7d\u4e2d\u2026"}</div>
@@ -518,7 +348,23 @@ export default function EnrollmentPage() {
           ) : (
             <div className="enroll-empty">{"\u65e0\u6cd5\u52a0\u8f7d\u8bfe\u8868\uff0c\u8bf7\u5237\u65b0\u91cd\u8bd5"}</div>
           )
-        ) : null}
+        ) : mainTab === "admin" && isAdmin ? (
+          <div className="enroll-empty">{"\u7ba1\u7406\u5458\u914d\u7f6e\u8bf7\u4f7f\u7528\u539f\u6709\u63a5\u53e3\uff1b\u672c\u9875\u9762\u4ee5\u5b66\u751f\u9009\u8bfe\u4e3a\u4e3b\u3002"}</div>
+        ) : (
+          <CourseEnrollmentTable
+            courses={displayCourses}
+            loading={mainTab === "recommend" ? recLoading : catalogLoading}
+            open={open}
+            busyId={busyId}
+            showRecommendBadge={mainTab === "recommend"}
+            emptyText={
+              mainTab === "selected"
+                ? "\u6682\u672a\u9009\u8bfe\uff0c\u8bf7\u5728\u63a8\u8350\u6216\u5168\u6821\u8bfe\u7a0b\u4e2d\u9009\u8bfe"
+                : "\u6682\u65e0\u8bfe\u7a0b"
+            }
+            {...handlers}
+          />
+        )}
       </div>
     </div>
   );

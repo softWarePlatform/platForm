@@ -18,7 +18,6 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/messages", label: "消息", roles: ["STUDENT", "TEACHER", "ADMIN"], className: "nav-messages" },
   { to: "/profile", label: "个人中心", roles: ["STUDENT", "TEACHER", "ADMIN"] },
   { to: "/admin/users", label: "用户", roles: ["ADMIN"] },
-  { to: "/admin/users", label: "用户", roles: ["ADMIN"] },
 ];
 
 export default function Shell() {
@@ -59,7 +58,6 @@ export default function Shell() {
   const role = user?.role;
   const visibleNav = role ? NAV_ITEMS.filter((item) => item.roles.includes(role)) : [];
   const hideTopNavForAdmin = role === "ADMIN";
-
   return (
     <div>
       <header className="app-header">
@@ -69,7 +67,7 @@ export default function Shell() {
               教学实训平台
             </Link>
             <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-              {user ? (
+              {user && !hideTopNavForAdmin ? (
                 <>
                   <span className="muted app-header__user">
                     {user.name}（
@@ -100,7 +98,7 @@ export default function Shell() {
             </div>
           </div>
 
-          {user && !hideTopNavForAdmin ? (
+          {user ? (
             <nav className="app-header__nav row" aria-label="站点导航">
               <LayoutGroup id="app-nav">
                 {visibleNav.map((item) => (

@@ -1,5 +1,4 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import PageHeader from "../components/layout/PageHeader";
@@ -7,7 +6,6 @@ import PageShell from "../components/layout/PageShell";
 import StatusBadge from "../components/layout/StatusBadge";
 
 export default function Profile() {
-  const nav = useNavigate();
   const { user, setSession, token } = useAuth();
   const [name, setName] = useState(user?.name ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl ?? "");
@@ -63,13 +61,10 @@ export default function Profile() {
         title="个人中心"
         lead={user?.email ?? ""}
         below={
-          <div className="page-header__meta" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div className="page-header__meta">
             <StatusBadge tone={user?.emailVerified ? "ok" : "warn"}>
               {user?.emailVerified ? "邮箱已验证" : "邮箱未验证"}
             </StatusBadge>
-            <button className="btn" type="button" onClick={() => nav(-1)}>
-              返回
-            </button>
           </div>
         }
       />

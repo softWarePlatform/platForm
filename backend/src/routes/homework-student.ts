@@ -199,10 +199,6 @@ const homeworkStudentRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(400).send({ error: "作业已提交锁定，无法保存草稿" });
       }
 
-      const isNew = !(await prisma.homeworkSubmission.findUnique({
-        where: { homeworkId_userId: { homeworkId: id, userId: req.auth!.sub } },
-        select: { id: true },
-      }));
       const sub = await prisma.homeworkSubmission.upsert({
         where: { homeworkId_userId: { homeworkId: id, userId: req.auth!.sub } },
         create: {
@@ -213,17 +209,6 @@ const homeworkStudentRoutes: FastifyPluginAsync = async (app) => {
         },
         update: { draftContent: body.data.content },
       });
-      if (isNew) {
-        await prisma.siteNotification.create({
-          data: {
-            userId: req.auth!.sub,
-            type: "AUDIT",
-            title: `作业草稿创建：${hw.title}`,
-            body: "已创建新的作业草稿",
-            linkPath: `/courses/${hw.courseId}`,
-          },
-        });
-      }
       return { submission: { id: sub.id, draftContent: sub.draftContent } };
     },
   );
@@ -282,15 +267,6 @@ const homeworkStudentRoutes: FastifyPluginAsync = async (app) => {
           storedPath,
           mimeType: mime,
           sizeBytes: fileBuf.length,
-        },
-      });
-      await prisma.siteNotification.create({
-        data: {
-          userId: req.auth!.sub,
-          type: "AUDIT",
-          title: `作业附件上传：${hw.title}`,
-          body: `已上传附件 ${fileName}`,
-          linkPath: `/courses/${hw.courseId}`,
         },
       });
       return { file: row };

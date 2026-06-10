@@ -1,24 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api/client";
 import AdminLayout from "./AdminLayout";
 import styles from "./admin.module.css";
 
 type DashboardData = {
+  semester?: { key: string; label: string };
   stats?: {
     registeredUsers?: number;
-    courses?: number;
-    currentSemesterLabs?: number;
-    electionStatus?: string;
+    teacherCount?: number;
+    studentCount?: number;
+    adminCount?: number;
+    courseCount?: number;
+    publishedCourseCount?: number;
+    currentSemesterCourseCount?: number;
+    enrollmentCount?: number;
+    labSetCount?: number;
+    homeworkCount?: number;
+    enrollmentPhase?: string;
   };
-  semester?: string;
   schedule?: {
-    openAt?: string;
-    closeAt?: string;
-    confirmDeadline?: string;
-  };
+    openAt?: string | null;
+    closeAt?: string | null;
+    confirmDeadline?: string | null;
+  } | null;
+  recentPeriods?: Array<{
+    semesterKey: string;
+    label: string;
+    phase: string;
+    openAt: string;
+    closeAt: string;
+    confirmDeadline?: string | null;
+  }>;
 };
 
-function fmtDate(value?: string) {
+function fmtDate(value?: string | null) {
   if (!value) return "-";
   return new Date(value).toLocaleString("zh-CN", { hour12: false });
 }
@@ -34,7 +49,7 @@ export default function AdminDashboard() {
         const { data } = await api.get<DashboardData>("/admin/dashboard");
         if (!cancelled) setData(data);
       } catch {
-        if (!cancelled) setError("当前仅展示前端静态布局，后台概览接口暂不可用。");
+        if (!cancelled) setError("后台概览接口暂不可用。");
       }
     })();
     return () => {
@@ -42,15 +57,28 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  const stats = [
-    { label: "注册用户", value: data.stats?.registeredUsers ?? 4, meta: "学生 2 · 教师 1 · 管理员 1" },
-    { label: "课程总数", value: data.stats?.courses ?? 3, meta: "已发布 3 · 本学期 3" },
-    { label: "本学期选课", value: data.stats?.currentSemesterLabs ?? 5, meta: "人次（含重复选多门）" },
-    { label: "选课阶段", value: data.stats?.electionStatus ?? "正选", meta: "当前在开放时段内" },
-  ];
+  const stats = useMemo(
+    () => [
+      { label: "注册用户数", value: data.stats?.registeredUsers ?? "-" },
+      { label: "教师数", value: data.stats?.teacherCount ?? "-" },
+      { label: "学生数", value: data.stats?.studentCount ?? "-" },
+      { label: "管理员数", value: data.stats?.adminCount ?? "-" },
+      { label: "课程数", value: data.stats?.courseCount ?? "-" },
+      { label: "已发布课程数", value: data.stats?.publishedCourseCount ?? "-" },
+      { label: "本学期课程数", value: data.stats?.currentSemesterCourseCount ?? "-" },
+      { label: "选课人数", value: data.stats?.enrollmentCount ?? "-" },
+      { label: "实验集数量", value: data.stats?.labSetCount ?? "-" },
+      { label: "作业数量", value: data.stats?.homeworkCount ?? "-" },
+      { label: "当前选课阶段", value: data.stats?.enrollmentPhase ?? "-" },
+    ],
+    [data],
+  );
 
   return (
-    <AdminLayout title="管理控制台" subtitle={`超级管理员 · 演示管理台 · ${data.semester ?? "2026 - 2027 春学期"}`}>
+    <AdminLayout
+      title="管理控制台"
+      subtitle={`超级管理员 · ${data.semester?.label ?? "-"}`}
+    >
       {error ? <div className="page-alert page-alert--warn">{error}</div> : null}
 
       <div className={styles.stats}>
@@ -58,37 +86,30 @@ export default function AdminDashboard() {
           <article key={item.label} className={styles.stat}>
             <div className={styles.statLabel}>{item.label}</div>
             <div className={styles.statValue}>{item.value}</div>
-            <div className={styles.statMeta}>{item.meta}</div>
           </article>
         ))}
       </div>
 
       <section className={styles.banner}>
-        <div className={styles.bannerLabel}>选课时段 · 2026 - 2027 春学期</div>
+        <div className={styles.bannerLabel}>选课时段</div>
         <div className={styles.bannerMeta}>
-          开放：{fmtDate(data.schedule?.openAt ?? "2026-05-25T08:41:15")} — {fmtDate(data.schedule?.closeAt ?? "2026-07-31T08:41:15")} ·
-          确认截止：{fmtDate(data.schedule?.confirmDeadline ?? "2026-08-30T08:41:15")}
+          开放时间：{fmtDate(data.schedule?.openAt)} · 截止时间：{fmtDate(data.schedule?.closeAt)} ·
+          确认截止时间：{fmtDate(data.schedule?.confirmDeadline)}
         </div>
       </section>
 
-      <h2 className={styles.sectionTitle}>快捷入口</h2>
-      <div className={styles.quickGrid}>
-        <article className={styles.quick}>
-          <div className={styles.quickTitle}>用户管理</div>
-          <div className={styles.quickDesc}>查看全部用户、角色与邮箱验证状态</div>
-        </article>
-        <article className={styles.quick}>
-          <div className={styles.quickTitle}>选课配置</div>
-          <div className={styles.quickDesc}>设置选课阶段、时段、手动追退与容量</div>
-        </article>
-        <article className={styles.quick}>
-          <div className={styles.quickTitle}>课程运维</div>
-          <div className={styles.quickDesc}>调整课程容量与选课相关字段</div>
-        </article>
-        <article className={styles.quick}>
-          <div className={styles.quickTitle}>教学台预览</div>
-          <div className={styles.quickDesc}>以管理员身份查看全站课程与教学模块</div>
-        </article>
+      <h2 className={styles.sectionTitle}>最近几个选课周期</h2>
+      <div className={styles.cardGrid}>
+        {(data.recentPeriods ?? []).map((period) => (
+          <article key={period.semesterKey} className={styles.card}>
+            <div className={styles.quickTitle}>{period.label}</div>
+            <div className={styles.quickDesc}>学期键：{period.semesterKey}</div>
+            <div className={styles.quickDesc}>阶段：{period.phase}</div>
+            <div className={styles.quickDesc}>开放：{fmtDate(period.openAt)}</div>
+            <div className={styles.quickDesc}>截止：{fmtDate(period.closeAt)}</div>
+            <div className={styles.quickDesc}>确认截止：{fmtDate(period.confirmDeadline)}</div>
+          </article>
+        ))}
       </div>
     </AdminLayout>
   );

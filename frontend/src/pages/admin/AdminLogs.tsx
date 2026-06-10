@@ -1,39 +1,44 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client";
 import AdminLayout from "./AdminLayout";
+import styles from "./admin.module.css";
 
-type AdminLogItem = {
+type UnifiedLogItem = {
   id: string;
+  time: string;
   type: string;
   title: string;
   detail: string;
-  createdAt: string;
 };
 
-type AdminUserLogsResponse = {
+type LogsResponse = {
   user: {
     id: string;
     name: string;
     email: string;
     role: string;
-  };
-  logs: AdminLogItem[];
+  } | null;
+  logs: UnifiedLogItem[];
 };
 
+function fmt(value: string) {
+  return new Date(value).toLocaleString("zh-CN", { hour12: false });
+}
+
 export default function AdminLogs() {
-  const [data, setData] = useState<AdminUserLogsResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<LogsResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     (async () => {
       try {
-        const me = await api.get<{ user: { id: string } }>("/auth/me");
-        const { data } = await api.get<AdminUserLogsResponse>(`/admin/users/${me.data.user.id}/logs`);
+        const { data } = await api.get<LogsResponse>("/admin/audit");
         if (!cancelled) setData(data);
       } catch {
-        if (!cancelled) setError("日志列表加载失败");
+        if (!cancelled) setErr("加载管理员日志失败");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -44,51 +49,56 @@ export default function AdminLogs() {
   }, []);
 
   return (
-    <AdminLayout title="管理员操作日志" subtitle="查看后台配置、用户与课程运维中的关键操作记录">
-      <section className="card" style={{ padding: 18 }}>
-        <div style={{ fontWeight: 800 }}>管理员操作日志</div>
-        <div className="muted" style={{ marginTop: 8 }}>
-          后端接口已接入，当前展示管理员自己的操作日志汇总。
+    <AdminLayout title="管理员操作日志" subtitle="仅查看管理员本人操作记录">
+      {err ? <div className="page-alert page-alert--warn">{err}</div> : null}
+      {loading ? <div className="page-alert">加载日志中...</div> : null}
+
+      <section className={styles.panel}>
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3 className={styles.sectionTitle}>管理员审计中心</h3>
+            <p className={styles.sectionSubtitle}>汇总所有管理员高风险操作记录，包括删除用户等动作。</p>
+          </div>
+          <span className={styles.sectionTag}>后端接口 /admin/audit</span>
         </div>
       </section>
 
-      {error ? <div className="page-alert page-alert--warn" style={{ marginTop: 16 }}>{error}</div> : null}
-
-      <section className="card" style={{ padding: 18, marginTop: 16 }}>
-        {loading ? (
-          <div className="muted">加载中…</div>
-        ) : data ? (
-          <>
-            <div style={{ fontWeight: 800, marginBottom: 10 }}>
-              {data.user.name} · {data.user.email}
+      {data ? (
+        <section className={styles.panel} style={{ marginTop: 16 }}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h3 className={styles.sectionTitle}>操作明细</h3>
+              <p className={styles.sectionSubtitle}>展示时间、类型、标题和详情。</p>
             </div>
-            <div className="data-table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>时间</th>
-                    <th>类型</th>
-                    <th>标题</th>
-                    <th>详情</th>
+          </div>
+          <div className={styles.adminLogTableWrap}>
+            <table className={styles.adminLogTable}>
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>类型</th>
+                  <th>标题</th>
+                  <th>详情</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.logs.length ? data.logs.map((item) => (
+                  <tr key={item.id}>
+                    <td>{fmt(item.time)}</td>
+                    <td><span className={styles.logPill}>{item.type}</span></td>
+                    <td>{item.title}</td>
+                    <td className={styles.logDetailCell}>{item.detail}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {data.logs.map((item) => (
-                    <tr key={item.id}>
-                      <td>{new Date(item.createdAt).toLocaleString("zh-CN")}</td>
-                      <td>{item.type}</td>
-                      <td>{item.title}</td>
-                      <td>{item.detail}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        ) : (
-          <div className="muted">暂无日志</div>
-        )}
-      </section>
+                )) : (
+                  <tr>
+                    <td colSpan={4}><div className={styles.emptyState}>暂无日志</div></td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
     </AdminLayout>
   );
 }

@@ -36,6 +36,10 @@ import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserLogs from "./pages/admin/AdminUserLogs";
+import AdminLogs from "./pages/admin/AdminLogs";
+import AdminClassServe from "./pages/admin/AdminClassServe";
+import AdminShell from "./pages/admin/AdminShell";
 import Help from "./pages/Help";
 
 function RequireAuth({ children }: { children: ReactElement }) {
@@ -200,23 +204,21 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route
-          path="/admin"
-          element={
-            <RequireRole roles={["ADMIN"]}>
-              <AdminDashboard />
-            </RequireRole>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <RequireRole roles={["ADMIN"]}>
-              <AdminUsers />
-            </RequireRole>
-          }
-        />
         <Route path="/practice" element={<Navigate to="/" replace />} />
+      </Route>
+
+      <Route
+        element={
+          <RequireRole roles={["ADMIN"]}>
+            <AdminShell />
+          </RequireRole>
+        }
+      >
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/users/:userId/logs" element={<AdminUserLogs />} />
+        <Route path="/admin/logs" element={<AdminLogs />} />
+        <Route path="/admin/classserve" element={<AdminClassServe />} />
       </Route>
     </Routes>
   );
