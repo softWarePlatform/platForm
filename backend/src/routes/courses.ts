@@ -12,7 +12,7 @@ import {
 import { courseEnrollmentFieldsSchema } from "../lib/course-enrollment-schema.js";
 import { getEnrollmentFilterOptions } from "../lib/enrollment-labels.js";
 import { currentSemester } from "../lib/semester.js";
-import { enrollStudent, writeEnrollmentLog } from "../lib/enrollment-service.js";
+import { enrollStudent } from "../lib/enrollment-service.js";
 
 function withScheduleSlots<T extends { id: string; scheduleSlotsJson: string | null }>(course: T) {
   return {

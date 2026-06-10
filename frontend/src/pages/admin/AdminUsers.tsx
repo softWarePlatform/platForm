@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
 import AdminLayout from "./AdminLayout";
@@ -140,14 +139,19 @@ export default function AdminUsers() {
                   <td className="data-table__muted">{new Date(u.createdAt).toLocaleDateString()}</td>
                   <td>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <Link className="btn" to={`/admin/users/${u.id}/logs`}>
+                      <button
+                        className="btn"
+                        type="button"
+                        onClick={() => void loadLogs(u.id)}
+                        disabled={loadingLogs}
+                      >
                         查看日志
-                      </Link>
+                      </button>
                       <button
                         className="btn danger"
                         type="button"
                         onClick={() => void deleteUser(u)}
-                        disabled={deletingId === u.id}
+                        disabled={deletingId === u.id || loadingLogs}
                       >
                         删除
                       </button>

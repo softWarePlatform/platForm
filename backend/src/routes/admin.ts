@@ -3,25 +3,6 @@ import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/authGuard.js";
 
 const adminRoutes: FastifyPluginAsync = async (app) => {
-<<<<<<< HEAD
-  app.get("/admin/users", { preHandler: authRequired("ADMIN") }, async () => {
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        emailVerifiedAt: true,
-        createdAt: true,
-      },
-    });
-
-    return { users };
-  });
-
-=======
->>>>>>> b1e28fb8a41de525dc9e3ac02d21daf6deb1da25
   app.get("/admin/audit", { preHandler: authRequired("ADMIN") }, async () => {
     const admins = await prisma.user.findMany({
       where: { role: "ADMIN" },

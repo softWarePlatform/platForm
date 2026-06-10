@@ -243,7 +243,7 @@ export async function dropStudent(
 
   await prisma.enrollment.delete({ where: { id: row.id } });
   const action: EnrollmentLogAction = opts?.operatorId ? "ADMIN_DROP" : "DROP";
-  await writeLog(userId, courseId, action, opts?.operatorId);
+  await writeEnrollmentLog(userId, courseId, action, opts?.operatorId);
   await promoteWaitlistForCourse(courseId);
 }
 
