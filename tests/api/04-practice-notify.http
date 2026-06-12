@@ -1,0 +1,32 @@
+### 练习与通知模块 API 测试
+
+@baseUrl = http://127.0.0.1:3000
+@studentToken = {{loginStudent.response.body.token}}
+@teacherToken = {{loginTeacher.response.body.token}}
+@courseId = 00000000-0000-4000-8000-00000001001c
+
+### TC-PRACTICE-001 查看练习标签
+GET {{baseUrl}}/courses/{{courseId}}/practice/tags
+Authorization: Bearer {{studentToken}}
+
+### TC-PRACTICE-002 智能组卷创建练习会话
+POST {{baseUrl}}/courses/{{courseId}}/practice/sessions
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "mode": "SMART",
+  "count": 5
+}
+
+### TC-PRACTICE-003 教师查看题库
+GET {{baseUrl}}/courses/{{courseId}}/practice/questions
+Authorization: Bearer {{teacherToken}}
+
+### TC-NOTIFY-001 未读通知数
+GET {{baseUrl}}/notifications/unread-count
+Authorization: Bearer {{studentToken}}
+
+### TC-NOTIFY-002 通知列表
+GET {{baseUrl}}/notifications
+Authorization: Bearer {{studentToken}}

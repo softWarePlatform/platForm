@@ -1,0 +1,216 @@
+﻿{
+  "summary": [
+    {
+      "name": "TC-DASH-001",
+      "result": "閫氳繃",
+      "note": "6 闂ㄨ锛屽惈璇捐〃鏃舵"
+    },
+    {
+      "name": "TC-DASH-002",
+      "result": "閫氳繃",
+      "note": "璇捐〃 slots 鏁版嵁榻愬叏锛屽墠绔彲鍒囨崲鍛ㄦ"
+    },
+    {
+      "name": "TC-DASH-003",
+      "result": "閫氳繃",
+      "note": "璇剧▼鍒楄〃鍙墠绔悳绱㈣繃婊?
+    },
+    {
+      "name": "TC-DASH-004",
+      "result": "閫氳繃",
+      "note": "鍙烦杞?/courses/00000000-0000-4000-8000-00000001038e"
+    },
+    {
+      "name": "TC-DASH-005",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-ENROLL-003",
+      "result": "閫氳繃",
+      "note": "dashboard 鍚凡閫夎绋?
+    },
+    {
+      "name": "TC-ENROLL-005",
+      "result": "閫氳繃",
+      "note": "宸叉弧 409锛屽€欒ˉ 200"
+    },
+    {
+      "name": "TC-ENROLL-006",
+      "result": "閫氳繃",
+      "note": "閫夎闃舵宸插叧闂?
+    },
+    {
+      "name": "TC-ANN-001",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-ANN-002",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-ANN-003",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-HW-002",
+      "result": "閫氳繃",
+      "note": "宸叉彁浜ら攣瀹?
+    },
+    {
+      "name": "TC-HW-003",
+      "result": "閫氳繃",
+      "note": "婕旂ず鏁版嵁鍚壒鏀硅褰?
+    },
+    {
+      "name": "TC-HW-004",
+      "result": "閫氳繃",
+      "note": "杩熶氦 6 澶╋紙宸叉彁浜わ級"
+    },
+    {
+      "name": "TC-HW-005",
+      "result": "閫氳繃",
+      "note": "宸插鎵癸紝鍙啀鎻愪氦"
+    },
+    {
+      "name": "TC-HW-006",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-LAB-001",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-LAB-002",
+      "result": "閫氳繃",
+      "note": "鏈紑濮?
+    },
+    {
+      "name": "TC-LAB-005",
+      "result": "閫氳繃",
+      "note": "瀛︾敓绔粎鍏紑鐢ㄤ緥"
+    },
+    {
+      "name": "TC-LAB-006",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-LAB-007",
+      "result": "閫氳繃",
+      "note": "杈撳嚭涓庢湡鏈涗笉绗︼紝璇峰弬鑰冮瑙ｆ彁绀轰慨鏀瑰悗閲嶆柊鎻愪氦銆?
+    },
+    {
+      "name": "TC-LAB-003",
+      "result": "閫氳繃",
+      "note": "姝ラ5宸查獙璇?JS ACCEPTED"
+    },
+    {
+      "name": "TC-LAB-004",
+      "result": "閫氳繃",
+      "note": "姝ラ5宸查獙璇?worker 鍦烘櫙"
+    },
+    {
+      "name": "TC-PRACTICE-001",
+      "result": "閫氳繃",
+      "note": "姝ラ5宸查獙璇?
+    },
+    {
+      "name": "TC-PRACTICE-002",
+      "result": "閫氳繃",
+      "note": "姝ラ5宸查獙璇?
+    },
+    {
+      "name": "TC-PRACTICE-003",
+      "result": "閫氳繃",
+      "note": "姝ラ5 WRONG_BOOK 宸查獙璇?
+    },
+    {
+      "name": "TC-PRACTICE-004",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-PRACTICE-005",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-PRACTICE-006",
+      "result": "閫氳繃",
+      "note": "鏈夋彁绀?
+    },
+    {
+      "name": "TC-MAT-002",
+      "result": "閫氳繃",
+      "note": "7 涓祫鏂欏彲鍒楄〃"
+    },
+    {
+      "name": "TC-MAT-002-dl",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-MAT-001",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-MAT-003",
+      "result": "閫氳繃",
+      "note": "status 413"
+    },
+    {
+      "name": "TC-GRADE-001",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-GRADE-002",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-GRADE-003",
+      "result": "閫氳繃",
+      "note": "9 浜?
+    },
+    {
+      "name": "TC-NOTIFY-001",
+      "result": "閫氳繃",
+      "note": "姝ラ5"
+    },
+    {
+      "name": "TC-NOTIFY-002",
+      "result": "閫氳繃",
+      "note": "姝ラ5"
+    },
+    {
+      "name": "TC-ADMIN-001",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-ADMIN-002",
+      "result": "閫氳繃",
+      "note": ""
+    },
+    {
+      "name": "TC-ADMIN-003",
+      "result": "閫氳繃",
+      "note": "瀛︾敓 API 403"
+    },
+    {
+      "name": "TC-UX-001",
+      "result": "閫氳繃",
+      "note": "鍓嶇璺敱鍙闂?
+    }
+  ],
+  "webOk": true,
+  "courseCount": 6
+}
