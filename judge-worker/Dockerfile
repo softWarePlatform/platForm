@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS build
+FROM node:24-bookworm-slim AS build
 WORKDIR /app
 COPY backend/prisma ./prisma
 COPY judge-worker/package.json judge-worker/tsconfig.json ./
@@ -7,7 +7,7 @@ COPY judge-worker/src ./src
 RUN npx prisma generate --schema=./prisma/schema.prisma
 RUN npm run build
 
-FROM node:20-bookworm-slim
+FROM node:24-bookworm-slim
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 \
   && rm -rf /var/lib/apt/lists/*
