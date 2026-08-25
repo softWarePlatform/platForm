@@ -36,7 +36,6 @@
     "mammoth": "^1.12.0",
     "pdf-parse": "^2.4.5",
     "prisma": "^6.5.0",
-    "teaching-platform": "file:..",
     "zod": "^3.24.2"
   },
   "devDependencies": {

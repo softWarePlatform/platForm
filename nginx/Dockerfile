@@ -1,4 +1,4 @@
-FROM node:20-alpine AS fe
+FROM node:24-alpine AS fe
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci --no-audit --fund=false || npm install --no-audit --fund=false
