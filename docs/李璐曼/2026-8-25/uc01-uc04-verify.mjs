@@ -225,16 +225,28 @@ async function runUc02() {
   });
   const persisted = (mine.json?.courses ?? []).find((course) => course.courseCode === courseCode);
   if (!testCourseId && persisted?.id) testCourseId = persisted.id;
+  const createLog = testCourseId
+    ? await prisma.enrollmentLog.findFirst({
+        where: { courseId: testCourseId, action: "COURSE_CREATE" },
+        orderBy: { createdAt: "desc" },
+      })
+    : null;
 
   addCase({
     id: "UC02-M-01",
     useCase: "UC02",
     flow: "主流程",
     scenario: "教师创建未发布课程",
-    expected: "HTTP 200，返回新课程且 published=false",
-    actual: `HTTP ${created.status}${persisted ? `；查询发现数据库中已存在课程 ${persisted.id}` : ""}`,
-    passed: created.status === 200 && created.json?.course?.published === false,
-    evidence: { response: created.json, persistedAfterResponse: persisted ?? null },
+    expected: "HTTP 200，返回 published=false 的新课程，并同步写入 COURSE_CREATE 日志",
+    actual: `HTTP ${created.status}${persisted ? `；课程 ${persisted.id} 已写入` : "；未发现课程"}${createLog ? "；创建日志已写入" : "；未发现创建日志"}`,
+    passed: created.status === 200 && created.json?.course?.published === false && !!createLog,
+    evidence: {
+      response: created.json,
+      persistedAfterResponse: persisted ?? null,
+      createLog: createLog
+        ? { id: createLog.id, action: createLog.action, courseId: createLog.courseId }
+        : null,
+    },
   });
 
   if (testCourseId) {

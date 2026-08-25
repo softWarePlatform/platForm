@@ -1,12 +1,12 @@
 {
-  "capturedAt": "2026-08-25T08:05:49.897Z",
+  "capturedAt": "2026-08-25T13:27:01.367Z",
   "tableCountsDuringVerification": {
     "User": 26,
     "Course": 15,
     "Class": 13,
     "Enrollment": 114,
     "EnrollmentWaitlist": 0,
-    "EnrollmentLog": 7,
+    "EnrollmentLog": 10,
     "EnrollmentPeriod": 2,
     "TimetableConfirmation": 0,
     "CourseAnnouncement": 25,
@@ -14,7 +14,7 @@
     "AnnouncementMark": 0,
     "CourseMaterial": 37,
     "MaterialFavorite": 1,
-    "SiteNotification": 13
+    "SiteNotification": 17
   },
   "enrollmentLogActionValuesInDatabase": [
     "ENROLL",
@@ -24,17 +24,18 @@
     "WAITLIST_PROMOTED",
     "ADMIN_ENROLL",
     "ADMIN_DROP",
-    "TIMETABLE_CONFIRM"
+    "TIMETABLE_CONFIRM",
+    "COURSE_CREATE"
   ],
   "schemaRequiresCourseCreate": true,
-  "databaseHasCourseCreate": false,
+  "databaseHasCourseCreate": true,
   "tableCountsAfterCleanup": {
     "User": 26,
     "Course": 14,
     "Class": 13,
     "Enrollment": 113,
     "EnrollmentWaitlist": 0,
-    "EnrollmentLog": 4,
+    "EnrollmentLog": 6,
     "EnrollmentPeriod": 2,
     "TimetableConfirmation": 0,
     "CourseAnnouncement": 24,
@@ -42,6 +43,6 @@
     "AnnouncementMark": 0,
     "CourseMaterial": 36,
     "MaterialFavorite": 0,
-    "SiteNotification": 8
+    "SiteNotification": 12
   }
 }
