@@ -1,0 +1,48 @@
+{
+  "capturedAt": "2026-08-25T13:27:01.367Z",
+  "tableCountsDuringVerification": {
+    "User": 26,
+    "Course": 15,
+    "Class": 13,
+    "Enrollment": 114,
+    "EnrollmentWaitlist": 0,
+    "EnrollmentLog": 10,
+    "EnrollmentPeriod": 2,
+    "TimetableConfirmation": 0,
+    "CourseAnnouncement": 25,
+    "AnnouncementRead": 1,
+    "AnnouncementMark": 0,
+    "CourseMaterial": 37,
+    "MaterialFavorite": 1,
+    "SiteNotification": 17
+  },
+  "enrollmentLogActionValuesInDatabase": [
+    "ENROLL",
+    "DROP",
+    "WAITLIST_JOIN",
+    "WAITLIST_LEAVE",
+    "WAITLIST_PROMOTED",
+    "ADMIN_ENROLL",
+    "ADMIN_DROP",
+    "TIMETABLE_CONFIRM",
+    "COURSE_CREATE"
+  ],
+  "schemaRequiresCourseCreate": true,
+  "databaseHasCourseCreate": true,
+  "tableCountsAfterCleanup": {
+    "User": 26,
+    "Course": 14,
+    "Class": 13,
+    "Enrollment": 113,
+    "EnrollmentWaitlist": 0,
+    "EnrollmentLog": 6,
+    "EnrollmentPeriod": 2,
+    "TimetableConfirmation": 0,
+    "CourseAnnouncement": 24,
+    "AnnouncementRead": 0,
+    "AnnouncementMark": 0,
+    "CourseMaterial": 36,
+    "MaterialFavorite": 0,
+    "SiteNotification": 12
+  }
+}

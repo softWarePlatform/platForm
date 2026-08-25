@@ -1,20 +1,19 @@
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci --no-audit --fund=false 2>/dev/null || npm install --no-audit --fund=false
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN npm ci --ignore-scripts --no-audit --fund=false
+RUN npx prisma generate --schema=prisma/schema.prisma --generator client
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine
+FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev --no-audit --fund=false 2>/dev/null || npm install --omit=dev --no-audit --fund=false
 COPY prisma ./prisma
+RUN npm ci --omit=dev --ignore-scripts --no-audit --fund=false
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/dist ./dist
-RUN npx prisma generate
 EXPOSE 3000
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
