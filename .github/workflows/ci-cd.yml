@@ -207,7 +207,6 @@ jobs:
     timeout-minutes: 20
     environment: production
     env:
-      KUBECONFIG: ${{ runner.temp }}/kubeconfig
       KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -239,7 +238,11 @@ jobs:
       - name: Load kubeconfig
         if: steps.deployment-config.outputs.ready == 'true'
         shell: bash
-        run: echo "$KUBE_CONFIG_B64" | base64 --decode > "$KUBECONFIG"
+        run: |
+          KUBECONFIG_PATH="${RUNNER_TEMP}/kubeconfig"
+          echo "$KUBE_CONFIG_B64" | base64 --decode > "$KUBECONFIG_PATH"
+          chmod 600 "$KUBECONFIG_PATH"
+          echo "KUBECONFIG=$KUBECONFIG_PATH" >> "$GITHUB_ENV"
 
       - name: Create namespace and runtime secrets
         if: steps.deployment-config.outputs.ready == 'true'
