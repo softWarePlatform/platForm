@@ -9,6 +9,7 @@
     "dev:full": "npm run dev:full --prefix ..",
     "dev:worker": "npm run dev:worker --prefix ..",
     "build": "tsc",
+    "test": "tsx --test src/lib/lab-set-status.test.ts",
     "start": "node dist/index.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
