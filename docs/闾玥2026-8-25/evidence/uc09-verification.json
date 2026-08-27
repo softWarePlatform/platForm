@@ -1,0 +1,100 @@
+{
+  "task": "D1-UC-09",
+  "date": "2026-08-26",
+  "scope": "验证成绩权重汇总与学生查看",
+  "environment": {
+    "apiReady": false,
+    "apiCheck": "http://127.0.0.1:3000/health/ready connection refused",
+    "runtimeRerun": false
+  },
+  "existingRuntimeEvidence": [
+    {
+      "source": "scripts/_step6-last.json",
+      "test": "TC-GRADE-001",
+      "result": "PASS",
+      "meaning": "PATCH grading config returned success"
+    },
+    {
+      "source": "scripts/_step6-last.json",
+      "test": "TC-GRADE-002",
+      "result": "UNRELIABLE_PASS",
+      "meaning": "test implementation marks both non-empty and empty course lists as pass"
+    },
+    {
+      "source": "scripts/_step6-last.json",
+      "test": "TC-GRADE-003",
+      "result": "PASS",
+      "meaning": "teacher gradebook returned 9 students"
+    },
+    {
+      "source": "docs/范文歆/2026-8-25/04-测试报告.md",
+      "test": "TC-GRADE-002~003",
+      "result": "PASS",
+      "meaning": "student grades and teacher gradebook pages were browser-tested with screenshots"
+    }
+  ],
+  "formula": {
+    "labScore": "best score per lab",
+    "labSetAverage": "mean of scored labs in a lab set",
+    "labAverage": "mean of non-null lab-set averages",
+    "homeworkAverage": "mean of graded non-null homework scores",
+    "totalScore": "(labAverage ?? 0) * labWeight + (homeworkAverage ?? 0) * homeworkWeight; null only when both averages are null",
+    "ranking": "descending totalScore with sequential index; ties do not share rank"
+  },
+  "checks": [
+    {
+      "id": "UC09-M-01",
+      "capability": "read and update weights",
+      "status": "PASS_WITH_EXISTING_EVIDENCE"
+    },
+    {
+      "id": "UC09-M-02",
+      "capability": "teacher views class gradebook",
+      "status": "PASS_WITH_EXISTING_EVIDENCE",
+      "actual": "9 students"
+    },
+    {
+      "id": "UC09-M-03",
+      "capability": "student views own course grades",
+      "status": "BROWSER_PASS_API_ASSERTION_INVALID"
+    },
+    {
+      "id": "UC09-M-04",
+      "capability": "teacher and student numeric results are consistent",
+      "status": "NOT_TESTED"
+    },
+    {
+      "id": "UC09-E-01",
+      "capability": "reject weights whose sum is not one",
+      "status": "SOURCE_VERIFIED_RUNTIME_BLOCKED"
+    },
+    {
+      "id": "UC09-E-02",
+      "capability": "student cannot access teacher gradebook/config",
+      "status": "SOURCE_VERIFIED_RUNTIME_BLOCKED"
+    },
+    {
+      "id": "UC09-E-03",
+      "capability": "unreleased homework scores are hidden from student aggregate",
+      "status": "FAIL"
+    }
+  ],
+  "defects": [
+    {
+      "id": "BUG-D1-LY-UC09-001",
+      "severity": "P1",
+      "summary": "Unreleased graded homework scores contribute to student homeworkAverage and totalScore"
+    },
+    {
+      "id": "BUG-D1-LY-UC09-002",
+      "severity": "P2",
+      "summary": "TC-GRADE-002 passes even when /grades/me returns zero courses"
+    },
+    {
+      "id": "BUG-D1-LY-UC09-003",
+      "severity": "P2",
+      "summary": "Grade test changes weights to 0.55/0.45 without restoring the original config"
+    }
+  ],
+  "conclusion": "PARTIAL_NOT_ACCEPTABLE"
+}

@@ -8,7 +8,8 @@
     "start": "node dist/worker.js",
     "stop:worker": "node scripts/stop-worker.mjs",
     "db:generate": "node scripts/stop-worker.mjs && node scripts/ensure-prisma.mjs --force",
-    "dev": "node scripts/ensure-prisma.mjs && tsx watch src/worker.ts"
+    "dev": "node scripts/ensure-prisma.mjs && tsx watch src/worker.ts",
+    "test": "tsx src/runner.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.5.0",
