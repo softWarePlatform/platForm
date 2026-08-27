@@ -42,4 +42,13 @@ const access = computeLabSetAccess({
 assert.equal(access.statusLabel, "要补交");
 assert.equal(access.inMakeupPeriod, isInMakeupPeriod(Date.parse("2026-05-11"), base));
 
+assert.equal(isInMakeupPeriod(Date.parse("2026-05-10T08:00:00Z"), base), false);
+assert.equal(isInMakeupPeriod(Date.parse("2026-05-10T08:00:01Z"), base), true);
+assert.equal(canSubmitAt(Date.parse("2026-05-12T08:00:00Z"), base, false), true);
+assert.equal(canSubmitAt(Date.parse("2026-05-12T08:00:01Z"), base, false), false);
+
+const noMakeup = { ...base, allowMakeup: false };
+assert.equal(getTeacherStatus(Date.parse("2026-05-11"), noMakeup), "CLOSED");
+assert.equal(canSubmitAt(Date.parse("2026-05-11"), noMakeup, false), false);
+
 console.log("lab-set-status.test.ts: ok");

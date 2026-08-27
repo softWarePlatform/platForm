@@ -1,4 +1,8 @@
-const base = "http://127.0.0.1:3000";
+/**
+ * 已并入 npm run test:lab。本文件仅保留 JS Hello 抽检，失败非零退出。
+ * Python 评测不在必过路径（Windows 无 python3）。
+ */
+const base = process.env.API_BASE ?? "http://127.0.0.1:3000";
 
 async function j(m, p, body, t) {
   const h = {};
@@ -13,34 +17,36 @@ async function j(m, p, body, t) {
 }
 
 const st = (await j("POST", "/auth/login", { email: "student@demo.local", password: "Demo123456" })).j.token;
+if (!st) {
+  console.error("login failed");
+  process.exit(1);
+}
 
-const cases = [
-  {
-    name: "TC-LAB-003-js-hello",
-    labId: "00000000-0000-4000-8000-00000001003d",
-    code: 'console.log("Hello")',
-    language: "javascript",
-  },
-  {
-    name: "TC-LAB-003-py-apb",
-    labId: "00000000-0000-4000-8000-000000010046",
-    code: "a,b=map(int,input().split())\nprint(a+b)",
-    language: "python",
-  },
-];
+const sub = await j(
+  "POST",
+  "/labs/00000000-0000-4000-8000-00000001003d/submit",
+  { code: 'console.log("Hello")', language: "javascript" },
+  st,
+);
+const sid = sub.j.submissionId;
+if (!sid) {
+  console.error("submit failed", sub);
+  process.exit(1);
+}
 
-for (const c of cases) {
-  const sub = await j("POST", `/labs/${c.labId}/submit`, { code: c.code, language: c.language }, st);
-  console.log(c.name, "submit", sub.s, sub.j);
-  const sid = sub.j.submissionId;
-  if (!sid) continue;
-  for (let i = 0; i < 15; i++) {
-    await new Promise((r) => setTimeout(r, 1500));
-    const poll = await j("GET", `/submissions/${sid}`, null, st);
-    const { status, score } = poll.j.submission ?? {};
-    if (status && status !== "PENDING" && status !== "JUDGING") {
-      console.log(c.name, "final", status, score);
-      break;
-    }
+let finalStatus = "";
+for (let i = 0; i < 15; i++) {
+  await new Promise((r) => setTimeout(r, 1500));
+  const poll = await j("GET", `/submissions/${sid}`, null, st);
+  const { status, score } = poll.j.submission ?? {};
+  if (status && status !== "PENDING" && status !== "JUDGING") {
+    finalStatus = status;
+    console.log("TC-LAB-003-js-hello", status, score);
+    break;
   }
+}
+
+if (finalStatus !== "ACCEPTED") {
+  console.error("expected ACCEPTED, got", finalStatus || "timeout");
+  process.exit(1);
 }

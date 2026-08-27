@@ -14,7 +14,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "test": "tsx src/lib/lab-set-status.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
