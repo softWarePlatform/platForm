@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-08-26T09:25:22.174Z",
+  "apiBaseUrl": "http://localhost/api",
+  "webBaseUrl": "http://localhost",
+  "passed": 12,
+  "failed": 0,
+  "results": [
+    { "name": "api:liveness", "ok": true, "status": 200, "durationMs": 120 },
+    { "name": "api:readiness", "ok": true, "status": 200, "durationMs": 6 },
+    { "name": "api:compat-health", "ok": true, "status": 200, "durationMs": 4 },
+    { "name": "web:index", "ok": true, "status": 200, "durationMs": 3 },
+    { "name": "courses:list", "ok": true, "status": 200, "durationMs": 12 },
+    { "name": "login:student@demo.local", "ok": true, "status": 200, "durationMs": 341 },
+    { "name": "login:teacher@demo.local", "ok": true, "status": 200, "durationMs": 352 },
+    { "name": "student:profile", "ok": true, "status": 200, "durationMs": 6 },
+    { "name": "student:notifications", "ok": true, "status": 200, "durationMs": 11 },
+    { "name": "student:lab-overview", "ok": true, "status": 200, "durationMs": 18 },
+    { "name": "student:homework", "ok": true, "status": 200, "durationMs": 27 },
+    { "name": "teacher:profile", "ok": true, "status": 200, "durationMs": 8 }
+  ]
+}
