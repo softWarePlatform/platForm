@@ -1,7 +1,8 @@
 FROM node:24-alpine AS fe
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm ci --no-audit --fund=false || npm install --no-audit --fund=false
+RUN --mount=type=cache,target=/root/.npm \
+  npm ci --no-audit --fund=false --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 COPY frontend/ ./
 RUN npm run build
 

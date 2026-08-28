@@ -1,63 +1,115 @@
-# 本项目的 PostgreSQL 映射到宿主机 5433，避免与已有数据库（如 openGauss 5432:5432）冲突。
-# 容器内仍监听 5432；从 Windows 本机连接请用 localhost:5433。
+# 宿主机默认使用 PostgreSQL 5433、Redis 6379、Web 80；可在根目录 .env 覆盖。
+x-app-environment: &app-environment
+  NODE_ENV: production
+  DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/${POSTGRES_DB:-teaching_platform}?schema=public
+  REDIS_URL: redis://redis:6379
+  UPLOAD_DIR: /app/uploads
+
 services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: platform
-      POSTGRES_PASSWORD: platform
-      POSTGRES_DB: teaching_platform
+      POSTGRES_USER: ${POSTGRES_USER:-platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-platform}
+      POSTGRES_DB: ${POSTGRES_DB:-teaching_platform}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U platform -d teaching_platform"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 12
+      start_period: 5s
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 12
+      start_period: 5s
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: build
+    environment:
+      <<: *app-environment
+    command: ["npx", "--no-install", "prisma", "migrate", "deploy"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  seed:
+    profiles: ["tools"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: build
+    environment:
+      <<: *app-environment
+    command: ["npx", "--no-install", "prisma", "db", "seed"]
+    volumes:
+      - api_uploads:/app/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
 
   api:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: runtime
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://platform:platform@db:5432/teaching_platform?schema=public
-      REDIS_URL: redis://redis:6379
+      <<: *app-environment
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-long-random-string}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+    volumes:
+      - api_uploads:/app/uploads
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     expose:
       - "3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
 
   judge-worker:
     build:
       context: .
       dockerfile: judge-worker/Dockerfile
+      target: runtime
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://platform:platform@db:5432/teaching_platform?schema=public
-      REDIS_URL: redis://redis:6379
+      <<: *app-environment
       JUDGE_TIMEOUT_MS: "8000"
+    volumes:
+      - api_uploads:/app/uploads
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
 
@@ -66,9 +118,18 @@ services:
       context: .
       dockerfile: nginx/Dockerfile
     ports:
-      - "80:80"
+      - "${WEB_PORT:-80}:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health/live >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
 volumes:
   pgdata:
+  redisdata:
+  api_uploads:
