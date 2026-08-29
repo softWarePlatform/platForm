@@ -9,7 +9,7 @@ RUN --mount=type=cache,target=/root/.npm \
   npm ci --ignore-scripts --no-audit --fund=false --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 COPY judge-worker/src ./src
 RUN --mount=type=cache,target=/root/.cache/prisma \
-  npx --no-install prisma generate --schema=./prisma/schema.prisma
+  npx --no-install prisma generate --schema=./prisma/schema.prisma --generator client
 RUN npm run build
 
 FROM node:24-bookworm-slim AS runtime

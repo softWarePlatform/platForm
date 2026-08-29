@@ -230,7 +230,8 @@ jobs:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
 
     steps:
-      - name: Validate deployment configuration
+      - name: Check deployment configuration
+        id: deployment-config
         shell: pwsh
         run: |
           $required = @(
@@ -249,17 +250,27 @@ jobs:
               }
             }
           )
-          if ($missing.Count -gt 0) {
+          if ($missing.Count -eq 0) {
+            "ready=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          } elseif ("${{ inputs.deploy }}" -eq "true") {
+            # 手动明确要求部署时必须严格校验，缺失密钥直接失败
             throw "Missing required production secrets: $($missing -join ' ')"
+          } else {
+            # 自动触发（main/master push）时按文档约定安全跳过部署，不阻塞构建与测试
+            "ready=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Host "::warning::Deployment skipped: production environment secrets not configured ($($missing -join ' ')). Configure the 'production' environment secrets to enable deployment."
           }
 
       - name: Check out repository
+        if: steps.deployment-config.outputs.ready == 'true'
         uses: actions/checkout@v7
 
       - name: Set up kubectl
+        if: steps.deployment-config.outputs.ready == 'true'
         uses: azure/setup-kubectl@v4
 
       - name: Load kubeconfig
+        if: steps.deployment-config.outputs.ready == 'true'
         shell: pwsh
         run: |
           $kubeconfigPath = Join-Path $env:RUNNER_TEMP "kubeconfig"
@@ -280,6 +291,7 @@ jobs:
           }
 
       - name: Create namespace and runtime secrets
+        if: steps.deployment-config.outputs.ready == 'true'
         shell: pwsh
         run: |
           kubectl apply -f k8s/monolith/namespace.yaml
@@ -307,6 +319,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Failed to apply the GHCR pull secret." }
 
       - name: Prepare database and run migrations
+        if: steps.deployment-config.outputs.ready == 'true'
         shell: pwsh
         run: |
           $imagePrefix = "ghcr.io/$($env:GITHUB_REPOSITORY_OWNER.ToLowerInvariant())/teaching-platform"
@@ -338,6 +351,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Failed to read migration logs." }
 
       - name: Deploy current commit
+        if: steps.deployment-config.outputs.ready == 'true'
         shell: pwsh
         run: |
           $imagePrefix = "ghcr.io/$($env:GITHUB_REPOSITORY_OWNER.ToLowerInvariant())/teaching-platform"
@@ -362,6 +376,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Failed to deploy the current commit." }
 
       - name: Verify rollout
+        if: steps.deployment-config.outputs.ready == 'true'
         shell: pwsh
         run: |
           kubectl --namespace teaching-platform rollout status deployment/api --timeout=300s
