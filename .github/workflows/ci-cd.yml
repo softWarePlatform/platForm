@@ -124,11 +124,20 @@ jobs:
           WEB_BASE_URL: http://127.0.0.1:4173
         run: npm run test:integration
 
-      - name: Run UC01-UC04 course-domain API tests
+      - name: Run DAO integration tests
+        run: npm run test:dao
+
+      - name: Run UC01-UC10 API tests
         env:
           API_BASE_URL: http://127.0.0.1:3000
-          UC_REPORT_PATH: ../test-results/uc01-04.json
-        run: npm run test:course
+        run: npm run test:api
+
+      - name: Run UC01-UC10 end-to-end tests
+        env:
+          E2E_BASE_URL: http://127.0.0.1:3000
+          E2E_ENVIRONMENT: github-actions
+          E2E_REPORT_PATH: test-results/e2e-github-actions.json
+        run: npm run test:e2e
 
       - name: Upload test evidence
         if: always()

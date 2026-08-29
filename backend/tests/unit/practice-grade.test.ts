@@ -50,4 +50,23 @@ describe("UC-07 练习判分规则", () => {
   it("UNIT-07-05：非法 JSON 按普通文本处理", () => {
     assert.equal(parseAnswerJson("plain answer"), "plain answer");
   });
+
+  it("UNIT-07-06：JavaScript 代码题可在 Windows 与 Linux 上执行并采集输出", async () => {
+    const result = await gradePracticeAnswer(
+      {
+        type: "CODE",
+        answerJson: JSON.stringify({
+          language: "javascript",
+          cases: [{ input: "Codex\n", expected: "Hello Codex" }],
+        }),
+        language: "javascript",
+      },
+      JSON.stringify({
+        code: "let input=''; process.stdin.on('data', c => input += c); process.stdin.on('end', () => console.log('Hello ' + input.trim()));",
+      }),
+    );
+
+    assert.equal(result.correct, true);
+    assert.equal(result.score, 1);
+  });
 });

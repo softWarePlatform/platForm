@@ -5,7 +5,12 @@
   "scripts": {
     "install:all": "npm install --prefix backend && npm install --prefix frontend && npm install --prefix judge-worker",
     "build": "npm run build --prefix backend && npm run build --prefix frontend && npm run build --prefix judge-worker",
-    "test:unit": "npm test --prefix backend",
+    "test": "npm run test:unit && npm run test:dao && npm run test:api && npm run test:e2e",
+    "test:unit": "npm run test:unit --prefix backend",
+    "test:dao": "npm run test:dao --prefix backend",
+    "test:api": "node tests/api/api-use-cases.test.mjs",
+    "test:e2e": "node tests/e2e/all-use-cases.e2e.mjs",
+    "test:ci:failure-block": "npm test",
     "test:lab:unit": "npm test --prefix backend && npm test --prefix judge-worker",
     "test:lab": "node scripts/lab-regression.mjs",
     "test:course": "npm run test:course --prefix backend",

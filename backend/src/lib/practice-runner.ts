@@ -16,23 +16,52 @@ export async function runPracticeCode(opts: {
   const file = path.join(dir, `main.${ext}`);
   await writeFile(file, opts.code, "utf8");
 
-  const cmd = opts.language === "python" ? "python3" : "node";
-  const child = spawn(cmd, [file], {
-    cwd: dir,
-    env: { ...process.env, PYTHONUNBUFFERED: "1" },
-  });
-
   let stdout = "";
   let stderr = "";
   let exitCode: number | null = null;
   let timedOut = false;
+
+  const cmd =
+    opts.language === "python"
+      ? process.platform === "win32"
+        ? "python"
+        : "python3"
+      : process.execPath;
+  let child;
+  try {
+    child = spawn(cmd, [file], {
+      cwd: dir,
+      env: { ...process.env, PYTHONUNBUFFERED: "1" },
+      windowsHide: true,
+    });
+  } catch (error) {
+    await rm(dir, { recursive: true, force: true });
+    return {
+      stdout,
+      stderr: error instanceof Error ? error.message : String(error),
+      exitCode,
+      timedOut,
+    };
+  }
+
+  child.stdout?.setEncoding("utf8");
+  child.stderr?.setEncoding("utf8");
+  child.stdout?.on("data", (chunk: string) => {
+    stdout += chunk;
+  });
+  child.stderr?.on("data", (chunk: string) => {
+    stderr += chunk;
+  });
 
   const exitPromise = new Promise<void>((resolve) => {
     child.on("close", (code) => {
       exitCode = code;
       resolve();
     });
-    child.on("error", () => resolve());
+    child.on("error", (error) => {
+      stderr += error.message;
+      resolve();
+    });
   });
 
   child.stdin?.write(opts.stdin);

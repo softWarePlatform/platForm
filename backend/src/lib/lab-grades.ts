@@ -29,3 +29,15 @@ export function computeLabSetSetAverage(
   if (scores.length === 0) return null;
   return scores.reduce((a, b) => a + b, 0) / scores.length;
 }
+
+/** 学生作业均分只统计已批改且已发布的有效分数，避免提前泄露成绩。 */
+export function computeReleasedHomeworkAverage(
+  submissions: Array<{ score: number | null; graded: boolean; released: boolean }>,
+): number | null {
+  const scores = submissions
+    .filter((submission) => submission.graded && submission.released)
+    .map((submission) => submission.score)
+    .filter((score): score is number => score != null);
+  if (scores.length === 0) return null;
+  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+}

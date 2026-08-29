@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-08-27T02:26:25.739Z",
+  "apiBaseUrl": "http://127.0.0.1:3000",
+  "summary": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "mainFlowTotal": 10,
+    "mainFlowPassed": 10,
+    "alternativeFlowTotal": 5,
+    "alternativeFlowPassed": 5
+  },
+  "resultsFile": "test-results/api-use-cases.json",
+  "testScript": "tests/api/api-use-cases.test.mjs"
+}

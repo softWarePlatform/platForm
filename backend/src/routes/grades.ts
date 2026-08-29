@@ -2,7 +2,11 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/authGuard.js";
-import { bestScoreForLab, computeLabSetSetAverage } from "../lib/lab-grades.js";
+import {
+  bestScoreForLab,
+  computeLabSetSetAverage,
+  computeReleasedHomeworkAverage,
+} from "../lib/lab-grades.js";
 
 type LabScoreCell = { labId: string; title: string; bestScore: number | null };
 
@@ -139,11 +143,7 @@ async function loadGradebook(courseId: string): Promise<{
     const setMeans = labSets.map((g) => g.setAverage).filter((x): x is number => x != null);
     const labAverage = setMeans.length ? setMeans.reduce((a, b) => a + b, 0) / setMeans.length : null;
 
-    const hwNums = hwForStudent
-      .filter((x) => x.graded)
-      .map((x) => x.score)
-      .filter((x): x is number => x != null);
-    const homeworkAverage = hwNums.length ? hwNums.reduce((a, b) => a + b, 0) / hwNums.length : null;
+    const homeworkAverage = computeReleasedHomeworkAverage(hwForStudent);
     const totalScore =
       labAverage == null && homeworkAverage == null
         ? null

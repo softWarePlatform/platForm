@@ -1,0 +1,196 @@
+{"kind":"deck","id":"pr/s5sbkd","name":"Deck"}
+{"kind":"layout","layoutId":"be329971-9b00-41a4-ac55-1dc88ed7c6a4","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"8d7424ba-bc1a-4762-9ff8-56218d8581ff","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/uagcdu","slide":1,"title":"从需求追溯到","textShapes":3}
+{"kind":"textbox","id":"sh/zmlsnapw","slide":1,"name":"Title-3-1","text":"从需求追溯到\n72项自动化验证","textPreview":"从需求追溯到 | 72项自动化验证","textChars":15,"textLines":2,"bbox":[41.33,182.55,992,261.57]}
+{"kind":"textbox","id":"sh/0nutwf6h","slide":1,"name":"Subtitle-4-2","text":"范文歆｜教学平台｜2026-08-28","textPreview":"范文歆｜教学平台｜2026-08-28","textChars":19,"textLines":1,"bbox":[41.33,497.87,598.67,113.41]}
+{"kind":"textbox","id":"sh/1o3apk7m","slide":1,"name":"Subtitle-4-3","text":"软件测试答辩 · 测试部分","textPreview":"软件测试答辩 · 测试部分","textChars":13,"textLines":1,"bbox":[41.33,41.18,598.67,68.15]}
+{"kind":"notes","id":"nt/uagcdu","slide":1,"text":"开场先给结论：10个用例全部具备需求、设计、代码和测试证据。\n本机72项自动化检查全部通过。\n\nSources:\n- docs/范文歆/2026-8-28/软件测试追溯表-最终版.xlsx\n- test-results/e2e-local.json"}
+{"kind":"slide","id":"sl/b606o1","slide":2,"title":"01 · TEST STRATEGY","textShapes":16}
+{"kind":"textbox","id":"sh/cvqd4fml","slide":2,"name":"eyebrow-2","text":"01 · TEST STRATEGY","textPreview":"01 · TEST STRATEGY","textChars":18,"textLines":1,"bbox":[48,34,380,28]}
+{"kind":"textbox","id":"sh/ruhcva5g","slide":2,"name":"title-2","text":"测试策略：四层防线覆盖同一批业务风险","textPreview":"测试策略：四层防线覆盖同一批业务风险","textChars":18,"textLines":1,"bbox":[48,72,1120,64]}
+{"kind":"shape","id":"sh/qt8v254v","slide":2,"name":"rule-2","bbox":[48,146,1184,3]}
+{"kind":"textbox","id":"sh/pszutkna","slide":2,"name":"page-2","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1170,674,62,24]}
+{"kind":"shape","id":"sh/4r6d0fmp","slide":2,"name":"strategy-0","bbox":[48,202,266,340]}
+{"kind":"shape","id":"sh/3qxcra54","slide":2,"name":"strategy-accent-0","bbox":[48,202,266,10]}
+{"kind":"textbox","id":"sh/2povy54j","slide":2,"name":"strategy-label-0","text":"单元","textPreview":"单元","textChars":2,"textLines":1,"bbox":[72,242,218,38]}
+{"kind":"textbox","id":"sh/9oje54ne","slide":2,"name":"strategy-stat-0","text":"43项","textPreview":"43项","textChars":3,"textLines":1,"bbox":[72,304,218,76]}
+{"kind":"textbox","id":"sh/onadczmt","slide":2,"name":"strategy-body-0","text":"业务规则与边界\n快速定位逻辑缺陷","textPreview":"业务规则与边界 | 快速定位逻辑缺陷","textChars":16,"textLines":2,"bbox":[72,408,218,90]}
+{"kind":"shape","id":"sh/et4fep0n","slide":2,"name":"strategy-1","bbox":[346,202,266,340]}
+{"kind":"shape","id":"sh/fudwnu18","slide":2,"name":"strategy-accent-1","bbox":[346,202,266,10]}
+{"kind":"textbox","id":"sh/0vmxgzit","slide":2,"name":"strategy-label-1","text":"DAO","textPreview":"DAO","textChars":3,"textLines":1,"bbox":[370,242,218,38]}
+{"kind":"textbox","id":"sh/1wvep4jy","slide":2,"name":"strategy-stat-1","text":"4项","textPreview":"4项","textChars":2,"textLines":1,"bbox":[370,304,218,76]}
+{"kind":"textbox","id":"sh/q5kfap0b","slide":2,"name":"strategy-body-1","text":"事务、复合键、upsert\n与级联删除","textPreview":"事务、复合键、upsert | 与级联删除","textChars":19,"textLines":2,"bbox":[370,408,218,90]}
+{"kind":"shape","id":"sh/rqtwja1w","slide":2,"name":"strategy-2","bbox":[644,202,266,340]}
+{"kind":"shape","id":"sh/srmxcfih","slide":2,"name":"strategy-accent-2","bbox":[644,202,266,10]}
+{"kind":"textbox","id":"sh/dsvelkj2","slide":2,"name":"strategy-label-2","text":"API","textPreview":"API","textChars":3,"textLines":1,"bbox":[668,242,218,38]}
+{"kind":"textbox","id":"sh/a1ofm90v","slide":2,"name":"strategy-stat-2","text":"15项","textPreview":"15项","textChars":3,"textLines":1,"bbox":[668,304,218,76]}
+{"kind":"textbox","id":"sh/bmxgve1g","slide":2,"name":"strategy-body-2","text":"10条主成功流程\n+ 5条异常/备选","textPreview":"10条主成功流程 | + 5条异常/备选","textChars":18,"textLines":2,"bbox":[668,408,218,90]}
+{"kind":"shape","id":"sh/76pc76hs","slide":2,"name":"strategy-3","bbox":[942,202,266,340]}
+{"kind":"shape","id":"sh/m5gbe1g7","slide":2,"name":"strategy-accent-3","bbox":[942,202,266,10]}
+{"kind":"textbox","id":"sh/98ru9gzy","slide":2,"name":"strategy-label-3","text":"E2E","textPreview":"E2E","textChars":3,"textLines":1,"bbox":[966,242,218,38]}
+{"kind":"textbox","id":"sh/87ytgbyd","slide":2,"name":"strategy-stat-3","text":"10项","textPreview":"10项","textChars":3,"textLines":1,"bbox":[966,304,218,76]}
+{"kind":"textbox","id":"sh/va9cbqho","slide":2,"name":"strategy-body-3","text":"每个用例1条完整链路\n含状态验证与清理","textPreview":"每个用例1条完整链路 | 含状态验证与清理","textChars":19,"textLines":2,"bbox":[966,408,218,90]}
+{"kind":"textbox","id":"sh/u90bilg3","slide":2,"name":"strategy-foot","text":"原则：主流程全覆盖，核心风险补异常；E2E必须看到业务结果，而不是只检查HTTP 200。","textPreview":"原则：主流程全覆盖，核心风险补异常；E2E必须看到业务结果，而不是只检查HTTP 200。","textChars":45,"textLines":1,"bbox":[72,584,1136,48]}
+{"kind":"notes","id":"nt/b606o1","slide":2,"text":"四层测试不是重复，而是定位粒度不同。\n单元和DAO负责快速反馈，API确认契约，E2E确认跨模块业务闭环。\n\nSources:\n- backend/tests/unit/*.test.ts\n- backend/tests/integration/prisma-dao.test.ts\n- tests/api/api-use-cases.test.mjs\n- tests/e2e/all-use-cases.e2e.mjs"}
+{"kind":"slide","id":"sl/2b36ya","slide":3,"title":"02 · TRACEABILITY","textShapes":4}
+{"kind":"textbox","id":"sh/jid8b2ls","slide":3,"name":"eyebrow-3","text":"02 · TRACEABILITY","textPreview":"02 · TRACEABILITY","textChars":17,"textLines":1,"bbox":[48,34,380,28]}
+{"kind":"textbox","id":"sh/kjmpk7md","slide":3,"name":"title-3","text":"追溯表：10个用例均形成可审计闭环","textPreview":"追溯表：10个用例均形成可审计闭环","textChars":17,"textLines":1,"bbox":[48,72,1120,64]}
+{"kind":"shape","id":"sh/lkvqdc3y","slide":3,"name":"rule-3","bbox":[48,146,1184,3]}
+{"kind":"textbox","id":"sh/adk7ex4b","slide":3,"name":"page-3","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1170,674,62,24]}
+{"kind":"textbox","id":"sh/wfmpgnm1","slide":3,"name":"trace-foot","text":"每一行都能从需求编号一路追到E2E结果，完整度公式为100%。","textPreview":"每一行都能从需求编号一路追到E2E结果，完整度公式为100%。","textChars":31,"textLines":1,"bbox":[72,582,1136,44]}
+{"kind":"table","id":"tb/u9wr250n","slide":3,"name":"","rows":6,"cols":5,"preview":"层级 | 覆盖范围 | 编号规则 | 状态 | 证据","bbox":[48,198,1184,350]}
+{"kind":"notes","id":"nt/2b36ya","slide":3,"text":"展示Excel中的追溯总表和编号字典。\n强调设计编号并非只做目录，而是与类和测试ID绑定。\n\nSources:\n- docs/范文歆/2026-8-28/软件测试追溯表-最终版.xlsx"}
+{"kind":"slide","id":"sl/rwo6t1","slide":4,"title":"04","textShapes":9}
+{"kind":"shape","id":"sh/103m1srm","slide":4,"name":"Rounded-Rectangle-5-1","bbox":[41.33,317.33,374.67,312]}
+{"kind":"shape","id":"sh/exsn6x8b","slide":4,"name":"Rounded-Rectangle-6-2","bbox":[452.67,317.33,374.67,312]}
+{"kind":"shape","id":"sh/fy14z29g","slide":4,"name":"Rounded-Rectangle-7-3","bbox":[864.28,317.33,374.67,312]}
+{"kind":"textbox","id":"sh/o3u5c7qd","slide":4,"name":"Slide-Number-Placeholder-1-4","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1184.18,659.24,54.48,25.33]}
+{"kind":"textbox","id":"sh/p43m5cry","slide":4,"name":"Title-2-5","text":"本机自动化验收：72项检查全部通过","textPreview":"本机自动化验收：72项检查全部通过","textChars":17,"textLines":1,"bbox":[41.33,36.12,1197.33,109.97]}
+{"kind":"textbox","id":"sh/21cnax87","slide":4,"name":"Content-Placeholder-9-6","text":"自动化检查通过","textPreview":"自动化检查通过","textChars":7,"textLines":1,"bbox":[73.74,514.5,309.67,86]}
+{"kind":"textbox","id":"sh/n2l4329s","slide":4,"name":"Content-Placeholder-10-7","text":"失败数量","textPreview":"失败数量","textChars":4,"textLines":1,"bbox":[896.78,514.5,309.67,86]}
+{"kind":"textbox","id":"sh/c7e5grq9","slide":4,"name":"Content-Placeholder-11-8","text":"业务用例覆盖","textPreview":"业务用例覆盖","textChars":6,"textLines":1,"bbox":[485.17,514.5,309.67,86]}
+{"kind":"textbox","id":"sh/xsn69wru","slide":4,"name":"Content-Placeholder-9-9","text":"72 / 72","textPreview":"72 / 72","textChars":7,"textLines":1,"bbox":[73.74,360,308.67,142.71]}
+{"kind":"textbox","id":"sh/dwbm1cje","slide":4,"name":"Content-Placeholder-9-10","text":"10 / 10","textPreview":"10 / 10","textChars":7,"textLines":1,"bbox":[484.3,360,308.67,142.71]}
+{"kind":"textbox","id":"sh/sv25s7it","slide":4,"name":"Content-Placeholder-9-11","text":"0","textPreview":"0","textChars":1,"textLines":1,"bbox":[898.94,360,308.67,142.71]}
+{"kind":"textbox","id":"sh/rut4z218","slide":4,"name":"Content-Placeholder-15-12","text":"一次命令完成四层测试\n根目录 npm test 顺序执行单元、DAO、API与E2E；任一阶段非零退出都会停止后续步骤。","textPreview":"一次命令完成四层测试 | 根目录 npm test 顺序执行单元、DAO、API与E2E；任一阶段非零退出都会停止后续步骤。","textChars":60,"textLines":2,"bbox":[41.33,119.51,1197.33,167.92]}
+{"kind":"notes","id":"nt/rwo6t1","slide":4,"text":"测试数由43个单元、4个DAO、15个API、10个E2E组成。\n完整构建同时通过，前端仅有非阻断的包体积提示。\n\nSources:\n- package.json\n- test-results/api-use-cases.json\n- test-results/e2e-local.json"}
+{"kind":"slide","id":"sl/brmw2y","slide":5,"title":"04 · REPRESENTATIVE CHAIN","textShapes":15}
+{"kind":"textbox","id":"sh/dkb21wra","slide":5,"name":"eyebrow-5","text":"04 · REPRESENTATIVE CHAIN","textPreview":"04 · REPRESENTATIVE CHAIN","textChars":25,"textLines":1,"bbox":[48,34,380,28]}
+{"kind":"textbox","id":"sh/qx036hsj","slide":5,"name":"title-5","text":"代表链路一：UC-03课程公告","textPreview":"代表链路一：UC-03课程公告","textChars":15,"textLines":1,"bbox":[48,72,1120,64]}
+{"kind":"shape","id":"sh/by9kzm94","slide":5,"name":"rule-5","bbox":[48,146,1184,3]}
+{"kind":"textbox","id":"sh/ovil47ad","slide":5,"name":"page-5","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1170,674,62,24]}
+{"kind":"shape","id":"sh/pwr2xcry","slide":5,"name":"connector-5-0","bbox":[262,295,45,5]}
+{"kind":"shape","id":"sh/2t0j2hsn","slide":5,"name":"connector-5-1","bbox":[497,295,45,5]}
+{"kind":"shape","id":"sh/3u9kv298","slide":5,"name":"connector-5-2","bbox":[732,295,45,5]}
+{"kind":"shape","id":"sh/gry107ah","slide":5,"name":"connector-5-3","bbox":[967,295,45,5]}
+{"kind":"shape","id":"sh/hsr2tcr2","slide":5,"name":"node-5-0","bbox":[72,236,190,124]}
+{"kind":"textbox","id":"sh/d8zy5gvy","slide":5,"name":"node-num-5-0","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[88,250,40,24]}
+{"kind":"textbox","id":"sh/c7qhwbed","slide":5,"name":"node-title-5-0","text":"教师发布","textPreview":"教师发布","textChars":4,"textLines":1,"bbox":[88,284,158,54]}
+{"kind":"shape","id":"sh/r6hg3qds","slide":5,"name":"node-5-1","bbox":[307,236,190,124]}
+{"kind":"textbox","id":"sh/q58zulw7","slide":5,"name":"node-num-5-1","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[323,250,40,24]}
+{"kind":"textbox","id":"sh/pkzy1gvm","slide":5,"name":"node-title-5-1","text":"数据库落库","textPreview":"数据库落库","textChars":5,"textLines":1,"bbox":[323,284,158,54]}
+{"kind":"shape","id":"sh/4j6hsbe1","slide":5,"name":"node-5-2","bbox":[542,236,190,124]}
+{"kind":"textbox","id":"sh/3ixgz6dw","slide":5,"name":"node-num-5-2","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[558,250,40,24]}
+{"kind":"textbox","id":"sh/2hozq1wb","slide":5,"name":"node-title-5-2","text":"学生读取","textPreview":"学生读取","textChars":4,"textLines":1,"bbox":[558,284,158,54]}
+{"kind":"shape","id":"sh/hgfyxwvq","slide":5,"name":"node-5-3","bbox":[777,236,190,124]}
+{"kind":"textbox","id":"sh/gf6hore5","slide":5,"name":"node-num-5-3","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[793,250,40,24]}
+{"kind":"textbox","id":"sh/8zahkbm1","slide":5,"name":"node-title-5-3","text":"标记已读","textPreview":"标记已读","textChars":4,"textLines":1,"bbox":[793,284,158,54]}
+{"kind":"shape","id":"sh/tkjydw3m","slide":5,"name":"node-5-4","bbox":[1012,236,190,124]}
+{"kind":"textbox","id":"sh/mxszi14v","slide":5,"name":"node-num-5-4","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1028,250,40,24]}
+{"kind":"textbox","id":"sh/7y1gb6lg","slide":5,"name":"node-title-5-4","text":"列表回查","textPreview":"列表回查","textChars":4,"textLines":1,"bbox":[1028,284,158,54]}
+{"kind":"shape","id":"sh/kvqhgrmp","slide":5,"name":"mapping-5","bbox":[72,438,1136,138]}
+{"kind":"textbox","id":"sh/lwzy9w3a","slide":5,"name":"mapping-title-5","text":"追溯映射","textPreview":"追溯映射","textChars":4,"textLines":1,"bbox":[96,458,140,30]}
+{"kind":"textbox","id":"sh/yt8zeh4z","slide":5,"name":"mapping-body-5","text":"REQ-03 → SYS/COMP/OBJ-SEQ-03 → AnnouncementRoutes / NotificationEvents → UNIT-03 → API-03 → E2E-03","textPreview":"REQ-03 → SYS/COMP/OBJ-SEQ-03 → AnnouncementRoutes / NotificationEvents → UNIT-03 → API-03 → E2E-03","textChars":98,"textLines":1,"bbox":[96,500,1088,56]}
+{"kind":"notes","id":"nt/brmw2y","slide":5,"text":"主流程验证教师发布后，学生能够标记已读并在列表回查到read=true。\n异常流程验证学生越权发布返回403。\n\nSources:\n- backend/src/routes/announcements.ts\n- tests/api/api-use-cases.test.mjs\n- tests/e2e/all-use-cases.e2e.mjs"}
+{"kind":"slide","id":"sl/qcyzti","slide":6,"title":"04 · REPRESENTATIVE CHAIN","textShapes":17}
+{"kind":"textbox","id":"sh/ehkv2tcv","slide":6,"name":"eyebrow-6","text":"04 · REPRESENTATIVE CHAIN","textPreview":"04 · REPRESENTATIVE CHAIN","textChars":25,"textLines":1,"bbox":[48,34,380,28]}
+{"kind":"textbox","id":"sh/1kbexob6","slide":6,"name":"title-6","text":"代表链路二：UC-05在线作业","textPreview":"代表链路二：UC-05在线作业","textChars":15,"textLines":1,"bbox":[48,72,1120,64]}
+{"kind":"shape","id":"sh/gj2d4jul","slide":6,"name":"rule-6","bbox":[48,146,1184,3]}
+{"kind":"textbox","id":"sh/re9wret4","slide":6,"name":"page-6","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1170,674,62,24]}
+{"kind":"shape","id":"sh/6d0vy9cj","slide":6,"name":"connector-6-0","bbox":[219,295,34,5]}
+{"kind":"shape","id":"sh/tgbetoba","slide":6,"name":"connector-6-1","bbox":[417,295,34,5]}
+{"kind":"shape","id":"sh/sfid0jup","slide":6,"name":"connector-6-2","bbox":[615,295,34,5]}
+{"kind":"shape","id":"sh/jq9wnet8","slide":6,"name":"connector-6-3","bbox":[813,295,34,5]}
+{"kind":"shape","id":"sh/ip0vu9cn","slide":6,"name":"connector-6-4","bbox":[1011,295,34,5]}
+{"kind":"shape","id":"sh/8zmlovq1","slide":6,"name":"node-6-0","bbox":[55,236,164,124]}
+{"kind":"textbox","id":"sh/90v2h07m","slide":6,"name":"node-num-6-0","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[71,250,40,24]}
+{"kind":"textbox","id":"sh/mxk3ml8v","slide":6,"name":"node-title-6-0","text":"教师发布","textPreview":"教师发布","textChars":4,"textLines":1,"bbox":[71,284,132,54]}
+{"kind":"shape","id":"sh/7ydkfqpg","slide":6,"name":"node-6-1","bbox":[253,236,164,124]}
+{"kind":"textbox","id":"sh/kv2lkbqp","slide":6,"name":"node-num-6-1","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[269,250,40,24]}
+{"kind":"textbox","id":"sh/lwb2dg7a","slide":6,"name":"node-title-6-1","text":"学生提交","textPreview":"学生提交","textChars":4,"textLines":1,"bbox":[269,284,132,54]}
+{"kind":"shape","id":"sh/ytkji18z","slide":6,"name":"node-6-2","bbox":[451,236,164,124]}
+{"kind":"textbox","id":"sh/zutkb6p4","slide":6,"name":"node-num-6-2","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[467,250,40,24]}
+{"kind":"textbox","id":"sh/4r6lwfq9","slide":6,"name":"node-title-6-2","text":"教师读取","textPreview":"教师读取","textChars":4,"textLines":1,"bbox":[467,284,132,54]}
+{"kind":"shape","id":"sh/5sfmpk7e","slide":6,"name":"node-6-3","bbox":[649,236,164,124]}
+{"kind":"textbox","id":"sh/tcrutgvm","slide":6,"name":"node-num-6-3","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[665,250,40,24]}
+{"kind":"textbox","id":"sh/sbitkbe1","slide":6,"name":"node-title-6-3","text":"批改92分","textPreview":"批改92分","textChars":5,"textLines":1,"bbox":[665,284,132,54]}
+{"kind":"shape","id":"sh/ra9cr6dg","slide":6,"name":"node-6-4","bbox":[847,236,164,124]}
+{"kind":"textbox","id":"sh/690bi1wv","slide":6,"name":"node-num-6-4","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[863,250,40,24]}
+{"kind":"textbox","id":"sh/58rupwva","slide":6,"name":"node-title-6-4","text":"发布成绩","textPreview":"发布成绩","textChars":4,"textLines":1,"bbox":[863,284,132,54]}
+{"kind":"shape","id":"sh/47itgrep","slide":6,"name":"node-6-5","bbox":[1045,236,164,124]}
+{"kind":"textbox","id":"sh/j6psn6dk","slide":6,"name":"node-num-6-5","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1061,250,40,24]}
+{"kind":"textbox","id":"sh/i5gbe1wz","slide":6,"name":"node-title-6-5","text":"学生查看","textPreview":"学生查看","textChars":4,"textLines":1,"bbox":[1061,284,132,54]}
+{"kind":"shape","id":"sh/h47alwve","slide":6,"name":"mapping-6","bbox":[72,438,1136,138]}
+{"kind":"textbox","id":"sh/w3ytcret","slide":6,"name":"mapping-title-6","text":"追溯映射","textPreview":"追溯映射","textChars":4,"textLines":1,"bbox":[96,458,140,30]}
+{"kind":"textbox","id":"sh/m9wrmxcr","slide":6,"name":"mapping-body-6","text":"REQ-05 → SYS/COMP/OBJ-SEQ-05 → HomeworkRoutes / HomeworkStudentRoutes → UNIT-05 → API-05 → E2E-05","textPreview":"REQ-05 → SYS/COMP/OBJ-SEQ-05 → HomeworkRoutes / HomeworkStudentRoutes → UNIT-05 → API-05 → E2E-05","textChars":97,"textLines":1,"bbox":[96,500,1088,56]}
+{"kind":"notes","id":"nt/qcyzti","slide":6,"text":"这是最完整的跨角色链路，覆盖教师和学生两个端的状态变化。\n结束后删除临时作业，避免污染演示数据。\n\nSources:\n- backend/src/routes/homework.ts\n- backend/src/routes/homework-student.ts\n- tests/e2e/all-use-cases.e2e.mjs"}
+{"kind":"slide","id":"sl/gmx0fi","slide":7,"title":"04 · REPRESENTATIVE CHAIN","textShapes":17}
+{"kind":"textbox","id":"sh/1gvmdwje","slide":7,"name":"eyebrow-7","text":"04 · REPRESENTATIVE CHAIN","textPreview":"04 · REPRESENTATIVE CHAIN","textChars":25,"textLines":1,"bbox":[48,34,380,28]}
+{"kind":"textbox","id":"sh/etkn2hkn","slide":7,"name":"title-7","text":"代表链路三：UC-06在线实验","textPreview":"代表链路三：UC-06在线实验","textChars":15,"textLines":1,"bbox":[48,72,1120,64]}
+{"kind":"shape","id":"sh/zed4bm18","slide":7,"name":"rule-7","bbox":[48,146,1184,3]}
+{"kind":"textbox","id":"sh/cr250r2h","slide":7,"name":"page-7","text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1170,674,62,24]}
+{"kind":"shape","id":"sh/dsbm9wj2","slide":7,"name":"connector-7-0","bbox":[219,295,34,5]}
+{"kind":"shape","id":"sh/qpknyhkr","slide":7,"name":"connector-7-1","bbox":[417,295,34,5]}
+{"kind":"shape","id":"sh/rqt47mlw","slide":7,"name":"connector-7-2","bbox":[615,295,34,5]}
+{"kind":"shape","id":"sh/4n25w72l","slide":7,"name":"connector-7-3","bbox":[813,295,34,5]}
+{"kind":"shape","id":"sh/pobm5c36","slide":7,"name":"connector-7-4","bbox":[1011,295,34,5]}
+{"kind":"shape","id":"sh/twn2tkf2","slide":7,"name":"node-7-0","bbox":[55,236,164,124]}
+{"kind":"textbox","id":"sh/8ve10feh","slide":7,"name":"node-num-7-0","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[71,250,40,24]}
+{"kind":"textbox","id":"sh/7u5kraxw","slide":7,"name":"node-title-7-0","text":"创建实验集","textPreview":"创建实验集","textChars":5,"textLines":1,"bbox":[71,284,132,54]}
+{"kind":"shape","id":"sh/6twjy5wr","slide":7,"name":"node-7-1","bbox":[253,236,164,124]}
+{"kind":"textbox","id":"sh/ls32p0f6","slide":7,"name":"node-num-7-1","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[269,250,40,24]}
+{"kind":"textbox","id":"sh/kru1wvel","slide":7,"name":"node-title-7-1","text":"设人工评测","textPreview":"设人工评测","textChars":5,"textLines":1,"bbox":[269,284,132,54]}
+{"kind":"shape","id":"sh/jqlknqx0","slide":7,"name":"node-7-2","bbox":[451,236,164,124]}
+{"kind":"textbox","id":"sh/y5cju5wf","slide":7,"name":"node-num-7-2","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[467,250,40,24]}
+{"kind":"textbox","id":"sh/x432l0fu","slide":7,"name":"node-title-7-2","text":"创建题目","textPreview":"创建题目","textChars":4,"textLines":1,"bbox":[467,284,132,54]}
+{"kind":"shape","id":"sh/w3u1sve9","slide":7,"name":"node-7-3","bbox":[649,236,164,124]}
+{"kind":"textbox","id":"sh/o7y18v65","slide":7,"name":"node-num-7-3","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[665,250,40,24]}
+{"kind":"textbox","id":"sh/p87210nq","slide":7,"name":"node-title-7-3","text":"录入用例","textPreview":"录入用例","textChars":4,"textLines":1,"bbox":[665,284,132,54]}
+{"kind":"shape","id":"sh/25wj6lof","slide":7,"name":"node-7-4","bbox":[847,236,164,124]}
+{"kind":"textbox","id":"sh/36pkzq5k","slide":7,"name":"node-num-7-4","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[863,250,40,24]}
+{"kind":"textbox","id":"sh/gje14b69","slide":7,"name":"node-title-7-4","text":"学生提交","textPreview":"学生提交","textChars":4,"textLines":1,"bbox":[863,284,132,54]}
+{"kind":"shape","id":"sh/1kn2xgnu","slide":7,"name":"node-7-5","bbox":[1045,236,164,124]}
+{"kind":"textbox","id":"sh/ehwj2lo3","slide":7,"name":"node-num-7-5","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1061,250,40,24]}
+{"kind":"textbox","id":"sh/fi5kvq5o","slide":7,"name":"node-title-7-5","text":"状态回查","textPreview":"状态回查","textChars":4,"textLines":1,"bbox":[1061,284,132,54]}
+{"kind":"shape","id":"sh/kfilgfmd","slide":7,"name":"mapping-7","bbox":[72,438,1136,138]}
+{"kind":"textbox","id":"sh/lgr29kny","slide":7,"name":"mapping-title-7","text":"追溯映射","textPreview":"追溯映射","textChars":4,"textLines":1,"bbox":[96,458,140,30]}
+{"kind":"textbox","id":"sh/vat4zep0","slide":7,"name":"mapping-body-7","text":"REQ-06 → SYS/COMP/OBJ-SEQ-06 → LabSetRoutes / LabSubmitService → UNIT-06 → API-06 → E2E-06","textPreview":"REQ-06 → SYS/COMP/OBJ-SEQ-06 → LabSetRoutes / LabSubmitService → UNIT-06 → API-06 → E2E-06","textChars":90,"textLines":1,"bbox":[96,500,1088,56]}
+{"kind":"notes","id":"nt/gmx0fi","slide":7,"text":"用人工评测模式避免依赖异步Worker，也仍验证了完整业务状态PENDING_REVIEW。\n实验集使用force=1级联清理题目、用例和提交。\n\nSources:\n- backend/src/routes/lab-sets.ts\n- backend/src/routes/labs.ts\n- backend/src/lib/lab-submit.ts\n- tests/e2e/all-use-cases.e2e.mjs"}
+{"kind":"slide","id":"sl/dfe1yi","slide":8,"title":"05 · DELIVERY GATES","textShapes":12}
+{"kind":"textbox","id":"sh/srilwj61","slide":8,"name":"eyebrow-8","text":"05 · DELIVERY GATES","textPreview":"05 · DELIVERY GATES","textChars":19,"textLines":1,"bbox":[48,34,380,28]}
+{"kind":"textbox","id":"sh/7q9k3e5g","slide":8,"name":"title-8","text":"CI/CD与Kubernetes：测试失败必须阻断交付","textPreview":"CI/CD与Kubernetes：测试失败必须阻断交付","textChars":27,"textLines":1,"bbox":[48,72,1120,64]}
+{"kind":"shape","id":"sh/6p03u9ov","slide":8,"name":"rule-8","bbox":[48,146,1184,3]}
+{"kind":"textbox","id":"sh/hgb29oni","slide":8,"name":"page-8","text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1170,674,62,24]}
+{"kind":"shape","id":"sh/gf2l0j6x","slide":8,"name":"ci-link-0","bbox":[242,284,58,5]}
+{"kind":"shape","id":"sh/fe9k7e5s","slide":8,"name":"ci-link-1","bbox":[452,284,58,5]}
+{"kind":"shape","id":"sh/ud03y9o7","slide":8,"name":"ci-link-2","bbox":[662,284,58,5]}
+{"kind":"shape","id":"sh/pkbmd8nu","slide":8,"name":"ci-link-3","bbox":[872,284,58,5]}
+{"kind":"shape","id":"sh/4j2l4369","slide":8,"name":"ci-node-0","bbox":[90,236,152,100]}
+{"kind":"textbox","id":"sh/yhsfq5k3","slide":8,"name":"ci-label-0","text":"安装依赖","textPreview":"安装依赖","textChars":4,"textLines":1,"bbox":[102,264,128,44]}
+{"kind":"shape","id":"sh/zi1gza18","slide":8,"name":"ci-node-1","bbox":[300,236,152,100]}
+{"kind":"textbox","id":"sh/kjahsf2t","slide":8,"name":"ci-label-1","text":"构建","textPreview":"构建","textChars":2,"textLines":1,"bbox":[312,264,128,44]}
+{"kind":"shape","id":"sh/lk3y1kje","slide":8,"name":"ci-node-2","bbox":[510,236,152,100]}
+{"kind":"textbox","id":"sh/mlczupkz","slide":8,"name":"ci-label-2","text":"Unit + DAO","textPreview":"Unit + DAO","textChars":10,"textLines":1,"bbox":[522,264,128,44]}
+{"kind":"shape","id":"sh/7mlg3u1k","slide":8,"name":"ci-node-3","bbox":[720,236,152,100]}
+{"kind":"textbox","id":"sh/87uhwf25","slide":8,"name":"ci-label-3","text":"API + E2E","textPreview":"API + E2E","textChars":9,"textLines":1,"bbox":[732,264,128,44]}
+{"kind":"shape","id":"sh/983y5kjq","slide":8,"name":"ci-node-4","bbox":[930,236,152,100]}
+{"kind":"textbox","id":"sh/2p8filkv","slide":8,"name":"ci-label-4","text":"镜像/部署","textPreview":"镜像/部署","textChars":5,"textLines":1,"bbox":[942,264,128,44]}
+{"kind":"shape","id":"sh/nqhgrq1g","slide":8,"name":"ci-proof-card","bbox":[90,400,520,176]}
+{"kind":"shape","id":"sh/ruxczmh8","slide":8,"name":"ci-proof-accent","bbox":[90,400,7,176]}
+{"kind":"textbox","id":"sh/6tovqh0n","slide":8,"name":"ci-proof-title","text":"故障注入：阻断生效","textPreview":"故障注入：阻断生效","textChars":9,"textLines":1,"bbox":[114,422,472,44]}
+{"kind":"textbox","id":"sh/dwfe1wzy","slide":8,"name":"ci-proof-body","text":"注入退出码17后，downstream-image-build 未执行。\npipelineBlocked = true","textPreview":"注入退出码17后，downstream-image-build 未执行。 | pipelineBlocked = true","textChars":59,"textLines":2,"bbox":[114,476,472,80]}
+{"kind":"shape","id":"sh/sv6dsrid","slide":8,"name":"k8s-proof-card","bbox":[670,400,520,176]}
+{"kind":"shape","id":"sh/jqdcvmhw","slide":8,"name":"k8s-proof-accent","bbox":[670,400,7,176]}
+{"kind":"textbox","id":"sh/ip4vmh0b","slide":8,"name":"k8s-proof-title","text":"K8s回归：10/10通过","textPreview":"K8s回归：10/10通过","textChars":13,"textLines":1,"bbox":[694,422,472,44]}
+{"kind":"textbox","id":"sh/5svuxcz2","slide":8,"name":"k8s-proof-body","text":"Docker Desktop Kubernetes部署完成；同一套E2E在容器环境再次全绿。","textPreview":"Docker Desktop Kubernetes部署完成；同一套E2E在容器环境再次全绿。","textChars":46,"textLines":1,"bbox":[694,476,472,80]}
+{"kind":"notes","id":"nt/dfe1yi","slide":8,"text":"GitHub Actions质量任务已加入DAO、API和E2E阶段。\nimages与deploy任务依赖quality，测试失败自然阻断。\n\nSources:\n- .github/workflows/ci-cd.yml\n- test-results/ci-failure-blocking.json\n- test-results/e2e-k8s.json"}
+{"kind":"slide","id":"sl/gwk19a","slide":9,"title":"06 · CONCLUSION","textShapes":10}
+{"kind":"textbox","id":"sh/ipwbyhw3","slide":9,"name":"eyebrow-9","text":"06 · CONCLUSION","textPreview":"06 · CONCLUSION","textChars":15,"textLines":1,"bbox":[48,34,380,28]}
+{"kind":"textbox","id":"sh/5snu9wve","slide":9,"name":"title-9","text":"结论：覆盖、追溯、阻断三项验收闭环","textPreview":"结论：覆盖、追溯、阻断三项验收闭环","textChars":17,"textLines":1,"bbox":[48,72,1120,64]}
+{"kind":"shape","id":"sh/4ret0ret","slide":9,"name":"rule-9","bbox":[48,146,1184,3]}
+{"kind":"textbox","id":"sh/rupcb6dk","slide":9,"name":"page-9","text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1170,674,62,24]}
+{"kind":"shape","id":"sh/6tgb21wz","slide":9,"name":"conclusion-coverage-card","bbox":[72,210,344,276]}
+{"kind":"shape","id":"sh/tg7udgvq","slide":9,"name":"conclusion-coverage-accent","bbox":[72,210,7,276]}
+{"kind":"textbox","id":"sh/svyt4be5","slide":9,"name":"conclusion-coverage-title","text":"覆盖","textPreview":"覆盖","textChars":2,"textLines":1,"bbox":[96,232,296,44]}
+{"kind":"textbox","id":"sh/nylsz2dg","slide":9,"name":"conclusion-coverage-body","text":"10个用例\n10条API主流程\n10条完整E2E","textPreview":"10个用例 | 10条API主流程 | 10条完整E2E","textChars":24,"textLines":3,"bbox":[96,286,296,180]}
+{"kind":"shape","id":"sh/mxcbqxwv","slide":9,"name":"conclusion-trace-card","bbox":[468,210,344,276]}
+{"kind":"shape","id":"sh/sfedsbmt","slide":9,"name":"conclusion-trace-accent","bbox":[468,210,7,276]}
+{"kind":"textbox","id":"sh/tgne1gny","slide":9,"name":"conclusion-trace-title","text":"追溯","textPreview":"追溯","textChars":2,"textLines":1,"bbox":[492,232,296,44]}
+{"kind":"textbox","id":"sh/6dcvq14n","slide":9,"name":"conclusion-trace-body","text":"需求 → 三层设计\n→ 代码模块\n→ 四层测试","textPreview":"需求 → 三层设计 | → 代码模块 | → 四层测试","textChars":23,"textLines":3,"bbox":[492,286,296,180]}
+{"kind":"shape","id":"sh/7elwz658","slide":9,"name":"conclusion-gate-card","bbox":[864,210,344,276]}
+{"kind":"shape","id":"sh/g3exwbmp","slide":9,"name":"conclusion-gate-accent","bbox":[864,210,7,276]}
+{"kind":"textbox","id":"sh/h4ne5gna","slide":9,"name":"conclusion-gate-title","text":"阻断","textPreview":"阻断","textChars":2,"textLines":1,"bbox":[888,232,296,44]}
+{"kind":"textbox","id":"sh/u1wful4j","slide":9,"name":"conclusion-gate-body","text":"本机全绿\nCI失败即停\nK8s容器回归","textPreview":"本机全绿 | CI失败即停 | K8s容器回归","textChars":19,"textLines":3,"bbox":[888,286,296,180]}
+{"kind":"textbox","id":"sh/f25w3654","slide":9,"name":"conclusion-line","text":"最终状态：全部交付物齐全，测试链路可复现、可审计、可答辩。","textPreview":"最终状态：全部交付物齐全，测试链路可复现、可审计、可答辩。","textChars":29,"textLines":1,"bbox":[72,548,1136,58]}
+{"kind":"notes","id":"nt/gwk19a","slide":9,"text":"收束到三句话：全覆盖、全追溯、失败可阻断。\n打开最终提交清单逐项展示文件。\n\nSources:\n- docs/范文歆/2026-8-28/00-D4-D5-全部任务完成清单.md\n- docs/范文歆/2026-8-28/04-D5-最终测试报告.md"}
