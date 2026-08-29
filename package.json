@@ -8,6 +8,7 @@
     "test:unit": "npm test --prefix backend",
     "test:lab:unit": "npm test --prefix backend && npm test --prefix judge-worker",
     "test:lab": "node scripts/lab-regression.mjs",
+    "test:course": "npm run test:course --prefix backend",
     "test:integration": "node scripts/ci-integration.mjs",
     "dev": "concurrently -c blue,green -n api,web \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "dev:full": "concurrently -c blue,green,magenta -n api,web,judge \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\" \"npm run dev --prefix judge-worker\"",

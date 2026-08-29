@@ -1,4 +1,4 @@
-# 宿主机默认使用 PostgreSQL 5433、Redis 6379、Web 80；可在根目录 .env 覆盖。
+# 宿主机默认使用 PostgreSQL 5433、Redis 6379、Web 8080；可在根目录 .env 覆盖。
 x-app-environment: &app-environment
   NODE_ENV: production
   DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/${POSTGRES_DB:-teaching_platform}?schema=public
@@ -41,10 +41,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: build
+      target: migrate
     environment:
       <<: *app-environment
-    command: ["npx", "--no-install", "prisma", "migrate", "deploy"]
     depends_on:
       db:
         condition: service_healthy
@@ -118,7 +117,7 @@ services:
       context: .
       dockerfile: nginx/Dockerfile
     ports:
-      - "${WEB_PORT:-80}:80"
+      - "${WEB_PORT:-8080}:80"
     depends_on:
       api:
         condition: service_healthy

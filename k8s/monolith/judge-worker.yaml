@@ -30,6 +30,16 @@ spec:
               value: redis://redis:6379
             - name: JUDGE_TIMEOUT_MS
               value: "8000"
+          startupProbe:
+            exec:
+              command: [sh, -c, "kill -0 1"]
+            failureThreshold: 12
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: [sh, -c, "kill -0 1"]
+            periodSeconds: 15
+            timeoutSeconds: 3
           resources:
             requests:
               cpu: 100m

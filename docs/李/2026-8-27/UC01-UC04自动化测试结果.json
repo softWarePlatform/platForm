@@ -1,0 +1,35 @@
+{
+  "executedAt": "2026-08-28T15:50:12+08:00",
+  "command": "npm run test:course",
+  "repeatRun": 2,
+  "summary": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0,
+    "cleanupError": null
+  },
+  "coverage": {
+    "UC01": ["主流程", "备选流程", "异常流程"],
+    "UC02": ["主流程", "备选流程", "异常流程"],
+    "UC03": ["主流程", "备选流程", "异常流程"],
+    "UC04": ["主流程", "备选流程", "异常流程"]
+  },
+  "results": [
+    { "id": "UC01-M01", "passed": true },
+    { "id": "UC01-A01", "passed": true },
+    { "id": "UC01-E01", "passed": true },
+    { "id": "UC01-E02", "passed": true },
+    { "id": "UC02-M01", "passed": true },
+    { "id": "UC02-M02", "passed": true },
+    { "id": "UC02-A01", "passed": true },
+    { "id": "UC02-E01", "passed": true },
+    { "id": "UC03-M01", "passed": true },
+    { "id": "UC03-M02", "passed": true },
+    { "id": "UC03-A01", "passed": true },
+    { "id": "UC03-E01", "passed": true },
+    { "id": "UC04-M01", "passed": true },
+    { "id": "UC04-M02", "passed": true },
+    { "id": "UC04-A01", "passed": true },
+    { "id": "UC04-E01", "passed": true }
+  ]
+}

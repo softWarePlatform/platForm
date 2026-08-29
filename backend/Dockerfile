@@ -9,6 +9,9 @@ RUN --mount=type=cache,target=/root/.cache/prisma \
 COPY . .
 RUN npm run build
 
+FROM build AS migrate
+CMD ["npx", "--no-install", "prisma", "migrate", "deploy"]
+
 FROM node:24-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production

@@ -37,18 +37,18 @@ notepad .env
 ```dotenv
 POSTGRES_PORT=5433
 REDIS_PORT=6379
-WEB_PORT=80
-CORS_ORIGIN=http://localhost
+WEB_PORT=8080
+CORS_ORIGIN=http://localhost:8080
 ```
 
-如果把 `WEB_PORT` 改为 `8080`，同时把 `CORS_ORIGIN` 改为 `http://localhost:8080`，访问地址也改为 `http://localhost:8080`。
+如果修改 `WEB_PORT`，同时把 `CORS_ORIGIN` 改为对应来源，后续 URL 也要使用该端口。
 
 ## 3. 检查端口占用
 
 在 PowerShell 中执行：
 
 ```powershell
-Get-NetTCPConnection -LocalPort 80,5433,6379 -ErrorAction SilentlyContinue |
+Get-NetTCPConnection -LocalPort 8080,5433,6379 -ErrorAction SilentlyContinue |
   Select-Object LocalAddress,LocalPort,State,OwningProcess
 ```
 
@@ -167,9 +167,9 @@ docker compose logs --tail 100 nginx
 ## 10. 健康和 API 验证
 
 ```powershell
-Invoke-RestMethod http://localhost/health/live
-Invoke-RestMethod http://localhost/health/ready
-Invoke-RestMethod http://localhost/api/courses
+Invoke-RestMethod http://localhost:8080/health/live
+Invoke-RestMethod http://localhost:8080/health/ready
+Invoke-RestMethod http://localhost:8080/api/courses
 ```
 
 前两个接口应返回 `ok=true`，第三个接口应包含 `courses` 数组。
@@ -178,7 +178,7 @@ Invoke-RestMethod http://localhost/api/courses
 
 ## 11. 浏览器验证
 
-1. 打开 `http://localhost`。
+1. 打开 `http://localhost:8080`。
 2. 使用演示账号登录。
 3. 检查首页、课表、选课、公告和课程资料。
 4. 打开浏览器开发者工具的 Network 面板。
@@ -200,8 +200,8 @@ Invoke-RestMethod http://localhost/api/courses
 演示数据存在时，在项目根目录执行：
 
 ```powershell
-$env:API_BASE_URL="http://localhost/api"
-$env:WEB_BASE_URL="http://localhost"
+$env:API_BASE_URL="http://localhost:8080/api"
+$env:WEB_BASE_URL="http://localhost:8080"
 npm run test:integration
 Remove-Item Env:API_BASE_URL
 Remove-Item Env:WEB_BASE_URL
