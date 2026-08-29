@@ -14,7 +14,86 @@ function currentSemesterLabel() {
   };
 }
 
+function formatPhase(phase?: string | null) {
+  switch (phase) {
+    case "PRESELECT":
+      return "预选";
+    case "FORMAL":
+      return "正选";
+    case "ADD_DROP":
+      return "补退选";
+    case "CLOSED":
+      return "关闭";
+    default:
+      return "未知";
+  }
+}
+
 const dashboardRoutes: FastifyPluginAsync = async (app) => {
+  app.get("/admin/dashboard", { preHandler: authRequired("ADMIN") }, async () => {
+    const [semester, periods, userStats, courseStats, enrollmentStats] = await Promise.all([
+      prisma.enrollmentPeriod.findFirst({ orderBy: { updatedAt: "desc" } }),
+      prisma.enrollmentPeriod.findMany({ orderBy: { updatedAt: "desc" }, take: 5 }),
+      Promise.all([
+        prisma.user.count(),
+        prisma.user.count({ where: { role: "TEACHER" } }),
+        prisma.user.count({ where: { role: "STUDENT" } }),
+        prisma.user.count({ where: { role: "ADMIN" } }),
+      ]),
+      Promise.all([
+        prisma.course.count(),
+        prisma.course.count({ where: { published: true } }),
+        prisma.course.count({ where: { semesterKey: currentSemesterLabel().key } }),
+      ]),
+      Promise.all([
+        prisma.enrollment.count(),
+        prisma.labSet.count(),
+        prisma.homework.count(),
+      ]),
+    ]);
+
+    const [totalUsers, teacherCount, studentCount, adminCount] = userStats;
+    const [courseCount, publishedCourseCount, currentSemesterCourseCount] = courseStats;
+    const [enrolledCount, countLabSets, countHomeworks] = enrollmentStats;
+
+    return {
+      semester: semester?.semesterKey
+        ? {
+            key: semester.semesterKey,
+            label: semester.label ?? semester.semesterKey,
+          }
+        : currentSemesterLabel(),
+      stats: {
+        registeredUsers: totalUsers,
+        teacherCount,
+        studentCount,
+        adminCount,
+        courseCount,
+        publishedCourseCount,
+        currentSemesterCourseCount,
+        enrollmentCount: enrolledCount,
+        labSetCount: countLabSets,
+        homeworkCount: countHomeworks,
+        enrollmentPhase: formatPhase(semester?.phase),
+      },
+      schedule: semester
+        ? {
+            openAt: semester.openAt.toISOString(),
+            closeAt: semester.closeAt.toISOString(),
+            confirmDeadline: semester.confirmDeadline?.toISOString() ?? null,
+          }
+        : null,
+      recentPeriods: periods.map((p) => ({
+        semesterKey: p.semesterKey,
+        label: p.label ?? p.semesterKey,
+        phase: formatPhase(p.phase),
+        openAt: p.openAt.toISOString(),
+        closeAt: p.closeAt.toISOString(),
+        confirmDeadline: p.confirmDeadline?.toISOString() ?? null,
+      })),
+    };
+  });
+
   app.get("/dashboard/me", { preHandler: authRequired() }, async (req) => {
     const uid = req.auth!.sub;
     const role = req.auth!.role;

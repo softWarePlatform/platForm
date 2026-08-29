@@ -12,6 +12,7 @@ import type { CustomScheduleEvent, DashboardCourse, DashboardDeadline } from "./
 import { PERIOD_OPTIONS } from "../../lib/schedulePeriods";
 import { exportTimetableExcel } from "./exportTimetableExcel";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
+import { coursePathForRole } from "../../lib/coursePaths";
 import { loadCustomEvents, saveCustomEvents } from "./scheduleStorage";
 
 const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
@@ -296,7 +297,7 @@ export default function WeeklySchedule({
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {weekDeadlines.map((d) => (
               <li key={`${d.type}-${d.id}`} style={{ marginBottom: 4 }}>
-                <Link to={`/courses/${d.courseId}/announcements`}>
+                <Link to={coursePathForRole(d.courseId, d.type === "labSet" ? "labs" : `homework/${d.id}`, user?.role)}>
                   {d.courseTitle} · {d.title}
                 </Link>
                 <span className="muted"> — {new Date(d.dueAt).toLocaleString()}</span>
@@ -388,7 +389,7 @@ function ScheduleCellContent({
   if (hit.kind === "course" && hit.courseId) {
     return (
       <Link
-        to={`/courses/${hit.courseId}/announcements`}
+        to={coursePathForRole(hit.courseId, "announcements", "STUDENT")}
         className={`schedule-event schedule-event--course${fillClass}`}
         style={{ background: isStart ? hit.color : "transparent", textDecoration: "none", color: "inherit" }}
         title={isStart ? undefined : hit.title}

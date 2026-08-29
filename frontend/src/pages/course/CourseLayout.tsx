@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { CourseHeroSkeleton } from "../../components/layout/PageSkeleton";
 import { courseModulesForNav } from "../../modules/courseNav";
+import { courseManagePathForRole } from "../../lib/coursePaths";
 import { CourseProvider, useCourse } from "./CourseContext";
 
 function CourseLayoutInner() {
@@ -29,9 +30,6 @@ function CourseLayoutInner() {
     <div className="course-page">
       <div className="course-hero">
         <div className="container course-hero__inner">
-          <Link to="/" className="course-back">
-            ← 主界面
-          </Link>
           <div className="course-hero__main">
             <div className="course-hero__text">
               <h1 className="course-hero__title">{course.title}</h1>
@@ -59,7 +57,7 @@ function CourseLayoutInner() {
                 )
               ) : null}
               {isTeacher ? (
-                <Link className="btn course-hero__btn course-hero__btn--ghost" to={`/courses/${courseId}/manage`}>
+                <Link className="btn course-hero__btn course-hero__btn--ghost" to={courseManagePathForRole(courseId, user?.role)}>
                   课程设置
                 </Link>
               ) : null}

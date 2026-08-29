@@ -5,6 +5,7 @@ import type { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { seedSkippedTestCases } from "./seed-skipped-test-cases.js";
 
 export const DEMO_PASSWORD = "Demo123456";
 
@@ -845,6 +846,18 @@ export async function seedDemoBulk(
       title: "答疑区使用说明",
       body: "实验与作业问题请发答疑帖，注明课程与实验集名称。",
     },
+  });
+
+  await seedSkippedTestCases(prisma, {
+    ensureFile,
+    now,
+    D,
+    H,
+    semesterKey: SEMESTER_KEY,
+    semesterLabel: SEMESTER_LABEL,
+    cs101: c0,
+    students,
+    teachers,
   });
 
   console.log("\n========== 演示数据已生成 ==========");

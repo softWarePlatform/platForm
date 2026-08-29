@@ -23,6 +23,8 @@ import {
   statusBadgeClass,
 } from "../lib/homework-student.js";
 import { UPLOAD_ROOT, saveStudentHomeworkFile } from "../lib/uploads.js";
+import { emitNotificationToUser } from "../lib/notification-events.js";
+import { notifyCourseStaffAndAdmins } from "../lib/role-feedback.js";
 
 async function enrolledStudent(userId: string, role: string, courseId: string, teacherId: string) {
   if (role === "ADMIN") return true;
@@ -51,6 +53,7 @@ async function notifyHomework(userId: string, homeworkId: string, title: string,
       linkPath: `/courses`,
     },
   });
+  emitNotificationToUser(userId);
 }
 
 function serializeStudentView(
@@ -376,6 +379,15 @@ const homeworkStudentRoutes: FastifyPluginAsync = async (app) => {
           userId: req.auth!.sub,
           reason: body.data.reason?.trim() || null,
         },
+      });
+      await notifyCourseStaffAndAdmins({
+        courseId: hw.courseId,
+        actorUserId: req.auth!.sub,
+        type: "HOMEWORK_REDO_REQUEST",
+        title: `重做申请：${hw.title}`,
+        body: body.data.reason?.trim() || "学生申请重做作业，请及时审批。",
+        homeworkId: id,
+        linkPath: `/teacher/courses/${hw.courseId}/homework/${id}`,
       });
       return { request: row };
     },

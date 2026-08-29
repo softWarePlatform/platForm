@@ -1,18 +1,21 @@
 import { Link } from "react-router-dom";
 import type { DashboardCourse } from "./types";
 import { CourseCoverArt, pickCourseTheme, themeStyle } from "./courseVisuals";
+import { useAuth } from "../../auth/AuthContext";
+import { coursePathForRole } from "../../lib/coursePaths";
 
 type Props = {
   course: DashboardCourse;
 };
 
 export default function DashboardCourseCard({ course }: Props) {
+  const { user } = useAuth();
   const theme = pickCourseTheme(course.title, course.category);
   const accent = themeStyle(theme).accent;
   const todo = course.pendingHomework + course.pendingLabs;
 
   return (
-    <Link to={`/courses/${course.id}/announcements`} className="dash-course-card">
+    <Link to={coursePathForRole(course.id, "announcements", user?.role)} className="dash-course-card">
       <CourseCoverArt title={course.title} category={course.category} theme={theme} />
       <div className="dash-course-card__body">
         <h3 className="dash-course-card__title">{course.title}</h3>

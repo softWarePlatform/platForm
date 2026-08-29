@@ -25,6 +25,8 @@ import {
   remainingRedoCount,
   STATUS_LABELS,
 } from "../lib/homework-student.js";
+import { emitNotificationToUser, emitNotificationToUsers } from "../lib/notification-events.js";
+import { notifyCourseStaffAndAdmins } from "../lib/role-feedback.js";
 
 const homeworkDetailInclude = {
   targetClass: { select: { id: true, name: true } },
@@ -675,6 +677,16 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
           linkPath: `/courses/${hw.courseId}/homework`,
         },
       });
+      emitNotificationToUser(req.auth!.sub);
+      await notifyCourseStaffAndAdmins({
+        courseId: hw.courseId,
+        actorUserId: req.auth!.sub,
+        type: "HOMEWORK_SUBMITTED",
+        title: `作业提交：${hw.title}`,
+        body: "有学生提交了作业，请及时查看批改。",
+        homeworkId: id,
+        linkPath: `/teacher/courses/${hw.courseId}/homework/${id}`,
+      });
 
       return {
         submission: updated,
@@ -819,6 +831,7 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
             linkPath: `/courses/${row.homework.courseId}/homework`,
           },
         });
+        emitNotificationToUser(row.userId);
         return { submission: updated, returned: true };
       }
 
@@ -929,6 +942,23 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
         where: { homeworkId: id, graded: true },
         data: { released: true, releasedAt: new Date() },
       });
+      const releasedRows = await prisma.homeworkSubmission.findMany({
+        where: { homeworkId: id, graded: true },
+        select: { userId: true },
+      });
+      if (releasedRows.length > 0) {
+        await prisma.siteNotification.createMany({
+          data: releasedRows.map((row) => ({
+            userId: row.userId,
+            type: "HOMEWORK",
+            title: `作业成绩已发布：${hw.title}`,
+            body: "你的作业成绩和反馈已经发布。",
+            homeworkId: id,
+            linkPath: `/student/courses/${hw.courseId}/homework/${id}`,
+          })),
+        });
+        emitNotificationToUsers(releasedRows.map((row) => row.userId));
+      }
       return { releasedCount: result.count };
     },
   );

@@ -10,6 +10,7 @@ import EmptyState from "../../../components/layout/EmptyState";
 import { FormSkeleton } from "../../../components/layout/PageSkeleton";
 import { useConfirm } from "../../../components/ui/ConfirmDialog";
 import { useToast } from "../../../components/ui/Toast";
+import { coursePathForRole } from "../../../lib/coursePaths";
 import { useCourse } from "../CourseContext";
 
 type ClassRow = { id: string; name: string };
@@ -71,7 +72,7 @@ export default function CourseHomeworkDetail() {
       await api.delete(`/homework/${homework!.id}`);
       await refreshSideData();
       toastSuccess("已删除作业");
-      navigate(`/courses/${courseId}/homework`, { replace: true });
+      navigate(coursePathForRole(courseId, "homework", user?.role), { replace: true });
     } catch (e: unknown) {
       setErr(getApiError(e, "删除失败"));
     } finally {
@@ -94,7 +95,7 @@ export default function CourseHomeworkDetail() {
           </div>
         </div>
         <div className="row homework-detail__actions">
-          <Link className="btn" to={`/courses/${courseId}/homework`}>
+          <Link className="btn" to={coursePathForRole(courseId, "homework", user?.role)}>
             返回列表
           </Link>
           {isTeacher ? (

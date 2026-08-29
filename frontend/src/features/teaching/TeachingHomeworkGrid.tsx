@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import EmptyState from "../../components/layout/EmptyState";
 import StatusBadge from "../../components/layout/StatusBadge";
+import { coursePathForRole } from "../../lib/coursePaths";
 import { HomeworkCoverArt } from "./teachingVisuals";
 
 export type HomeworkRow = {
@@ -62,7 +63,7 @@ export default function TeachingHomeworkGrid({ rows }: { rows: HomeworkRow[] }) 
                   </div>
                 ) : null}
               </div>
-              <Link className="btn primary btn--sm teach-homework-card__cta" to={`/courses/${r.courseId}/homework/${r.id}`}>
+              <Link className="btn primary btn--sm teach-homework-card__cta" to={coursePathForRole(r.courseId, `homework/${r.id}`, "TEACHER")}>
                 去批改
               </Link>
             </div>

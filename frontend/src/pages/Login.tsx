@@ -19,7 +19,7 @@ export default function Login() {
     try {
       const { data } = await api.post("/auth/login", { email, password });
       setSession(data.token, data.user);
-      nav("/");
+      nav(data.user.role === "ADMIN" ? "/admin" : "/");
     } catch (err: unknown) {
       setError(getApiError(err, "登录失败"));
     } finally {

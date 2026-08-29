@@ -1,0 +1,74 @@
+### 用户认证模块 API 测试
+### 演示账号见 RUN.txt：student@demo.local / teacher@demo.local，密码 Demo123456
+
+@baseUrl = http://127.0.0.1:3000
+@studentEmail = student@demo.local
+@teacherEmail = teacher@demo.local
+@password = Demo123456
+
+### TC-AUTH-001 学生登录
+# @name loginStudent
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{studentEmail}}",
+  "password": "{{password}}"
+}
+
+### TC-AUTH-002 教师登录
+# @name loginTeacher
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{teacherEmail}}",
+  "password": "{{password}}"
+}
+
+### 管理员登录（选课窗口等管理端用例）
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@demo.local",
+  "password": "{{password}}"
+}
+
+@studentToken = {{loginStudent.response.body.token}}
+@teacherToken = {{loginTeacher.response.body.token}}
+
+### TC-AUTH-003 错误密码（预期 401）
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{studentEmail}}",
+  "password": "wrong-password"
+}
+
+### TC-AUTH-004 获取当前用户
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{studentToken}}
+
+### TC-AUTH-005 修改个人资料
+PATCH {{baseUrl}}/auth/me
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "name": "演示学生",
+  "signature": "测试签名"
+}
+
+### TC-AUTH-006 注册新用户（测试后可删除）
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test-user-{{$timestamp}}@demo.local",
+  "password": "Demo123456",
+  "name": "测试用户",
+  "role": "STUDENT"
+}

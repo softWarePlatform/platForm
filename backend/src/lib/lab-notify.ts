@@ -1,4 +1,5 @@
 import { prisma } from "./prisma.js";
+import { emitNotificationToUser, emitNotificationToUsers } from "./notification-events.js";
 
 export async function notifyLabSetPublished(opts: {
   courseId: string;
@@ -22,6 +23,7 @@ export async function notifyLabSetPublished(opts: {
       labSetId: opts.labSetId,
     })),
   });
+  emitNotificationToUsers(enrollments.map((e) => e.userId));
 }
 
 export async function notifyLabSubmissionGraded(opts: {
@@ -42,6 +44,7 @@ export async function notifyLabSubmissionGraded(opts: {
       labSetId: opts.labSetId ?? undefined,
     },
   });
+  emitNotificationToUser(opts.userId);
 }
 
 export async function notifyLabSubmissionReturned(opts: {
@@ -62,4 +65,5 @@ export async function notifyLabSubmissionReturned(opts: {
       labSetId: opts.labSetId ?? undefined,
     },
   });
+  emitNotificationToUser(opts.userId);
 }

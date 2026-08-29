@@ -1,5 +1,6 @@
 import type { EnrollmentLogAction, EnrollmentPeriod, Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
+import { emitNotificationToUser } from "./notification-events.js";
 import { currentSemester } from "./semester.js";
 import { parseScheduleSlotsJson, slotsConflict, type ScheduleSlot } from "./scheduleSlots.js";
 import { offeringCollegeLabel } from "./enrollment-filters.js";
@@ -129,7 +130,7 @@ export async function assertEnrollmentOpen() {
   return window;
 }
 
-async function writeLog(
+export async function writeEnrollmentLog(
   userId: string,
   courseId: string,
   action: EnrollmentLogAction,
@@ -145,6 +146,7 @@ async function notifyUser(userId: string, title: string, body: string, linkPath:
   await prisma.siteNotification.create({
     data: { userId, type: "ENROLLMENT", title, body, linkPath },
   });
+  emitNotificationToUser(userId);
 }
 
 export async function promoteWaitlistForCourse(courseId: string) {
@@ -173,7 +175,7 @@ export async function promoteWaitlistForCourse(courseId: string) {
       prisma.enrollment.create({ data: { userId: next.userId, courseId } }),
       prisma.enrollmentWaitlist.delete({ where: { id: next.id } }),
     ]);
-    await writeLog(next.userId, courseId, "WAITLIST_PROMOTED", undefined, "有空位自动入选");
+    await writeEnrollmentLog(next.userId, courseId, "WAITLIST_PROMOTED", undefined, "有空位自动入选");
     await notifyUser(
       next.userId,
       "候补入选通知",
@@ -220,7 +222,7 @@ export async function enrollStudent(
   await prisma.enrollmentWaitlist.deleteMany({ where: { userId, courseId } }).catch(() => undefined);
 
   const action: EnrollmentLogAction = opts?.operatorId ? "ADMIN_ENROLL" : "ENROLL";
-  await writeLog(userId, courseId, action, opts?.operatorId);
+  await writeEnrollmentLog(userId, courseId, action, opts?.operatorId);
 
   return enrollment;
 }
@@ -243,7 +245,7 @@ export async function dropStudent(
 
   await prisma.enrollment.delete({ where: { id: row.id } });
   const action: EnrollmentLogAction = opts?.operatorId ? "ADMIN_DROP" : "DROP";
-  await writeLog(userId, courseId, action, opts?.operatorId);
+  await writeEnrollmentLog(userId, courseId, action, opts?.operatorId);
   await promoteWaitlistForCourse(courseId);
 }
 
@@ -280,7 +282,7 @@ export async function joinWaitlist(userId: string, courseId: string) {
     err.statusCode = 409;
     throw err;
   }
-  await writeLog(userId, courseId, "WAITLIST_JOIN");
+  await writeEnrollmentLog(userId, courseId, "WAITLIST_JOIN");
 }
 
 export async function leaveWaitlist(userId: string, courseId: string) {
@@ -294,7 +296,7 @@ export async function leaveWaitlist(userId: string, courseId: string) {
     throw err;
   }
   await prisma.enrollmentWaitlist.delete({ where: { id: row.id } });
-  await writeLog(userId, courseId, "WAITLIST_LEAVE");
+  await writeEnrollmentLog(userId, courseId, "WAITLIST_LEAVE");
 }
 
 export type CatalogCourse = {

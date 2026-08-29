@@ -59,12 +59,12 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: |
             package-lock.json
@@ -124,9 +124,15 @@ jobs:
           WEB_BASE_URL: http://127.0.0.1:4173
         run: npm run test:integration
 
+      - name: Run UC01-UC04 course-domain API tests
+        env:
+          API_BASE_URL: http://127.0.0.1:3000
+          UC_REPORT_PATH: ../test-results/uc01-04.json
+        run: npm run test:course
+
       - name: Upload test evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ github.run_id }}
           path: test-results/
@@ -134,9 +140,8 @@ jobs:
           retention-days: 14
 
   images:
-    name: Publish ${{ matrix.component }} image
+    name: Build ${{ matrix.component }} image
     needs: quality
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -149,26 +154,34 @@ jobs:
           - component: api
             context: ./backend
             dockerfile: ./backend/Dockerfile
+            target: runtime
+          - component: migrate
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+            target: migrate
           - component: web
             context: .
             dockerfile: ./nginx/Dockerfile
+            target: runtime
           - component: judge-worker
             context: .
             dockerfile: ./judge-worker/Dockerfile
+            target: runtime
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set image name
         shell: bash
         run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/teaching-platform-${{ matrix.component }}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Sign in to GitHub Container Registry
-        uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -176,7 +189,7 @@ jobs:
 
       - name: Generate image tags and labels
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
@@ -185,11 +198,12 @@ jobs:
             type=ref,event=tag
 
       - name: Build and publish image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
-          push: true
+          target: ${{ matrix.target }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.component }}
@@ -207,7 +221,6 @@ jobs:
     timeout-minutes: 20
     environment: production
     env:
-      KUBECONFIG: ${{ runner.temp }}/kubeconfig
       KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -217,32 +230,33 @@ jobs:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
 
     steps:
-      - name: Check deployment configuration
-        id: deployment-config
+      - name: Validate deployment configuration
         shell: bash
         run: |
-          if [[ -n "$KUBE_CONFIG_B64" && -n "$POSTGRES_PASSWORD" && -n "$DATABASE_URL" && -n "$JWT_SECRET" ]]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Deployment skipped. Add KUBE_CONFIG_B64, POSTGRES_PASSWORD, DATABASE_URL and JWT_SECRET to the production environment secrets."
+          missing=()
+          for name in KUBE_CONFIG_B64 POSTGRES_PASSWORD DATABASE_URL JWT_SECRET CORS_ORIGIN GHCR_USERNAME GHCR_PAT; do
+            if [[ -z "${!name}" ]]; then missing+=("$name"); fi
+          done
+          if (( ${#missing[@]} > 0 )); then
+            printf 'Missing required production secrets: %s\n' "${missing[*]}"
+            exit 1
           fi
 
       - name: Check out repository
-        if: steps.deployment-config.outputs.ready == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up kubectl
-        if: steps.deployment-config.outputs.ready == 'true'
         uses: azure/setup-kubectl@v4
 
       - name: Load kubeconfig
-        if: steps.deployment-config.outputs.ready == 'true'
         shell: bash
-        run: echo "$KUBE_CONFIG_B64" | base64 --decode > "$KUBECONFIG"
+        run: |
+          KUBECONFIG_PATH="${RUNNER_TEMP}/kubeconfig"
+          echo "$KUBE_CONFIG_B64" | base64 --decode > "$KUBECONFIG_PATH"
+          chmod 600 "$KUBECONFIG_PATH"
+          echo "KUBECONFIG=$KUBECONFIG_PATH" >> "$GITHUB_ENV"
 
       - name: Create namespace and runtime secrets
-        if: steps.deployment-config.outputs.ready == 'true'
         shell: bash
         run: |
           kubectl apply -f k8s/monolith/namespace.yaml
@@ -252,18 +266,30 @@ jobs:
             --from-literal=POSTGRES_DB=teaching_platform \
             --from-literal=DATABASE_URL="$DATABASE_URL" \
             --from-literal=JWT_SECRET="$JWT_SECRET" \
-            --from-literal=CORS_ORIGIN="${CORS_ORIGIN:-true}" \
+            --from-literal=CORS_ORIGIN="$CORS_ORIGIN" \
             --dry-run=client -o yaml | kubectl apply -f -
-          if [[ -n "$GHCR_USERNAME" && -n "$GHCR_PAT" ]]; then
-            kubectl --namespace teaching-platform create secret docker-registry ghcr-pull \
-              --docker-server=ghcr.io \
-              --docker-username="$GHCR_USERNAME" \
-              --docker-password="$GHCR_PAT" \
-              --dry-run=client -o yaml | kubectl apply -f -
-          fi
+          kubectl --namespace teaching-platform create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io \
+            --docker-username="$GHCR_USERNAME" \
+            --docker-password="$GHCR_PAT" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Prepare database and run migrations
+        shell: bash
+        run: |
+          IMAGE_PREFIX="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/teaching-platform"
+          kubectl --namespace teaching-platform apply -f k8s/monolith/postgres.yaml
+          kubectl --namespace teaching-platform apply -f k8s/monolith/redis.yaml
+          kubectl --namespace teaching-platform rollout status statefulset/postgres --timeout=180s
+          kubectl --namespace teaching-platform rollout status deployment/redis --timeout=180s
+          sed "s|teaching-platform-migrate:dev|${IMAGE_PREFIX}-migrate:sha-${GITHUB_SHA}|g" \
+            k8s/monolith/migrate-job.yaml > "${RUNNER_TEMP}/migrate-job.yaml"
+          kubectl --namespace teaching-platform delete job db-migrate --ignore-not-found
+          kubectl apply -f "${RUNNER_TEMP}/migrate-job.yaml"
+          kubectl --namespace teaching-platform wait --for=condition=complete job/db-migrate --timeout=300s
+          kubectl --namespace teaching-platform logs job/db-migrate
 
       - name: Deploy current commit
-        if: steps.deployment-config.outputs.ready == 'true'
         shell: bash
         run: |
           IMAGE_PREFIX="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/teaching-platform"
@@ -274,11 +300,13 @@ jobs:
           kubectl apply -f "${RUNNER_TEMP}/platform.yaml"
 
       - name: Verify rollout
-        if: steps.deployment-config.outputs.ready == 'true'
         run: |
-          kubectl --namespace teaching-platform rollout status statefulset/postgres --timeout=180s
-          kubectl --namespace teaching-platform rollout status deployment/redis --timeout=180s
           kubectl --namespace teaching-platform rollout status deployment/api --timeout=300s
           kubectl --namespace teaching-platform rollout status deployment/judge-worker --timeout=300s
           kubectl --namespace teaching-platform rollout status deployment/web --timeout=180s
+          API_POD="$(kubectl --namespace teaching-platform get pod \
+            -l app.kubernetes.io/name=api \
+            -o jsonpath='{.items[0].metadata.name}')"
+          kubectl --namespace teaching-platform exec "$API_POD" -- node -e \
+            "Promise.all(['/health/live','/health/ready'].map(path=>fetch('http://127.0.0.1:3000'+path).then(response=>{if(!response.ok)throw new Error(path+' '+response.status)})))"
           kubectl --namespace teaching-platform get pods,services

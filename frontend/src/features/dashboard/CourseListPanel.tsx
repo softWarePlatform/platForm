@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type DragEvent } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth, type Role } from "../../auth/AuthContext";
+import { coursePathForRole } from "../../lib/coursePaths";
 import { COURSE_GROUP_META, type CourseGroupKey, type DashboardCourse } from "./types";
 import { groupCourses } from "./courseGrouping";
 import { loadCourseOrder, saveCourseOrder } from "./scheduleStorage";
@@ -122,6 +123,7 @@ export default function CourseListPanel({ courses, semesterLabel }: Props) {
                       onDragStart={() => setDragId(c.id)}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={() => onDrop(c.id)}
+                      role={user?.role}
                     />
                   ))}
                 </div>
@@ -140,11 +142,13 @@ function CourseCard({
   onDragStart,
   onDragOver,
   onDrop,
+  role,
 }: {
   course: DashboardCourse;
   onDragStart: () => void;
   onDragOver: (e: DragEvent) => void;
   onDrop: () => void;
+  role?: Role | null;
 }) {
   const todo = course.pendingHomework + course.pendingLabs;
   const unreadAnn = course.announcementCount ?? 0;
@@ -182,7 +186,7 @@ function CourseCard({
 
       <Link
         className="btn primary"
-        to={`/courses/${course.id}/announcements`}
+        to={coursePathForRole(course.id, "announcements", role)}
         style={{ marginTop: 12, display: "block", textAlign: "center" }}
       >
         进入课程

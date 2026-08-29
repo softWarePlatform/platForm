@@ -60,7 +60,10 @@ export async function gradePracticeAnswer(
           ? String((student as { text: string }).text)
           : String(student),
       );
-      const ok = expText === gotText || gotText.includes(expText) || expText.includes(gotText);
+      const ok =
+        expText.length > 0 &&
+        gotText.length > 0 &&
+        (expText === gotText || gotText.includes(expText) || expText.includes(gotText));
       return {
         correct: ok,
         score: ok ? 1 : 0.5,

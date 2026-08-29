@@ -129,26 +129,38 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
 
       const sem = currentSemester();
       try {
-        const course = await prisma.course.create({
-          data: {
-            title: body.data.title,
-            description: body.data.description,
-            category: body.data.category,
-            published: body.data.published ?? false,
-            teacherId: req.auth!.sub,
-            startAt: body.data.startAt,
-            endAt: body.data.endAt,
-            scheduleSlotsJson: body.data.scheduleSlots
-              ? serializeScheduleSlots(body.data.scheduleSlots)
-              : undefined,
-            courseCode: body.data.courseCode,
-            credits: body.data.credits,
-            capacity: body.data.capacity,
-            courseNature: body.data.courseNature,
-            subjectCategory: body.data.subjectCategory,
-            offeringCollegeCode: body.data.offeringCollegeCode ?? undefined,
-            semesterKey: body.data.semesterKey ?? sem.key,
-          },
+        const course = await prisma.$transaction(async (tx) => {
+          const created = await tx.course.create({
+            data: {
+              title: body.data.title,
+              description: body.data.description,
+              category: body.data.category,
+              published: body.data.published ?? false,
+              teacherId: req.auth!.sub,
+              startAt: body.data.startAt,
+              endAt: body.data.endAt,
+              scheduleSlotsJson: body.data.scheduleSlots
+                ? serializeScheduleSlots(body.data.scheduleSlots)
+                : undefined,
+              courseCode: body.data.courseCode,
+              credits: body.data.credits,
+              capacity: body.data.capacity,
+              courseNature: body.data.courseNature,
+              subjectCategory: body.data.subjectCategory,
+              offeringCollegeCode: body.data.offeringCollegeCode ?? undefined,
+              semesterKey: body.data.semesterKey ?? sem.key,
+            },
+          });
+          await tx.enrollmentLog.create({
+            data: {
+              userId: req.auth!.sub,
+              courseId: created.id,
+              action: "COURSE_CREATE",
+              operatorId: req.auth!.sub,
+              note: `创建课程「${created.title}」`,
+            },
+          });
+          return created;
         });
         return { course: withScheduleSlots(course) };
       } catch (e: unknown) {

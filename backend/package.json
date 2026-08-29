@@ -9,13 +9,14 @@
     "dev:full": "npm run dev:full --prefix ..",
     "dev:worker": "npm run dev:worker --prefix ..",
     "build": "tsc",
-    "test": "tsx --test src/lib/lab-set-status.test.ts",
     "start": "node dist/index.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "test": "tsx src/lib/lab-set-status.test.ts",
+    "test:course": "tsx src/tests/uc01-04.api.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -25,7 +26,7 @@
     "@fastify/helmet": "^13.0.1",
     "@fastify/multipart": "^9.4.0",
     "@fastify/rate-limit": "^10.2.2",
-    "@prisma/client": "^6.5.0",
+    "@prisma/client": "^6.19.3",
     "archiver": "^6.0.2",
     "bcryptjs": "^3.0.2",
     "bullmq": "^5.43.0",
@@ -35,8 +36,6 @@
     "jsonwebtoken": "^9.0.2",
     "mammoth": "^1.12.0",
     "pdf-parse": "^2.4.5",
-    "prisma": "^6.5.0",
-    "teaching-platform": "file:..",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -45,6 +44,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.14.0",
     "@types/pdf-parse": "^1.1.5",
+    "prisma": "^6.19.3",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }

@@ -1,0 +1,2372 @@
+{
+  "metadata": {
+    "runId": "20260825132657",
+    "startedAt": "2026-08-25T13:26:57.537Z",
+    "baseUrl": "http://127.0.0.1:3000",
+    "courseCode": "D120260825132657",
+    "testAccounts": [
+      "teacher@demo.local",
+      "student20@demo.local",
+      "student@demo.local",
+      "admin@demo.local"
+    ],
+    "finishedAt": "2026-08-25T13:27:01.487Z"
+  },
+  "preconditions": [
+    {
+      "item": "API 与数据库就绪",
+      "expected": "GET /health/ready 返回 HTTP 200、ok=true",
+      "actual": "HTTP 200，ok=true",
+      "result": "通过"
+    },
+    {
+      "item": "teacher@demo.local 登录",
+      "expected": "HTTP 200 且返回 token",
+      "actual": "HTTP 200，已返回 token",
+      "result": "通过"
+    },
+    {
+      "item": "student20@demo.local 登录",
+      "expected": "HTTP 200 且返回 token",
+      "actual": "HTTP 200，已返回 token",
+      "result": "通过"
+    },
+    {
+      "item": "student@demo.local 登录",
+      "expected": "HTTP 200 且返回 token",
+      "actual": "HTTP 200，已返回 token",
+      "result": "通过"
+    },
+    {
+      "item": "admin@demo.local 登录",
+      "expected": "HTTP 200 且返回 token",
+      "actual": "HTTP 200，已返回 token",
+      "result": "通过"
+    }
+  ],
+  "cases": [
+    {
+      "id": "UC02-M-01",
+      "useCase": "UC02",
+      "flow": "主流程",
+      "scenario": "教师创建未发布课程",
+      "expected": "HTTP 200，返回 published=false 的新课程，并同步写入 COURSE_CREATE 日志",
+      "actual": "HTTP 200；课程 848aced1-b3ae-49e4-933f-92d264a45718 已写入；创建日志已写入",
+      "result": "通过",
+      "evidence": {
+        "response": {
+          "course": {
+            "id": "848aced1-b3ae-49e4-933f-92d264a45718",
+            "title": "D1-UC01-04验证课程-20260825132657",
+            "description": "创建阶段",
+            "category": "软件工程实践",
+            "teacherId": "00000000-0000-4000-8000-000000010002",
+            "published": false,
+            "createdAt": "2026-08-25T13:27:00.208Z",
+            "labWeight": 0.6,
+            "homeworkWeight": 0.4,
+            "startAt": null,
+            "endAt": null,
+            "knowledgeGraphJson": null,
+            "scheduleSlotsJson": "[{\"dayOfWeek\":7,\"periodStart\":13,\"periodEnd\":14,\"room\":\"D1-T01\"}]",
+            "courseCode": "D120260825132657",
+            "credits": 2,
+            "capacity": 40,
+            "courseNature": "ELECTIVE",
+            "subjectCategory": "CORE_MAJOR",
+            "offeringCollegeCode": "21",
+            "semesterKey": "2026-spring",
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          }
+        },
+        "persistedAfterResponse": {
+          "id": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1-UC01-04验证课程-20260825132657",
+          "description": "创建阶段",
+          "category": "软件工程实践",
+          "teacherId": "00000000-0000-4000-8000-000000010002",
+          "published": false,
+          "createdAt": "2026-08-25T13:27:00.208Z",
+          "labWeight": 0.6,
+          "homeworkWeight": 0.4,
+          "startAt": null,
+          "endAt": null,
+          "knowledgeGraphJson": null,
+          "scheduleSlotsJson": "[{\"dayOfWeek\":7,\"periodStart\":13,\"periodEnd\":14,\"room\":\"D1-T01\"}]",
+          "courseCode": "D120260825132657",
+          "credits": 2,
+          "capacity": 40,
+          "courseNature": "ELECTIVE",
+          "subjectCategory": "CORE_MAJOR",
+          "offeringCollegeCode": "21",
+          "semesterKey": "2026-spring",
+          "_count": {
+            "enrollments": 0,
+            "labs": 0,
+            "homeworks": 0
+          },
+          "scheduleSlots": [
+            {
+              "dayOfWeek": 7,
+              "periodStart": 13,
+              "periodEnd": 14,
+              "room": "D1-T01"
+            }
+          ]
+        },
+        "createLog": {
+          "id": "2197eb14-3a91-433e-8498-1ae9aa21d446",
+          "action": "COURSE_CREATE",
+          "courseId": "848aced1-b3ae-49e4-933f-92d264a45718"
+        }
+      }
+    },
+    {
+      "id": "UC02-M-02",
+      "useCase": "UC02",
+      "flow": "主流程",
+      "scenario": "教师配置课程容量、学分和课表",
+      "expected": "HTTP 200，capacity=50、credits=3、教室=D1-T02",
+      "actual": "HTTP 200",
+      "result": "通过",
+      "evidence": {
+        "course": {
+          "id": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1-UC01-04验证课程-20260825132657",
+          "description": "D1 UC01—UC04 当前环境验证课程",
+          "category": "软件工程实践",
+          "teacherId": "00000000-0000-4000-8000-000000010002",
+          "published": false,
+          "createdAt": "2026-08-25T13:27:00.208Z",
+          "labWeight": 0.6,
+          "homeworkWeight": 0.4,
+          "startAt": null,
+          "endAt": null,
+          "knowledgeGraphJson": null,
+          "scheduleSlotsJson": "[{\"dayOfWeek\":7,\"periodStart\":13,\"periodEnd\":14,\"room\":\"D1-T02\"}]",
+          "courseCode": "D120260825132657",
+          "credits": 3,
+          "capacity": 50,
+          "courseNature": "ELECTIVE",
+          "subjectCategory": "CORE_MAJOR",
+          "offeringCollegeCode": "21",
+          "semesterKey": "2026-spring",
+          "scheduleSlots": [
+            {
+              "dayOfWeek": 7,
+              "periodStart": 13,
+              "periodEnd": 14,
+              "room": "D1-T02"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "UC02-M-03",
+      "useCase": "UC02",
+      "flow": "主流程",
+      "scenario": "教师发布课程，学生端公开课程列表可见",
+      "expected": "发布 HTTP 200，公开列表包含该课程",
+      "actual": "发布 HTTP 200，公开列表包含该课程",
+      "result": "通过",
+      "evidence": {
+        "published": {
+          "course": {
+            "id": "848aced1-b3ae-49e4-933f-92d264a45718",
+            "title": "D1-UC01-04验证课程-20260825132657",
+            "description": "D1 UC01—UC04 当前环境验证课程",
+            "category": "软件工程实践",
+            "teacherId": "00000000-0000-4000-8000-000000010002",
+            "published": true,
+            "createdAt": "2026-08-25T13:27:00.208Z",
+            "labWeight": 0.6,
+            "homeworkWeight": 0.4,
+            "startAt": null,
+            "endAt": null,
+            "knowledgeGraphJson": null,
+            "scheduleSlotsJson": "[{\"dayOfWeek\":7,\"periodStart\":13,\"periodEnd\":14,\"room\":\"D1-T02\"}]",
+            "courseCode": "D120260825132657",
+            "credits": 3,
+            "capacity": 50,
+            "courseNature": "ELECTIVE",
+            "subjectCategory": "CORE_MAJOR",
+            "offeringCollegeCode": "21",
+            "semesterKey": "2026-spring",
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          }
+        },
+        "publicCourseCount": 1
+      }
+    },
+    {
+      "id": "UC02-E-01",
+      "useCase": "UC02",
+      "flow": "异常流程",
+      "scenario": "课程代码重复",
+      "expected": "HTTP 409，并提示课程代码已存在",
+      "actual": "HTTP 409：课程代码已存在，请更换",
+      "result": "通过",
+      "evidence": {
+        "error": "课程代码已存在，请更换"
+      }
+    },
+    {
+      "id": "UC02-E-02",
+      "useCase": "UC02",
+      "flow": "异常流程",
+      "scenario": "学生越权创建课程",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "result": "通过",
+      "evidence": {
+        "error": "权限不足"
+      }
+    },
+    {
+      "id": "UC02-E-03",
+      "useCase": "UC02",
+      "flow": "异常流程",
+      "scenario": "课程标题为空",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "result": "通过",
+      "evidence": {
+        "error": "参数无效"
+      }
+    },
+    {
+      "id": "UC01-M-01",
+      "useCase": "UC01",
+      "flow": "主流程",
+      "scenario": "学生选课后同步到个人课表",
+      "expected": "选课 HTTP 200，dashboard 包含课程和课表时段",
+      "actual": "选课 HTTP 200，dashboard 已包含课程",
+      "result": "通过",
+      "evidence": {
+        "enrollment": {
+          "enrollment": {
+            "id": "055877f8-4463-446b-b9b1-f5f772174309",
+            "userId": "00000000-0000-4000-8000-00000001001a",
+            "courseId": "848aced1-b3ae-49e4-933f-92d264a45718",
+            "classId": null
+          },
+          "ok": true
+        },
+        "dashboardCourse": {
+          "id": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1-UC01-04验证课程-20260825132657",
+          "category": "软件工程实践",
+          "teacherName": "张老师",
+          "startAt": null,
+          "endAt": null,
+          "progressPercent": 100,
+          "pendingHomework": 0,
+          "pendingLabs": 0,
+          "announcementCount": 0,
+          "isHistory": false,
+          "scheduleSlots": [
+            {
+              "dayOfWeek": 7,
+              "periodStart": 13,
+              "periodEnd": 14,
+              "room": "D1-T02"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "UC01-E-01",
+      "useCase": "UC01",
+      "flow": "异常流程",
+      "scenario": "重复选同一门课程",
+      "expected": "HTTP 409",
+      "actual": "HTTP 409：已选过该课程",
+      "result": "通过",
+      "evidence": {
+        "error": "已选过该课程"
+      }
+    },
+    {
+      "id": "UC01-M-02",
+      "useCase": "UC01",
+      "flow": "主流程",
+      "scenario": "学生退课后从个人课表移除",
+      "expected": "退课 HTTP 200，dashboard 不再包含课程",
+      "actual": "退课 HTTP 200，dashboard 已移除课程",
+      "result": "通过",
+      "evidence": {
+        "drop": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "UC01-E-02",
+      "useCase": "UC01",
+      "flow": "异常流程",
+      "scenario": "未选课程时再次退课",
+      "expected": "HTTP 404",
+      "actual": "HTTP 404：未选该课程",
+      "result": "通过",
+      "evidence": {
+        "error": "未选该课程"
+      }
+    },
+    {
+      "id": "UC01-M-03",
+      "useCase": "UC01",
+      "flow": "主流程",
+      "scenario": "课程已满时加入候补",
+      "expected": "直接选课 HTTP 409，加入候补 HTTP 200",
+      "actual": "直接选课 HTTP 409，加入候补 HTTP 200",
+      "result": "通过",
+      "evidence": {
+        "fullEnroll": {
+          "error": "课程已满，可加入候补"
+        },
+        "waitlist": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "UC01-E-03",
+      "useCase": "UC01",
+      "flow": "异常流程",
+      "scenario": "重复加入候补",
+      "expected": "HTTP 409",
+      "actual": "HTTP 409：已在候补列表中",
+      "result": "通过",
+      "evidence": {
+        "error": "已在候补列表中"
+      }
+    },
+    {
+      "id": "UC03-M-01",
+      "useCase": "UC03",
+      "flow": "主流程",
+      "scenario": "教师发布公告，学生公告列表可见",
+      "expected": "发布 HTTP 200，学生列表包含公告且 read=false",
+      "actual": "发布 HTTP 200，列表包含公告，read=false",
+      "result": "通过",
+      "evidence": {
+        "announcement": {
+          "id": "2db10499-73ea-4880-87e2-7c65d82b5744",
+          "courseId": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1验证公告-20260825132657",
+          "content": "UC03 公告正文",
+          "pinned": false,
+          "createdAt": "2026-08-25T13:27:01.015Z",
+          "updatedAt": "2026-08-25T13:27:01.015Z",
+          "edited": false,
+          "read": true,
+          "marked": false,
+          "author": {
+            "id": "00000000-0000-4000-8000-000000010002",
+            "name": "张老师"
+          }
+        },
+        "studentListItem": {
+          "id": "2db10499-73ea-4880-87e2-7c65d82b5744",
+          "courseId": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1验证公告-20260825132657",
+          "content": "UC03 公告正文",
+          "pinned": false,
+          "createdAt": "2026-08-25T13:27:01.015Z",
+          "updatedAt": "2026-08-25T13:27:01.015Z",
+          "edited": false,
+          "read": false,
+          "marked": false,
+          "author": {
+            "id": "00000000-0000-4000-8000-000000010002",
+            "name": "张老师"
+          }
+        }
+      }
+    },
+    {
+      "id": "UC03-M-02",
+      "useCase": "UC03",
+      "flow": "主流程",
+      "scenario": "学生阅读公告并形成已读记录",
+      "expected": "详情 HTTP 200，随后列表 read=true",
+      "actual": "详情 HTTP 200，随后 read=true",
+      "result": "通过",
+      "evidence": {
+        "detail": {
+          "id": "2db10499-73ea-4880-87e2-7c65d82b5744",
+          "courseId": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1验证公告-20260825132657",
+          "content": "UC03 公告正文",
+          "pinned": false,
+          "createdAt": "2026-08-25T13:27:01.015Z",
+          "updatedAt": "2026-08-25T13:27:01.015Z",
+          "edited": false,
+          "read": true,
+          "marked": false,
+          "author": {
+            "id": "00000000-0000-4000-8000-000000010002",
+            "name": "张老师"
+          },
+          "editHistory": []
+        },
+        "listItemAfterRead": {
+          "id": "2db10499-73ea-4880-87e2-7c65d82b5744",
+          "courseId": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1验证公告-20260825132657",
+          "content": "UC03 公告正文",
+          "pinned": false,
+          "createdAt": "2026-08-25T13:27:01.015Z",
+          "updatedAt": "2026-08-25T13:27:01.015Z",
+          "edited": false,
+          "read": true,
+          "marked": false,
+          "author": {
+            "id": "00000000-0000-4000-8000-000000010002",
+            "name": "张老师"
+          }
+        }
+      }
+    },
+    {
+      "id": "UC03-E-01",
+      "useCase": "UC03",
+      "flow": "异常流程",
+      "scenario": "学生越权发布公告",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "result": "通过",
+      "evidence": {
+        "error": "仅教师可发布公告"
+      }
+    },
+    {
+      "id": "UC03-E-02",
+      "useCase": "UC03",
+      "flow": "异常流程",
+      "scenario": "公告正文为空",
+      "expected": "HTTP 400",
+      "actual": "HTTP 400",
+      "result": "通过",
+      "evidence": {
+        "error": "标题 1–100 字，内容不能为空"
+      }
+    },
+    {
+      "id": "UC03-E-03",
+      "useCase": "UC03",
+      "flow": "异常流程",
+      "scenario": "未选课学生查看课程公告",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "result": "通过",
+      "evidence": {
+        "error": "未选课或无权查看"
+      }
+    },
+    {
+      "id": "UC04-M-01",
+      "useCase": "UC04",
+      "flow": "主流程",
+      "scenario": "教师上传资料，学生浏览资料列表",
+      "expected": "上传 HTTP 200，学生列表包含资料",
+      "actual": "上传 HTTP 200，列表包含资料",
+      "result": "通过",
+      "evidence": {
+        "uploaded": {
+          "id": "824ceb78-cb55-4bdd-8f95-31b311050747",
+          "title": "UC04验证资料-20260825132657",
+          "fileName": "uc04-20260825132657.txt",
+          "mimeType": "text/plain",
+          "sizeBytes": 33,
+          "folderPath": "D1验证",
+          "visibility": "ALL",
+          "targetClassId": null,
+          "pinned": false,
+          "groupId": "2fafdee0-049d-45c6-b3c8-0c7e830707c6",
+          "version": 1,
+          "isCurrent": true,
+          "downloadCount": 0,
+          "lastDownloadAt": null,
+          "createdAt": "2026-08-25T13:27:01.189Z",
+          "updatedAt": "2026-08-25T13:27:01.189Z",
+          "uploadedBy": {
+            "id": "00000000-0000-4000-8000-000000010002",
+            "name": "张老师"
+          },
+          "targetClass": null
+        },
+        "studentListItem": {
+          "id": "824ceb78-cb55-4bdd-8f95-31b311050747",
+          "title": "UC04验证资料-20260825132657",
+          "fileName": "uc04-20260825132657.txt",
+          "mimeType": "text/plain",
+          "sizeBytes": 33,
+          "folderPath": "D1验证",
+          "visibility": "ALL",
+          "targetClassId": null,
+          "pinned": false,
+          "groupId": "2fafdee0-049d-45c6-b3c8-0c7e830707c6",
+          "version": 1,
+          "isCurrent": true,
+          "downloadCount": 0,
+          "lastDownloadAt": null,
+          "createdAt": "2026-08-25T13:27:01.189Z",
+          "updatedAt": "2026-08-25T13:27:01.189Z",
+          "uploadedBy": {
+            "id": "00000000-0000-4000-8000-000000010002",
+            "name": "张老师"
+          },
+          "targetClass": null,
+          "fileType": "document",
+          "previewable": true,
+          "favorited": false
+        }
+      }
+    },
+    {
+      "id": "UC04-M-02",
+      "useCase": "UC04",
+      "flow": "主流程",
+      "scenario": "学生收藏资料并在收藏列表查看",
+      "expected": "收藏 HTTP 200，收藏列表包含资料",
+      "actual": "收藏 HTTP 200，收藏列表包含资料",
+      "result": "通过",
+      "evidence": {
+        "favorite": {
+          "ok": true
+        },
+        "favoriteCount": 1
+      }
+    },
+    {
+      "id": "UC04-M-03",
+      "useCase": "UC04",
+      "flow": "主流程",
+      "scenario": "学生下载课程资料",
+      "expected": "HTTP 200，下载内容与上传内容一致",
+      "actual": "HTTP 200，33 bytes，内容一致",
+      "result": "通过",
+      "evidence": {
+        "bytes": 33,
+        "contentType": "text/plain"
+      }
+    },
+    {
+      "id": "UC04-E-01",
+      "useCase": "UC04",
+      "flow": "异常流程",
+      "scenario": "学生越权上传课程资料",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "result": "通过",
+      "evidence": {
+        "error": "权限不足"
+      }
+    },
+    {
+      "id": "UC04-E-02",
+      "useCase": "UC04",
+      "flow": "异常流程",
+      "scenario": "未选课学生浏览课程资料",
+      "expected": "HTTP 403",
+      "actual": "HTTP 403",
+      "result": "通过",
+      "evidence": {
+        "error": "无权查看课程资料"
+      }
+    },
+    {
+      "id": "UC04-E-03",
+      "useCase": "UC04",
+      "flow": "异常流程",
+      "scenario": "下载不存在的资料",
+      "expected": "HTTP 404",
+      "actual": "HTTP 404",
+      "result": "通过",
+      "evidence": {
+        "error": "文件不存在"
+      }
+    }
+  ],
+  "requests": [
+    {
+      "name": "health-ready",
+      "method": "GET",
+      "path": "/health/ready",
+      "status": 200,
+      "durationMs": 55,
+      "response": {
+        "ok": true,
+        "service": "api",
+        "type": "ready"
+      }
+    },
+    {
+      "name": "UC02-create-course",
+      "method": "POST",
+      "path": "/courses",
+      "request": {
+        "title": "D1-UC01-04验证课程-20260825132657",
+        "description": "创建阶段",
+        "category": "软件工程实践",
+        "published": false,
+        "courseCode": "D120260825132657",
+        "credits": 2,
+        "capacity": 40,
+        "courseNature": "ELECTIVE",
+        "subjectCategory": "CORE_MAJOR",
+        "offeringCollegeCode": "21",
+        "scheduleSlots": [
+          {
+            "dayOfWeek": 7,
+            "periodStart": 13,
+            "periodEnd": 14,
+            "room": "D1-T01"
+          }
+        ]
+      },
+      "status": 200,
+      "durationMs": 62,
+      "response": {
+        "course": {
+          "id": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1-UC01-04验证课程-20260825132657",
+          "description": "创建阶段",
+          "category": "软件工程实践",
+          "teacherId": "00000000-0000-4000-8000-000000010002",
+          "published": false,
+          "createdAt": "2026-08-25T13:27:00.208Z",
+          "labWeight": 0.6,
+          "homeworkWeight": 0.4,
+          "startAt": null,
+          "endAt": null,
+          "knowledgeGraphJson": null,
+          "scheduleSlotsJson": "[{\"dayOfWeek\":7,\"periodStart\":13,\"periodEnd\":14,\"room\":\"D1-T01\"}]",
+          "courseCode": "D120260825132657",
+          "credits": 2,
+          "capacity": 40,
+          "courseNature": "ELECTIVE",
+          "subjectCategory": "CORE_MAJOR",
+          "offeringCollegeCode": "21",
+          "semesterKey": "2026-spring",
+          "scheduleSlots": [
+            {
+              "dayOfWeek": 7,
+              "periodStart": 13,
+              "periodEnd": 14,
+              "room": "D1-T01"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "UC02-query-created-course",
+      "method": "GET",
+      "path": "/courses/mine",
+      "status": 200,
+      "durationMs": 73,
+      "response": {
+        "courses": [
+          {
+            "id": "848aced1-b3ae-49e4-933f-92d264a45718",
+            "title": "D1-UC01-04验证课程-20260825132657",
+            "description": "创建阶段",
+            "category": "软件工程实践",
+            "teacherId": "00000000-0000-4000-8000-000000010002",
+            "published": false,
+            "createdAt": "2026-08-25T13:27:00.208Z",
+            "labWeight": 0.6,
+            "homeworkWeight": 0.4,
+            "startAt": null,
+            "endAt": null,
+            "knowledgeGraphJson": null,
+            "scheduleSlotsJson": "[{\"dayOfWeek\":7,\"periodStart\":13,\"periodEnd\":14,\"room\":\"D1-T01\"}]",
+            "courseCode": "D120260825132657",
+            "credits": 2,
+            "capacity": 40,
+            "courseNature": "ELECTIVE",
+            "subjectCategory": "CORE_MAJOR",
+            "offeringCollegeCode": "21",
+            "semesterKey": "2026-spring",
+            "_count": {
+              "enrollments": 0,
+              "labs": 0,
+              "homeworks": 0
+            },
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000090030",
+            "title": "TC-ENROLL-006 窗口关闭选课测试",
+            "description": "当前学期未选；管理员将选课窗口设为 CLOSED 后，student 尝试 POST enroll 应返回 403。",
+            "category": "通识",
+            "teacherId": "00000000-0000-4000-8000-000000010002",
+            "published": true,
+            "createdAt": "2026-08-25T07:36:04.639Z",
+            "labWeight": 0.6,
+            "homeworkWeight": 0.4,
+            "startAt": "2026-08-18T07:35:59.336Z",
+            "endAt": "2026-11-23T07:35:59.336Z",
+            "knowledgeGraphJson": null,
+            "scheduleSlotsJson": "[{\"dayOfWeek\":7,\"periodStart\":9,\"periodEnd\":10,\"room\":\"测试楼 T903\"}]",
+            "courseCode": "CS903",
+            "credits": 1,
+            "capacity": 30,
+            "courseNature": "ELECTIVE",
+            "subjectCategory": "GENERAL_MAJOR",
+            "offeringCollegeCode": "21",
+            "semesterKey": "2026-spring",
+            "_count": {
+              "enrollments": 0,
+              "labs": 0,
+              "homeworks": 0
+            },
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000090001",
+            "title": "TC-ENROLL-005 已满课程测试",
+            "description": "容量 2，已预置 2 名选课学生；student@demo.local 未选，用于测已满/候补。",
+            "category": "程序设计",
+            "teacherId": "00000000-0000-4000-8000-000000010002",
+            "published": true,
+            "createdAt": "2026-08-25T07:36:04.618Z",
+            "labWeight": 0.5,
+            "homeworkWeight": 0.5,
+            "startAt": "2026-08-18T07:35:59.336Z",
+            "endAt": "2026-11-23T07:35:59.336Z",
+            "knowledgeGraphJson": null,
+            "scheduleSlotsJson": "[{\"dayOfWeek\":6,\"periodStart\":7,\"periodEnd\":8,\"room\":\"测试楼 T901\"}]",
+            "courseCode": "CS901",
+            "credits": 1,
+            "capacity": 2,
+            "courseNature": "ELECTIVE",
+            "subjectCategory": "CORE_MAJOR",
+            "offeringCollegeCode": "21",
+            "semesterKey": "2026-spring",
+            "_count": {
+              "enrollments": 2,
+              "labs": 0,
+              "homeworks": 0
+            },
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000001038e",
+            "title": "离散数学",
+            "description": "离散数学（MA101）演示课程：含作业、实验、资料、智能练习与样例提交。",
+            "category": "数学",
+            "teacherId": "00000000-0000-4000-8000-000000010002",
+            "published": true,
+            "createdAt": "2026-08-25T07:36:03.628Z",
+            "labWeight": 0.55,
+            "homeworkWeight": 0.45,
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "knowledgeGraphJson": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"基础\"},{\"id\":\"n2\",\"label\":\"实验\"},{\"id\":\"n3\",\"label\":\"作业\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\"},{\"from\":\"n1\",\"to\":\"n3\"}]}",
+            "scheduleSlotsJson": "[{\"dayOfWeek\":1,\"periodStart\":2,\"periodEnd\":3,\"room\":\"教学楼 C211\"},{\"dayOfWeek\":4,\"periodStart\":5,\"periodEnd\":6,\"room\":\"实验楼 B101\"}]",
+            "courseCode": "MA101",
+            "credits": 3,
+            "capacity": 80,
+            "courseNature": "ELECTIVE",
+            "subjectCategory": "CORE_MAJOR",
+            "offeringCollegeCode": "21",
+            "semesterKey": "2026-spring",
+            "_count": {
+              "enrollments": 9,
+              "labs": 4,
+              "homeworks": 2
+            },
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010074",
+            "title": "数据结构与算法",
+            "description": "数据结构与算法（CS102）演示课程：含作业、实验、资料、智能练习与样例提交。",
+            "category": "数据结构",
+            "teacherId": "00000000-0000-4000-8000-000000010002",
+            "published": true,
+            "createdAt": "2026-08-25T07:35:59.899Z",
+            "labWeight": 0.55,
+            "homeworkWeight": 0.45,
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "knowledgeGraphJson": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"基础\"},{\"id\":\"n2\",\"label\":\"实验\"},{\"id\":\"n3\",\"label\":\"作业\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\"},{\"from\":\"n1\",\"to\":\"n3\"}]}",
+            "scheduleSlotsJson": "[{\"dayOfWeek\":2,\"periodStart\":2,\"periodEnd\":3,\"room\":\"教学楼 B202\"},{\"dayOfWeek\":5,\"periodStart\":5,\"periodEnd\":6,\"room\":\"实验楼 B102\"}]",
+            "courseCode": "CS102",
+            "credits": 4,
+            "capacity": 80,
+            "courseNature": "ELECTIVE",
+            "subjectCategory": "CORE_MAJOR",
+            "offeringCollegeCode": "21",
+            "semesterKey": "2026-spring",
+            "_count": {
+              "enrollments": 9,
+              "labs": 4,
+              "homeworks": 2
+            },
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000001001c",
+            "title": "程序设计基础",
+            "description": "程序设计基础（CS101）演示课程：含作业、实验、资料、智能练习与样例提交。",
+            "category": "程序设计",
+            "teacherId": "00000000-0000-4000-8000-000000010002",
+            "published": true,
+            "createdAt": "2026-08-25T07:35:59.437Z",
+            "labWeight": 0.55,
+            "homeworkWeight": 0.45,
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "knowledgeGraphJson": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"基础\"},{\"id\":\"n2\",\"label\":\"实验\"},{\"id\":\"n3\",\"label\":\"作业\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\"},{\"from\":\"n1\",\"to\":\"n3\"}]}",
+            "scheduleSlotsJson": "[{\"dayOfWeek\":1,\"periodStart\":1,\"periodEnd\":2,\"room\":\"教学楼 A201\"},{\"dayOfWeek\":4,\"periodStart\":5,\"periodEnd\":6,\"room\":\"实验楼 B101\"}]",
+            "courseCode": "CS101",
+            "credits": 3,
+            "capacity": 80,
+            "courseNature": "REQUIRED",
+            "subjectCategory": "CORE_MAJOR",
+            "offeringCollegeCode": "21",
+            "semesterKey": "2026-spring",
+            "_count": {
+              "enrollments": 9,
+              "labs": 6,
+              "homeworks": 4
+            },
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          }
+        ],
+        "teachingHomework": {
+          "homework": [
+            {
+              "id": "00000000-0000-4000-8000-000000090010",
+              "title": "TC-HW-004 迟交测试作业",
+              "courseId": "00000000-0000-4000-8000-00000001001c",
+              "courseTitle": "程序设计基础",
+              "dueAt": "2026-08-20T07:35:59.336Z",
+              "published": true,
+              "targetClassName": null,
+              "submissionCount": 0,
+              "gradedCount": 0,
+              "releasedCount": 0
+            },
+            {
+              "id": "00000000-0000-4000-8000-00000001002c",
+              "title": "作业一：程序设计基础学习心得",
+              "courseId": "00000000-0000-4000-8000-00000001001c",
+              "courseTitle": "程序设计基础",
+              "dueAt": "2026-08-30T07:35:59.336Z",
+              "published": true,
+              "targetClassName": null,
+              "submissionCount": 4,
+              "gradedCount": 3,
+              "releasedCount": 3
+            },
+            {
+              "id": "00000000-0000-4000-8000-000000010084",
+              "title": "作业一：数据结构与算法学习心得",
+              "courseId": "00000000-0000-4000-8000-000000010074",
+              "courseTitle": "数据结构与算法",
+              "dueAt": "2026-08-31T07:35:59.336Z",
+              "published": true,
+              "targetClassName": null,
+              "submissionCount": 4,
+              "gradedCount": 3,
+              "releasedCount": 3
+            },
+            {
+              "id": "00000000-0000-4000-8000-00000001002d",
+              "title": "作业二：程序设计综合练习",
+              "courseId": "00000000-0000-4000-8000-00000001001c",
+              "courseTitle": "程序设计基础",
+              "dueAt": "2026-09-06T07:35:59.336Z",
+              "published": true,
+              "targetClassName": "CS101 默认班",
+              "submissionCount": 4,
+              "gradedCount": 3,
+              "releasedCount": 0
+            },
+            {
+              "id": "00000000-0000-4000-8000-000000010085",
+              "title": "作业二：数据结构综合练习",
+              "courseId": "00000000-0000-4000-8000-000000010074",
+              "courseTitle": "数据结构与算法",
+              "dueAt": "2026-09-07T07:35:59.336Z",
+              "published": true,
+              "targetClassName": "CS102 默认班",
+              "submissionCount": 4,
+              "gradedCount": 3,
+              "releasedCount": 0
+            },
+            {
+              "id": "00000000-0000-4000-8000-000000090011",
+              "title": "TC-HW-005 重做测试作业",
+              "courseId": "00000000-0000-4000-8000-00000001001c",
+              "courseTitle": "程序设计基础",
+              "dueAt": "2026-09-08T07:35:59.336Z",
+              "published": true,
+              "targetClassName": null,
+              "submissionCount": 1,
+              "gradedCount": 1,
+              "releasedCount": 1
+            },
+            {
+              "id": "00000000-0000-4000-8000-00000001039e",
+              "title": "作业一：离散数学学习心得",
+              "courseId": "00000000-0000-4000-8000-00000001038e",
+              "courseTitle": "离散数学",
+              "dueAt": "2026-09-09T07:35:59.336Z",
+              "published": true,
+              "targetClassName": null,
+              "submissionCount": 4,
+              "gradedCount": 3,
+              "releasedCount": 3
+            },
+            {
+              "id": "00000000-0000-4000-8000-00000001039f",
+              "title": "作业二：数学综合练习",
+              "courseId": "00000000-0000-4000-8000-00000001038e",
+              "courseTitle": "离散数学",
+              "dueAt": "2026-09-16T07:35:59.336Z",
+              "published": true,
+              "targetClassName": "MA101 默认班",
+              "submissionCount": 4,
+              "gradedCount": 3,
+              "releasedCount": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "UC02-configure-course",
+      "method": "PATCH",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718",
+      "request": {
+        "description": "D1 UC01—UC04 当前环境验证课程",
+        "capacity": 50,
+        "credits": 3,
+        "scheduleSlots": [
+          {
+            "dayOfWeek": 7,
+            "periodStart": 13,
+            "periodEnd": 14,
+            "room": "D1-T02"
+          }
+        ]
+      },
+      "status": 200,
+      "durationMs": 25,
+      "response": {
+        "course": {
+          "id": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1-UC01-04验证课程-20260825132657",
+          "description": "D1 UC01—UC04 当前环境验证课程",
+          "category": "软件工程实践",
+          "teacherId": "00000000-0000-4000-8000-000000010002",
+          "published": false,
+          "createdAt": "2026-08-25T13:27:00.208Z",
+          "labWeight": 0.6,
+          "homeworkWeight": 0.4,
+          "startAt": null,
+          "endAt": null,
+          "knowledgeGraphJson": null,
+          "scheduleSlotsJson": "[{\"dayOfWeek\":7,\"periodStart\":13,\"periodEnd\":14,\"room\":\"D1-T02\"}]",
+          "courseCode": "D120260825132657",
+          "credits": 3,
+          "capacity": 50,
+          "courseNature": "ELECTIVE",
+          "subjectCategory": "CORE_MAJOR",
+          "offeringCollegeCode": "21",
+          "semesterKey": "2026-spring",
+          "scheduleSlots": [
+            {
+              "dayOfWeek": 7,
+              "periodStart": 13,
+              "periodEnd": 14,
+              "room": "D1-T02"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "UC02-publish-course",
+      "method": "PATCH",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718",
+      "request": {
+        "published": true
+      },
+      "status": 200,
+      "durationMs": 23,
+      "response": {
+        "course": {
+          "id": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1-UC01-04验证课程-20260825132657",
+          "description": "D1 UC01—UC04 当前环境验证课程",
+          "category": "软件工程实践",
+          "teacherId": "00000000-0000-4000-8000-000000010002",
+          "published": true,
+          "createdAt": "2026-08-25T13:27:00.208Z",
+          "labWeight": 0.6,
+          "homeworkWeight": 0.4,
+          "startAt": null,
+          "endAt": null,
+          "knowledgeGraphJson": null,
+          "scheduleSlotsJson": "[{\"dayOfWeek\":7,\"periodStart\":13,\"periodEnd\":14,\"room\":\"D1-T02\"}]",
+          "courseCode": "D120260825132657",
+          "credits": 3,
+          "capacity": 50,
+          "courseNature": "ELECTIVE",
+          "subjectCategory": "CORE_MAJOR",
+          "offeringCollegeCode": "21",
+          "semesterKey": "2026-spring",
+          "scheduleSlots": [
+            {
+              "dayOfWeek": 7,
+              "periodStart": 13,
+              "periodEnd": 14,
+              "room": "D1-T02"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "UC02-public-course-list",
+      "method": "GET",
+      "path": "/courses?search=D1-UC01-04%E9%AA%8C%E8%AF%81%E8%AF%BE%E7%A8%8B-20260825132657",
+      "status": 200,
+      "durationMs": 17,
+      "response": {
+        "courses": [
+          {
+            "id": "848aced1-b3ae-49e4-933f-92d264a45718",
+            "title": "D1-UC01-04验证课程-20260825132657",
+            "description": "D1 UC01—UC04 当前环境验证课程",
+            "category": "软件工程实践",
+            "published": true,
+            "createdAt": "2026-08-25T13:27:00.208Z",
+            "teacher": {
+              "id": "00000000-0000-4000-8000-000000010002",
+              "name": "张老师"
+            },
+            "enrollmentCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "UC02-duplicate-code",
+      "method": "POST",
+      "path": "/courses",
+      "request": {
+        "title": "D1-UC01-04验证课程-20260825132657-重复代码",
+        "description": "创建阶段",
+        "category": "软件工程实践",
+        "published": false,
+        "courseCode": "D120260825132657",
+        "credits": 2,
+        "capacity": 40,
+        "courseNature": "ELECTIVE",
+        "subjectCategory": "CORE_MAJOR",
+        "offeringCollegeCode": "21",
+        "scheduleSlots": [
+          {
+            "dayOfWeek": 7,
+            "periodStart": 13,
+            "periodEnd": 14,
+            "room": "D1-T01"
+          }
+        ]
+      },
+      "status": 409,
+      "durationMs": 75,
+      "response": {
+        "error": "课程代码已存在，请更换"
+      }
+    },
+    {
+      "name": "UC02-student-create-forbidden",
+      "method": "POST",
+      "path": "/courses",
+      "request": {
+        "title": "D1-UC01-04验证课程-20260825132657",
+        "description": "创建阶段",
+        "category": "软件工程实践",
+        "published": false,
+        "courseCode": "D120260825132657",
+        "credits": 2,
+        "capacity": 40,
+        "courseNature": "ELECTIVE",
+        "subjectCategory": "CORE_MAJOR",
+        "offeringCollegeCode": "21",
+        "scheduleSlots": [
+          {
+            "dayOfWeek": 7,
+            "periodStart": 13,
+            "periodEnd": 14,
+            "room": "D1-T01"
+          }
+        ]
+      },
+      "status": 403,
+      "durationMs": 10,
+      "response": {
+        "error": "权限不足"
+      }
+    },
+    {
+      "name": "UC02-invalid-create-body",
+      "method": "POST",
+      "path": "/courses",
+      "request": {
+        "title": "",
+        "courseCode": "D120260825132657X"
+      },
+      "status": 400,
+      "durationMs": 9,
+      "response": {
+        "error": "参数无效"
+      }
+    },
+    {
+      "name": "enrollment-period-snapshot",
+      "method": "GET",
+      "path": "/enrollment/period",
+      "status": 200,
+      "durationMs": 14,
+      "response": {
+        "period": {
+          "id": "00000000-0000-4000-8000-00000001001b",
+          "semesterKey": "2026-spring",
+          "label": "2026-2027 春季学期",
+          "phase": "FORMAL",
+          "openAt": "2026-08-11T07:35:59.336Z",
+          "closeAt": "2026-10-24T07:35:59.336Z",
+          "confirmDeadline": "2026-11-23T07:35:59.336Z",
+          "updatedAt": "2026-08-25T07:35:59.430Z"
+        },
+        "semester": {
+          "key": "2026-spring",
+          "label": "2026-2027 春季学期"
+        }
+      }
+    },
+    {
+      "name": "enrollment-window-status",
+      "method": "GET",
+      "path": "/enrollment/status",
+      "status": 200,
+      "durationMs": 21,
+      "response": {
+        "window": {
+          "semesterKey": "2026-spring",
+          "semesterLabel": "2026-2027 春季学期",
+          "openAt": "2026-08-11T07:35:59.336Z",
+          "closeAt": "2026-10-24T07:35:59.336Z",
+          "confirmDeadline": "2026-11-23T07:35:59.336Z",
+          "phase": "FORMAL",
+          "phaseLabel": "正选",
+          "open": true,
+          "message": "正选进行中，欢迎选课"
+        },
+        "timetableConfirmed": false,
+        "canConfirmTimetable": false,
+        "labels": {
+          "courseNatures": {
+            "REQUIRED": "必修",
+            "RENXIU": "任修",
+            "ELECTIVE": "选修"
+          },
+          "subjectCategories": {
+            "MATH_BASIC": "数理基础课",
+            "ENGINEERING_BASIC": "工程基础课",
+            "FOREIGN_LANGUAGE": "外语类课",
+            "PE": "体育课",
+            "QUALITY_EDU_THEORY": "素质教育理论课",
+            "QUALITY_EDU_PRACTICE": "素质教育实践课",
+            "CORE_MAJOR": "核心专业类",
+            "IDEOLOGY": "思政课",
+            "GENERAL_MAJOR": "一般专业类",
+            "CORE_GENERAL": "核心通识类"
+          },
+          "offeringColleges": {
+            "1": "材料科学与工程学院",
+            "2": "电子信息工程学院",
+            "3": "自动化科学与电气工程学院",
+            "4": "能源与动力工程学院",
+            "5": "航空科学与工程学院",
+            "6": "计算机学院",
+            "7": "机械工程及自动化学院",
+            "8": "经济管理学院",
+            "9": "数学科学学院",
+            "10": "生物与医学工程学院",
+            "11": "人文社会科学学院（公共管理学院）",
+            "12": "外国语学院",
+            "13": "交通科学与工程学院",
+            "14": "可靠性与系统工程学院",
+            "15": "宇航学院",
+            "16": "飞行学院",
+            "17": "仪器科学与光电工程学院",
+            "18": "北京学院",
+            "19": "物理学院",
+            "20": "法学院",
+            "21": "软件学院",
+            "22": "继续教育学院",
+            "23": "沈元学院（高等理工学院/未来空天技术学院/国家卓越工程师学院）",
+            "24": "中法工程师学院/国际通用工程学院",
+            "25": "国际学院",
+            "26": "新媒体艺术与设计学院",
+            "27": "化学学院",
+            "28": "马克思主义学院",
+            "29": "人文与社会科学高等研究院",
+            "30": "空间与环境学院",
+            "31": "无人系统研究院",
+            "32": "航空发动机研究院",
+            "33": "体育部",
+            "36": "国际前沿交叉科学研究院",
+            "37": "北航学院",
+            "38": "医学科学与工程学院/医工交叉创新研究院",
+            "39": "网络空间安全学院",
+            "41": "集成电路科学与工程学院",
+            "42": "人工智能研究院",
+            "43": "前沿科学技术创新研究院",
+            "54": "大科学装置研究院",
+            "57": "中法航空学院（北航杭州国际校园）",
+            "71": "传源书院（信息类）",
+            "73": "士谔书院（信息类）",
+            "74": "冯如书院（航空航天类）",
+            "75": "士嘉书院（航空航天类）",
+            "76": "守锷书院（航空航天类）",
+            "77": "致真书院（理科试验班类）",
+            "79": "知行书院（社会科学试验班）"
+          },
+          "offeringCollegeList": [
+            {
+              "code": "1",
+              "name": "材料科学与工程学院"
+            },
+            {
+              "code": "2",
+              "name": "电子信息工程学院"
+            },
+            {
+              "code": "3",
+              "name": "自动化科学与电气工程学院"
+            },
+            {
+              "code": "4",
+              "name": "能源与动力工程学院"
+            },
+            {
+              "code": "5",
+              "name": "航空科学与工程学院"
+            },
+            {
+              "code": "6",
+              "name": "计算机学院"
+            },
+            {
+              "code": "7",
+              "name": "机械工程及自动化学院"
+            },
+            {
+              "code": "8",
+              "name": "经济管理学院"
+            },
+            "[+41 more]"
+          ],
+          "phases": {
+            "PRESELECT": "预选课",
+            "FORMAL": "正选",
+            "ADD_DROP": "补退选",
+            "CLOSED": "已关闭"
+          }
+        }
+      }
+    },
+    {
+      "name": "UC01-enroll",
+      "method": "POST",
+      "path": "/enrollment/courses/848aced1-b3ae-49e4-933f-92d264a45718/enroll",
+      "request": {},
+      "status": 200,
+      "durationMs": 55,
+      "response": {
+        "enrollment": {
+          "id": "055877f8-4463-446b-b9b1-f5f772174309",
+          "userId": "00000000-0000-4000-8000-00000001001a",
+          "courseId": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "classId": null
+        },
+        "ok": true
+      }
+    },
+    {
+      "name": "UC01-dashboard-after-enroll",
+      "method": "GET",
+      "path": "/dashboard/me",
+      "status": 200,
+      "durationMs": 108,
+      "response": {
+        "role": "STUDENT",
+        "semester": {
+          "key": "2026-spring",
+          "label": "2026-2027 春季学期"
+        },
+        "courses": [
+          {
+            "id": "848aced1-b3ae-49e4-933f-92d264a45718",
+            "title": "D1-UC01-04验证课程-20260825132657",
+            "category": "软件工程实践",
+            "teacherName": "张老师",
+            "startAt": null,
+            "endAt": null,
+            "progressPercent": 100,
+            "pendingHomework": 0,
+            "pendingLabs": 0,
+            "announcementCount": 0,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000090001",
+            "title": "TC-ENROLL-005 已满课程测试",
+            "category": "程序设计",
+            "teacherName": "张老师",
+            "startAt": "2026-08-18T07:35:59.336Z",
+            "endAt": "2026-11-23T07:35:59.336Z",
+            "progressPercent": 100,
+            "pendingHomework": 0,
+            "pendingLabs": 0,
+            "announcementCount": 0,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000103e6",
+            "title": "专业英语",
+            "category": "通识",
+            "teacherName": "李老师",
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "progressPercent": 0,
+            "pendingHomework": 2,
+            "pendingLabs": 4,
+            "announcementCount": 2,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000102dd",
+            "title": "人工智能导论",
+            "category": "人工智能",
+            "teacherName": "陈老师",
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "progressPercent": 0,
+            "pendingHomework": 2,
+            "pendingLabs": 4,
+            "announcementCount": 2,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000101d4",
+            "title": "软件工程",
+            "category": "软件工程",
+            "teacherName": "王老师",
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "progressPercent": 0,
+            "pendingHomework": 2,
+            "pendingLabs": 4,
+            "announcementCount": 2,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010124",
+            "title": "操作系统概论",
+            "category": "计算机系统",
+            "teacherName": "李老师",
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "progressPercent": 0,
+            "pendingHomework": 2,
+            "pendingLabs": 4,
+            "announcementCount": 2,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000100cc",
+            "title": "计算机组成原理",
+            "category": "计算机系统",
+            "teacherName": "李老师",
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "progressPercent": 0,
+            "pendingHomework": 2,
+            "pendingLabs": 4,
+            "announcementCount": 2,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          }
+        ],
+        "deadlines": [
+          {
+            "id": "00000000-0000-4000-8000-000000010407",
+            "courseId": "00000000-0000-4000-8000-0000000103e6",
+            "courseTitle": "专业英语",
+            "title": "第1周 基础实验",
+            "type": "labSet",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000101f5",
+            "courseId": "00000000-0000-4000-8000-0000000101d4",
+            "courseTitle": "软件工程",
+            "title": "第1周 基础实验",
+            "type": "labSet",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010145",
+            "courseId": "00000000-0000-4000-8000-000000010124",
+            "courseTitle": "操作系统概论",
+            "title": "第1周 基础实验",
+            "type": "labSet",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000102fd",
+            "courseId": "00000000-0000-4000-8000-0000000102dd",
+            "courseTitle": "人工智能导论",
+            "title": "第1周 基础实验",
+            "type": "labSet",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000100dc",
+            "courseId": "00000000-0000-4000-8000-0000000100cc",
+            "courseTitle": "计算机组成原理",
+            "title": "作业一：计算机组成原理学习心得",
+            "type": "homework",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000100ec",
+            "courseId": "00000000-0000-4000-8000-0000000100cc",
+            "courseTitle": "计算机组成原理",
+            "title": "第1周 基础实验",
+            "type": "labSet",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010135",
+            "courseId": "00000000-0000-4000-8000-000000010124",
+            "courseTitle": "操作系统概论",
+            "title": "作业一：操作系统概论学习心得",
+            "type": "homework",
+            "dueAt": "2026-09-02T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000101e5",
+            "courseId": "00000000-0000-4000-8000-0000000101d4",
+            "courseTitle": "软件工程",
+            "title": "作业一：软件工程学习心得",
+            "type": "homework",
+            "dueAt": "2026-09-04T07:35:59.336Z"
+          },
+          "[+17 more]"
+        ],
+        "activeLabReminders": []
+      }
+    },
+    {
+      "name": "UC01-duplicate-enroll",
+      "method": "POST",
+      "path": "/enrollment/courses/848aced1-b3ae-49e4-933f-92d264a45718/enroll",
+      "request": {},
+      "status": 409,
+      "durationMs": 14,
+      "response": {
+        "error": "已选过该课程"
+      }
+    },
+    {
+      "name": "UC01-drop",
+      "method": "DELETE",
+      "path": "/enrollment/courses/848aced1-b3ae-49e4-933f-92d264a45718/enroll",
+      "status": 200,
+      "durationMs": 48,
+      "response": {
+        "ok": true
+      }
+    },
+    {
+      "name": "UC01-dashboard-after-drop",
+      "method": "GET",
+      "path": "/dashboard/me",
+      "status": 200,
+      "durationMs": 44,
+      "response": {
+        "role": "STUDENT",
+        "semester": {
+          "key": "2026-spring",
+          "label": "2026-2027 春季学期"
+        },
+        "courses": [
+          {
+            "id": "00000000-0000-4000-8000-000000090001",
+            "title": "TC-ENROLL-005 已满课程测试",
+            "category": "程序设计",
+            "teacherName": "张老师",
+            "startAt": "2026-08-18T07:35:59.336Z",
+            "endAt": "2026-11-23T07:35:59.336Z",
+            "progressPercent": 100,
+            "pendingHomework": 0,
+            "pendingLabs": 0,
+            "announcementCount": 0,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000103e6",
+            "title": "专业英语",
+            "category": "通识",
+            "teacherName": "李老师",
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "progressPercent": 0,
+            "pendingHomework": 2,
+            "pendingLabs": 4,
+            "announcementCount": 2,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000102dd",
+            "title": "人工智能导论",
+            "category": "人工智能",
+            "teacherName": "陈老师",
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "progressPercent": 0,
+            "pendingHomework": 2,
+            "pendingLabs": 4,
+            "announcementCount": 2,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000101d4",
+            "title": "软件工程",
+            "category": "软件工程",
+            "teacherName": "王老师",
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "progressPercent": 0,
+            "pendingHomework": 2,
+            "pendingLabs": 4,
+            "announcementCount": 2,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010124",
+            "title": "操作系统概论",
+            "category": "计算机系统",
+            "teacherName": "李老师",
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "progressPercent": 0,
+            "pendingHomework": 2,
+            "pendingLabs": 4,
+            "announcementCount": 2,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000100cc",
+            "title": "计算机组成原理",
+            "category": "计算机系统",
+            "teacherName": "李老师",
+            "startAt": "2026-07-26T07:35:59.336Z",
+            "endAt": "2026-12-23T07:35:59.336Z",
+            "progressPercent": 0,
+            "pendingHomework": 2,
+            "pendingLabs": 4,
+            "announcementCount": 2,
+            "isHistory": false,
+            "scheduleSlots": [
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              },
+              {
+                "dayOfWeek": "[truncated]",
+                "periodStart": "[truncated]",
+                "periodEnd": "[truncated]",
+                "room": "[truncated]"
+              }
+            ]
+          }
+        ],
+        "deadlines": [
+          {
+            "id": "00000000-0000-4000-8000-0000000101f5",
+            "courseId": "00000000-0000-4000-8000-0000000101d4",
+            "courseTitle": "软件工程",
+            "title": "第1周 基础实验",
+            "type": "labSet",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000100dc",
+            "courseId": "00000000-0000-4000-8000-0000000100cc",
+            "courseTitle": "计算机组成原理",
+            "title": "作业一：计算机组成原理学习心得",
+            "type": "homework",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000100ec",
+            "courseId": "00000000-0000-4000-8000-0000000100cc",
+            "courseTitle": "计算机组成原理",
+            "title": "第1周 基础实验",
+            "type": "labSet",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010407",
+            "courseId": "00000000-0000-4000-8000-0000000103e6",
+            "courseTitle": "专业英语",
+            "title": "第1周 基础实验",
+            "type": "labSet",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000102fd",
+            "courseId": "00000000-0000-4000-8000-0000000102dd",
+            "courseTitle": "人工智能导论",
+            "title": "第1周 基础实验",
+            "type": "labSet",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010145",
+            "courseId": "00000000-0000-4000-8000-000000010124",
+            "courseTitle": "操作系统概论",
+            "title": "第1周 基础实验",
+            "type": "labSet",
+            "dueAt": "2026-09-01T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010135",
+            "courseId": "00000000-0000-4000-8000-000000010124",
+            "courseTitle": "操作系统概论",
+            "title": "作业一：操作系统概论学习心得",
+            "type": "homework",
+            "dueAt": "2026-09-02T07:35:59.336Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000101e5",
+            "courseId": "00000000-0000-4000-8000-0000000101d4",
+            "courseTitle": "软件工程",
+            "title": "作业一：软件工程学习心得",
+            "type": "homework",
+            "dueAt": "2026-09-04T07:35:59.336Z"
+          },
+          "[+17 more]"
+        ],
+        "activeLabReminders": []
+      }
+    },
+    {
+      "name": "UC01-repeat-drop",
+      "method": "DELETE",
+      "path": "/enrollment/courses/848aced1-b3ae-49e4-933f-92d264a45718/enroll",
+      "status": 404,
+      "durationMs": 10,
+      "response": {
+        "error": "未选该课程"
+      }
+    },
+    {
+      "name": "UC01-full-course-enroll",
+      "method": "POST",
+      "path": "/enrollment/courses/00000000-0000-4000-8000-000000090001/enroll",
+      "request": {},
+      "status": 409,
+      "durationMs": 15,
+      "response": {
+        "error": "课程已满，可加入候补"
+      }
+    },
+    {
+      "name": "UC01-join-waitlist",
+      "method": "POST",
+      "path": "/enrollment/courses/00000000-0000-4000-8000-000000090001/waitlist",
+      "request": {},
+      "status": 200,
+      "durationMs": 41,
+      "response": {
+        "ok": true
+      }
+    },
+    {
+      "name": "UC01-duplicate-waitlist",
+      "method": "POST",
+      "path": "/enrollment/courses/00000000-0000-4000-8000-000000090001/waitlist",
+      "request": {},
+      "status": 409,
+      "durationMs": 38,
+      "response": {
+        "error": "已在候补列表中"
+      }
+    },
+    {
+      "name": "UC01-leave-waitlist",
+      "method": "DELETE",
+      "path": "/enrollment/courses/00000000-0000-4000-8000-000000090001/waitlist",
+      "status": 200,
+      "durationMs": 22,
+      "response": {
+        "ok": true
+      }
+    },
+    {
+      "name": "shared-reenroll-for-UC03-UC04",
+      "method": "POST",
+      "path": "/enrollment/courses/848aced1-b3ae-49e4-933f-92d264a45718/enroll",
+      "request": {},
+      "status": 200,
+      "durationMs": 36,
+      "response": {
+        "enrollment": {
+          "id": "0a7acb84-9927-4a65-97e0-d71a0bd92ff3",
+          "userId": "00000000-0000-4000-8000-00000001001a",
+          "courseId": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "classId": null
+        },
+        "ok": true
+      }
+    },
+    {
+      "name": "UC03-publish-announcement",
+      "method": "POST",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/announcements",
+      "request": {
+        "title": "D1验证公告-20260825132657",
+        "content": "UC03 公告正文",
+        "pinned": false
+      },
+      "status": 200,
+      "durationMs": 41,
+      "response": {
+        "announcement": {
+          "id": "2db10499-73ea-4880-87e2-7c65d82b5744",
+          "courseId": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1验证公告-20260825132657",
+          "content": "UC03 公告正文",
+          "pinned": false,
+          "createdAt": "2026-08-25T13:27:01.015Z",
+          "updatedAt": "2026-08-25T13:27:01.015Z",
+          "edited": false,
+          "read": true,
+          "marked": false,
+          "author": {
+            "id": "00000000-0000-4000-8000-000000010002",
+            "name": "张老师"
+          }
+        }
+      }
+    },
+    {
+      "name": "UC03-list-before-read",
+      "method": "GET",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/announcements",
+      "status": 200,
+      "durationMs": 25,
+      "response": {
+        "announcements": [
+          {
+            "id": "2db10499-73ea-4880-87e2-7c65d82b5744",
+            "courseId": "848aced1-b3ae-49e4-933f-92d264a45718",
+            "title": "D1验证公告-20260825132657",
+            "content": "UC03 公告正文",
+            "pinned": false,
+            "createdAt": "2026-08-25T13:27:01.015Z",
+            "updatedAt": "2026-08-25T13:27:01.015Z",
+            "edited": false,
+            "read": false,
+            "marked": false,
+            "author": {
+              "id": "00000000-0000-4000-8000-000000010002",
+              "name": "张老师"
+            }
+          }
+        ],
+        "page": 1,
+        "pageSize": 15,
+        "total": 1,
+        "totalPages": 1
+      }
+    },
+    {
+      "name": "UC03-read-announcement",
+      "method": "GET",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/announcements/2db10499-73ea-4880-87e2-7c65d82b5744",
+      "status": 200,
+      "durationMs": 46,
+      "response": {
+        "announcement": {
+          "id": "2db10499-73ea-4880-87e2-7c65d82b5744",
+          "courseId": "848aced1-b3ae-49e4-933f-92d264a45718",
+          "title": "D1验证公告-20260825132657",
+          "content": "UC03 公告正文",
+          "pinned": false,
+          "createdAt": "2026-08-25T13:27:01.015Z",
+          "updatedAt": "2026-08-25T13:27:01.015Z",
+          "edited": false,
+          "read": true,
+          "marked": false,
+          "author": {
+            "id": "00000000-0000-4000-8000-000000010002",
+            "name": "张老师"
+          },
+          "editHistory": []
+        }
+      }
+    },
+    {
+      "name": "UC03-list-after-read",
+      "method": "GET",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/announcements",
+      "status": 200,
+      "durationMs": 18,
+      "response": {
+        "announcements": [
+          {
+            "id": "2db10499-73ea-4880-87e2-7c65d82b5744",
+            "courseId": "848aced1-b3ae-49e4-933f-92d264a45718",
+            "title": "D1验证公告-20260825132657",
+            "content": "UC03 公告正文",
+            "pinned": false,
+            "createdAt": "2026-08-25T13:27:01.015Z",
+            "updatedAt": "2026-08-25T13:27:01.015Z",
+            "edited": false,
+            "read": true,
+            "marked": false,
+            "author": {
+              "id": "00000000-0000-4000-8000-000000010002",
+              "name": "张老师"
+            }
+          }
+        ],
+        "page": 1,
+        "pageSize": 15,
+        "total": 1,
+        "totalPages": 1
+      }
+    },
+    {
+      "name": "UC03-student-publish-forbidden",
+      "method": "POST",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/announcements",
+      "request": {
+        "title": "越权公告",
+        "content": "不应创建"
+      },
+      "status": 403,
+      "durationMs": 8,
+      "response": {
+        "error": "仅教师可发布公告"
+      }
+    },
+    {
+      "name": "UC03-empty-content",
+      "method": "POST",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/announcements",
+      "request": {
+        "title": "空正文",
+        "content": ""
+      },
+      "status": 400,
+      "durationMs": 7,
+      "response": {
+        "error": "标题 1–100 字，内容不能为空"
+      }
+    },
+    {
+      "name": "UC03-outsider-list-forbidden",
+      "method": "GET",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/announcements",
+      "status": 403,
+      "durationMs": 8,
+      "response": {
+        "error": "未选课或无权查看"
+      }
+    },
+    {
+      "name": "UC04-upload-material",
+      "method": "POST",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/materials",
+      "request": "[multipart]",
+      "status": 200,
+      "durationMs": 42,
+      "response": {
+        "materials": [
+          {
+            "id": "824ceb78-cb55-4bdd-8f95-31b311050747",
+            "title": "UC04验证资料-20260825132657",
+            "fileName": "uc04-20260825132657.txt",
+            "mimeType": "text/plain",
+            "sizeBytes": 33,
+            "folderPath": "D1验证",
+            "visibility": "ALL",
+            "targetClassId": null,
+            "pinned": false,
+            "groupId": "2fafdee0-049d-45c6-b3c8-0c7e830707c6",
+            "version": 1,
+            "isCurrent": true,
+            "downloadCount": 0,
+            "lastDownloadAt": null,
+            "createdAt": "2026-08-25T13:27:01.189Z",
+            "updatedAt": "2026-08-25T13:27:01.189Z",
+            "uploadedBy": {
+              "id": "00000000-0000-4000-8000-000000010002",
+              "name": "张老师"
+            },
+            "targetClass": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "UC04-list-materials",
+      "method": "GET",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/materials",
+      "status": 200,
+      "durationMs": 26,
+      "response": {
+        "materials": [
+          {
+            "id": "824ceb78-cb55-4bdd-8f95-31b311050747",
+            "title": "UC04验证资料-20260825132657",
+            "fileName": "uc04-20260825132657.txt",
+            "mimeType": "text/plain",
+            "sizeBytes": 33,
+            "folderPath": "D1验证",
+            "visibility": "ALL",
+            "targetClassId": null,
+            "pinned": false,
+            "groupId": "2fafdee0-049d-45c6-b3c8-0c7e830707c6",
+            "version": 1,
+            "isCurrent": true,
+            "downloadCount": 0,
+            "lastDownloadAt": null,
+            "createdAt": "2026-08-25T13:27:01.189Z",
+            "updatedAt": "2026-08-25T13:27:01.189Z",
+            "uploadedBy": {
+              "id": "00000000-0000-4000-8000-000000010002",
+              "name": "张老师"
+            },
+            "targetClass": null,
+            "fileType": "document",
+            "previewable": true,
+            "favorited": false
+          }
+        ],
+        "folders": [
+          "D1验证"
+        ],
+        "classes": [],
+        "isManager": false
+      }
+    },
+    {
+      "name": "UC04-favorite-material",
+      "method": "POST",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/materials/824ceb78-cb55-4bdd-8f95-31b311050747/favorite",
+      "request": {},
+      "status": 200,
+      "durationMs": 23,
+      "response": {
+        "ok": true
+      }
+    },
+    {
+      "name": "UC04-list-favorites",
+      "method": "GET",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/materials/favorites",
+      "status": 200,
+      "durationMs": 18,
+      "response": {
+        "materials": [
+          {
+            "id": "824ceb78-cb55-4bdd-8f95-31b311050747",
+            "title": "UC04验证资料-20260825132657",
+            "fileName": "uc04-20260825132657.txt",
+            "mimeType": "text/plain",
+            "sizeBytes": 33,
+            "folderPath": "D1验证",
+            "visibility": "ALL",
+            "targetClassId": null,
+            "pinned": false,
+            "groupId": "2fafdee0-049d-45c6-b3c8-0c7e830707c6",
+            "version": 1,
+            "isCurrent": true,
+            "downloadCount": 0,
+            "lastDownloadAt": null,
+            "createdAt": "2026-08-25T13:27:01.189Z",
+            "updatedAt": "2026-08-25T13:27:01.189Z",
+            "uploadedBy": {
+              "id": "00000000-0000-4000-8000-000000010002",
+              "name": "张老师"
+            },
+            "targetClass": null,
+            "fileType": "document",
+            "previewable": true,
+            "favorited": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "UC04-download-material",
+      "method": "GET",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/materials/824ceb78-cb55-4bdd-8f95-31b311050747/download",
+      "status": 200,
+      "durationMs": 22,
+      "response": {
+        "bytes": 33,
+        "preview": "UC04 verification 20260825132657\n"
+      }
+    },
+    {
+      "name": "UC04-student-upload-forbidden",
+      "method": "POST",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/materials",
+      "request": "[multipart]",
+      "status": 403,
+      "durationMs": 5,
+      "response": {
+        "error": "权限不足"
+      }
+    },
+    {
+      "name": "UC04-outsider-list-forbidden",
+      "method": "GET",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/materials",
+      "status": 403,
+      "durationMs": 9,
+      "response": {
+        "error": "无权查看课程资料"
+      }
+    },
+    {
+      "name": "UC04-missing-material-download",
+      "method": "GET",
+      "path": "/courses/848aced1-b3ae-49e4-933f-92d264a45718/materials/00000000-0000-4000-8000-000000000404/download",
+      "status": 404,
+      "durationMs": 9,
+      "response": {
+        "error": "文件不存在"
+      }
+    }
+  ],
+  "cleanup": [
+    {
+      "item": "本次用例产生的站内通知",
+      "result": "已清理"
+    },
+    {
+      "item": "临时资料 824ceb78-cb55-4bdd-8f95-31b311050747",
+      "result": "已删除（含上传文件）",
+      "unfavoriteStatus": 200
+    },
+    {
+      "item": "临时公告 2db10499-73ea-4880-87e2-7c65d82b5744",
+      "result": "已删除"
+    },
+    {
+      "item": "临时课程 848aced1-b3ae-49e4-933f-92d264a45718",
+      "result": "已从数据库删除"
+    }
+  ],
+  "database": {
+    "capturedAt": "2026-08-25T13:27:01.367Z",
+    "tableCountsDuringVerification": {
+      "User": 26,
+      "Course": 15,
+      "Class": 13,
+      "Enrollment": 114,
+      "EnrollmentWaitlist": 0,
+      "EnrollmentLog": 10,
+      "EnrollmentPeriod": 2,
+      "TimetableConfirmation": 0,
+      "CourseAnnouncement": 25,
+      "AnnouncementRead": 1,
+      "AnnouncementMark": 0,
+      "CourseMaterial": 37,
+      "MaterialFavorite": 1,
+      "SiteNotification": 17
+    },
+    "enrollmentLogActionValuesInDatabase": [
+      "ENROLL",
+      "DROP",
+      "WAITLIST_JOIN",
+      "WAITLIST_LEAVE",
+      "WAITLIST_PROMOTED",
+      "ADMIN_ENROLL",
+      "ADMIN_DROP",
+      "TIMETABLE_CONFIRM",
+      "COURSE_CREATE"
+    ],
+    "schemaRequiresCourseCreate": true,
+    "databaseHasCourseCreate": true,
+    "tableCountsAfterCleanup": {
+      "User": 26,
+      "Course": 14,
+      "Class": 13,
+      "Enrollment": 113,
+      "EnrollmentWaitlist": 0,
+      "EnrollmentLog": 6,
+      "EnrollmentPeriod": 2,
+      "TimetableConfirmation": 0,
+      "CourseAnnouncement": 24,
+      "AnnouncementRead": 0,
+      "AnnouncementMark": 0,
+      "CourseMaterial": 36,
+      "MaterialFavorite": 0,
+      "SiteNotification": 12
+    }
+  },
+  "summary": {
+    "total": 23,
+    "passed": 23,
+    "failed": 0
+  }
+}

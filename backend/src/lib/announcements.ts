@@ -1,4 +1,5 @@
 import { prisma } from "./prisma.js";
+import { emitNotificationToUsers } from "./notification-events.js";
 
 type EditEntry = {
   at: string;
@@ -59,6 +60,7 @@ export async function notifyStudentsOfAnnouncement(
       announcementId,
     })),
   });
+  emitNotificationToUsers(enrollments.map((e) => e.userId));
 }
 
 export async function countUnreadAnnouncementsForUser(userId: string) {

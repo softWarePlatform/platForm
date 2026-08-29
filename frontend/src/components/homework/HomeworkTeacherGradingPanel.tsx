@@ -17,6 +17,15 @@ type SubmissionRow = {
   files?: { id: string; fileName: string; sizeBytes: number }[];
 };
 
+type RedoRequestRow = {
+  id: string;
+  reason?: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: string;
+  rejectReason?: string | null;
+  user?: { id: string; name?: string; email?: string };
+};
+
 type Props = {
   homeworkId: string;
   setErr?: (msg: string | null) => void;
@@ -40,6 +49,8 @@ export default function HomeworkTeacherGradingPanel({
   autoLoad = true,
 }: Props) {
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
+  const [redoRequests, setRedoRequests] = useState<RedoRequestRow[]>([]);
+  const [redoBusy, setRedoBusy] = useState<Record<string, boolean>>({});
   const [drafts, setDrafts] = useState<Record<string, { score: string; feedback: string }>>({});
   const [aiPreview, setAiPreview] = useState<
     Record<string, { score: number; feedback: string; source?: string }>
@@ -61,9 +72,13 @@ export default function HomeworkTeacherGradingPanel({
     setLoading(true);
     setErr(null);
     try {
-      const { data } = await api.get(`/homework/${homeworkId}/submissions`);
+      const [{ data }, redoRes] = await Promise.all([
+        api.get(`/homework/${homeworkId}/submissions`),
+        api.get(`/homework/${homeworkId}/redo-requests`).catch(() => ({ data: { requests: [] } })),
+      ]);
       const list = (data.submissions ?? []) as SubmissionRow[];
       setSubmissions(list);
+      setRedoRequests((redoRes.data.requests ?? []) as RedoRequestRow[]);
       setDrafts((prev) => {
         const next = { ...prev };
         for (const row of list) {
@@ -77,6 +92,7 @@ export default function HomeworkTeacherGradingPanel({
     } catch (e: unknown) {
       setErr(apiErrorMessage(e, "加载提交失败"));
       setSubmissions([]);
+      setRedoRequests([]);
     } finally {
       setLoading(false);
     }
@@ -88,6 +104,7 @@ export default function HomeworkTeacherGradingPanel({
 
   const graded = submissions.filter((s) => s.graded).length;
   const released = submissions.filter((s) => s.released).length;
+  const pendingRedoCount = redoRequests.filter((r) => r.status === "PENDING").length;
   const nums = submissions
     .filter((s) => s.graded && s.score != null)
     .map((s) => Number(s.score));
@@ -112,6 +129,78 @@ export default function HomeworkTeacherGradingPanel({
             avg != null ? `均分 ${avg.toFixed(1)}` : "均分 —",
           ]}
         />
+
+        <section className="redo-panel-inline">
+          <div className="redo-panel-inline__head">
+            <h3>重做申请</h3>
+            <span>{pendingRedoCount} 待审批 / {redoRequests.length} 条</span>
+          </div>
+          {redoRequests.length === 0 ? (
+            <EmptyState title="暂无重做申请" />
+          ) : (
+            <div className="redo-list">
+              {redoRequests.map((r) => (
+                <article key={r.id} className="redo-card">
+                  <div className="redo-card__head">
+                    <strong>{r.user?.name ?? "学生"}</strong>
+                    <span className="muted">{r.user?.email}</span>
+                    <StatusBadge tone={r.status === "PENDING" ? "warn" : r.status === "APPROVED" ? "ok" : "muted"}>
+                      {r.status === "PENDING" ? "待审批" : r.status === "APPROVED" ? "已通过" : "已拒绝"}
+                    </StatusBadge>
+                  </div>
+                  <p className="redo-card__body">{r.reason || "（未填写理由）"}</p>
+                  {r.rejectReason ? <p className="redo-card__body muted">拒绝原因：{r.rejectReason}</p> : null}
+                  {r.status === "PENDING" ? (
+                    <div className="redo-card__actions">
+                      <button
+                        className="btn primary btn--sm"
+                        type="button"
+                        disabled={redoBusy[r.id]}
+                        onClick={async () => {
+                          setRedoBusy((m) => ({ ...m, [r.id]: true }));
+                          setErr(null);
+                          try {
+                            await api.patch(`/homework/redo-requests/${r.id}`, { action: "approve" });
+                            await loadSubmissions();
+                          } catch (e: unknown) {
+                            setErr(apiErrorMessage(e, "通过失败"));
+                          } finally {
+                            setRedoBusy((m) => ({ ...m, [r.id]: false }));
+                          }
+                        }}
+                      >
+                        通过
+                      </button>
+                      <button
+                        className="btn btn--sm"
+                        type="button"
+                        disabled={redoBusy[r.id]}
+                        onClick={async () => {
+                          const rejectReason = window.prompt("拒绝原因（可选）") ?? "";
+                          setRedoBusy((m) => ({ ...m, [r.id]: true }));
+                          setErr(null);
+                          try {
+                            await api.patch(`/homework/redo-requests/${r.id}`, {
+                              action: "reject",
+                              rejectReason: rejectReason.trim() || undefined,
+                            });
+                            await loadSubmissions();
+                          } catch (e: unknown) {
+                            setErr(apiErrorMessage(e, "拒绝失败"));
+                          } finally {
+                            setRedoBusy((m) => ({ ...m, [r.id]: false }));
+                          }
+                        }}
+                      >
+                        拒绝
+                      </button>
+                    </div>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
 
         {submissions.length === 0 && !loading ? (
           <EmptyState title="暂无提交" />

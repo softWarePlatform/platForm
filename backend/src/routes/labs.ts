@@ -24,6 +24,7 @@ import {
   notifyLabSubmissionGraded,
   notifyLabSubmissionReturned,
 } from "../lib/lab-notify.js";
+import { notifyCourseStaffAndAdmins } from "../lib/role-feedback.js";
 import {
   computeLabSetAccess,
   isLabSetCompleted,
@@ -594,6 +595,17 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
       language: body.data.language,
       judgeConfig,
     });
+    if (req.auth!.role === "STUDENT") {
+      await notifyCourseStaffAndAdmins({
+        courseId: lab.courseId,
+        actorUserId: req.auth!.sub,
+        type: "LAB_SUBMITTED",
+        title: `实验提交：${lab.title}`,
+        body: "有学生提交了实验，请及时查看。",
+        labSetId: lab.labSetId,
+        linkPath: `/teacher/courses/${lab.courseId}/labs/${lab.id}`,
+      });
+    }
 
     return { submissionId: submission.id, status: submission.status };
   });
@@ -645,6 +657,17 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
           fileBuf,
           judgeConfig,
         });
+        if (req.auth!.role === "STUDENT") {
+          await notifyCourseStaffAndAdmins({
+            courseId: lab.courseId,
+            actorUserId: req.auth!.sub,
+            type: "LAB_SUBMITTED",
+            title: `实验提交：${lab.title}`,
+            body: "有学生提交了实验文件，请及时查看。",
+            labSetId: lab.labSetId,
+            linkPath: `/teacher/courses/${lab.courseId}/labs/${lab.id}`,
+          });
+        }
         return { submissionId: submission.id, status: submission.status };
       } catch (e) {
         const msg = e instanceof Error ? e.message : "提交失败";

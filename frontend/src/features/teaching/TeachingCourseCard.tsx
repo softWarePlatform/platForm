@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { CourseCoverArt, pickCourseTheme, themeStyle } from "../dashboard/courseVisuals";
 import StatusBadge from "../../components/layout/StatusBadge";
 import { formatScheduleSummary } from "../../components/CourseScheduleFields";
+import { courseManagePathForRole, coursePathForRole } from "../../lib/coursePaths";
 
 type Props = {
   id: string;
@@ -64,10 +65,10 @@ export default function TeachingCourseCard({
           />
         </div>
         <div className="teach-course-card__actions">
-          <Link className="btn primary btn--sm" to={`/courses/${id}/manage`}>
+          <Link className="btn primary btn--sm" to={courseManagePathForRole(id, "TEACHER")}>
             管理
           </Link>
-          <Link className="btn btn--sm" to={`/courses/${id}/announcements`}>
+          <Link className="btn btn--sm" to={coursePathForRole(id, "announcements", "TEACHER")}>
             进入
           </Link>
         </div>

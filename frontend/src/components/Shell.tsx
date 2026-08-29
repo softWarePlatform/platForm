@@ -4,7 +4,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import PageTransition from "./motion/PageTransition";
 import { api } from "../api/client";
 import { useAuth, type Role } from "../auth/AuthContext";
-import { NOTIFICATIONS_REFRESH } from "../lib/appEvents";
+import { DASHBOARD_REFRESH, NOTIFICATIONS_REFRESH } from "../lib/appEvents";
 
 type NavItem = { to: string; label: string; end?: boolean; roles: Role[]; className?: string };
 
@@ -47,17 +47,25 @@ export default function Shell() {
     const onRefresh = () => void fetchUnread();
     window.addEventListener(NOTIFICATIONS_REFRESH, onRefresh);
     const t = window.setInterval(() => void fetchUnread(), 60000);
+    const events = new EventSource(`/api/notifications/events?token=${encodeURIComponent(token)}`);
+    events.addEventListener("notify", () => {
+      void fetchUnread();
+      window.dispatchEvent(new CustomEvent(DASHBOARD_REFRESH));
+    });
 
     return () => {
       cancelled = true;
       window.removeEventListener(NOTIFICATIONS_REFRESH, onRefresh);
       clearInterval(t);
+      events.close();
     };
   }, [token]);
 
   const role = user?.role;
-  const visibleNav = role ? NAV_ITEMS.filter((item) => item.roles.includes(role)) : [];
-
+  const visibleNav = role
+    ? NAV_ITEMS.filter((item) => item.roles.includes(role) && !(role === "ADMIN" && item.to === "/teaching"))
+    : [];
+  const hideTopNavForAdmin = role === "ADMIN";
   return (
     <div>
       <header className="app-header">
@@ -67,7 +75,7 @@ export default function Shell() {
               教学实训平台
             </Link>
             <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-              {user ? (
+              {user && !hideTopNavForAdmin ? (
                 <>
                   <span className="muted app-header__user">
                     {user.name}（

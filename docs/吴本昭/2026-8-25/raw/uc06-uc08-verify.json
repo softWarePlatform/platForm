@@ -1,0 +1,1868 @@
+{
+  "at": "2026-08-25T08:53:16.200Z",
+  "base": "http://127.0.0.1:3000",
+  "courseId": "00000000-0000-4000-8000-00000001001c",
+  "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+  "labId": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+  "sessionId": "a13de4ad-815d-4c31-bc3c-9de4d403f7ca",
+  "postId": "4b920e1e-522c-402f-b5f4-2c200c7de9de",
+  "summary": [
+    {
+      "uc": "ENV",
+      "name": "API 存活",
+      "ok": true,
+      "note": "{\"ok\":true,\"service\":\"api\",\"type\":\"live\"}"
+    },
+    {
+      "uc": "ENV",
+      "name": "API 就绪(DB+Redis)",
+      "ok": true,
+      "note": "{\"ok\":true,\"service\":\"api\",\"type\":\"ready\"}"
+    },
+    {
+      "uc": "ENV",
+      "name": "学生登录",
+      "ok": true,
+      "note": "student@demo.local"
+    },
+    {
+      "uc": "ENV",
+      "name": "教师登录",
+      "ok": true,
+      "note": "teacher@demo.local"
+    },
+    {
+      "uc": "UC06",
+      "name": "学生查看课程实验集",
+      "ok": true,
+      "note": "count=5"
+    },
+    {
+      "uc": "UC06",
+      "name": "教师发布实验集",
+      "ok": true,
+      "note": "92bce595-ff15-4390-a091-c40a1f8dec2a"
+    },
+    {
+      "uc": "UC06",
+      "name": "教师创建实验题目",
+      "ok": true,
+      "note": "730464a2-d84f-4f9e-8442-773f9eaf0a28"
+    },
+    {
+      "uc": "UC06",
+      "name": "教师配置测试用例",
+      "ok": true,
+      "note": "69d6a1eb-bf3b-409c-a94d-067c0b5d4a33"
+    },
+    {
+      "uc": "UC06",
+      "name": "学生提交正确代码入队",
+      "ok": true,
+      "note": "status=PENDING id=9681e3d6-4e8c-4fef-a143-1a2132cecfe3"
+    },
+    {
+      "uc": "UC06",
+      "name": "Worker 消费并评测 AC",
+      "ok": true,
+      "note": "status=ACCEPTED score=100",
+      "submissionId": "9681e3d6-4e8c-4fef-a143-1a2132cecfe3"
+    },
+    {
+      "uc": "UC06",
+      "name": "错误代码得到 WRONG_ANSWER",
+      "ok": true,
+      "note": "status=WRONG_ANSWER score=0"
+    },
+    {
+      "uc": "UC06",
+      "name": "教师打回",
+      "ok": true,
+      "note": "D1 验证打回：输出不正确，请按样例修改后补交。"
+    },
+    {
+      "uc": "UC06",
+      "name": "打回后补交再评测",
+      "ok": true,
+      "note": "status=ACCEPTED id=c5cfe5c5-9c68-4e9c-b107-9b44404ce23e"
+    },
+    {
+      "uc": "UC06",
+      "name": "未开始实验集禁止提交",
+      "ok": true,
+      "note": "status=403 error=不在可访问时间内"
+    },
+    {
+      "uc": "UC06",
+      "name": "种子已打回记录可查询",
+      "ok": true,
+      "note": "输出与期望不符，请参考题解提示修改后重新提交。"
+    },
+    {
+      "uc": "UC07",
+      "name": "查看练习知识点标签",
+      "ok": true,
+      "note": "tags=14"
+    },
+    {
+      "uc": "UC07",
+      "name": "智能组卷",
+      "ok": true,
+      "note": "id=a13de4ad-815d-4c31-bc3c-9de4d403f7ca items=10 error="
+    },
+    {
+      "uc": "UC07",
+      "name": "逐题作答",
+      "ok": true,
+      "note": "answered=10"
+    },
+    {
+      "uc": "UC07",
+      "name": "提交练习并出分",
+      "ok": true,
+      "note": "score=1.5/10"
+    },
+    {
+      "uc": "UC07",
+      "name": "练习记录列表",
+      "ok": true,
+      "note": "count=2"
+    },
+    {
+      "uc": "UC07",
+      "name": "错题记录可查询",
+      "ok": true,
+      "note": "keys=entries"
+    },
+    {
+      "uc": "UC07",
+      "name": "获取辅导（允许本地降级）",
+      "ok": true,
+      "note": "status=200 degraded=false preview={\"hint\":\"【解题思路】本题考点：程序设计 > 应用。\\n建议先明确题目要求，列出相关概念或伪代码步骤；若卡住，可标出不确定的环节再追问「再详细一点」。\",\"hints\":[\"【解题思路】本题考点：程序设计 > 应用。\\n建议先明确题目要求，列出相关概念或伪代码步骤；若卡住，可标出不确定的环节再追问「再详细一点」。\"],\"messages\":[{\"ro"
+    },
+    {
+      "uc": "UC07",
+      "name": "教师查看练习统计",
+      "ok": true,
+      "note": "keys=questionCount,feedbackByType,questions"
+    },
+    {
+      "uc": "UC08",
+      "name": "学生发帖并提及教师",
+      "ok": true,
+      "note": "4b920e1e-522c-402f-b5f4-2c200c7de9de"
+    },
+    {
+      "uc": "UC08",
+      "name": "学生评论",
+      "ok": true,
+      "note": "65bc2ada-8877-481e-8452-51c60d15a214"
+    },
+    {
+      "uc": "UC08",
+      "name": "被提及教师收到通知",
+      "ok": true,
+      "note": "unread={\"count\":5} mentioned=true n=5"
+    },
+    {
+      "uc": "UC08",
+      "name": "讨论列表可见新帖",
+      "ok": true,
+      "note": "posts=1"
+    }
+  ],
+  "log": [
+    {
+      "name": "health.live",
+      "method": "GET",
+      "path": "/health/live",
+      "status": 200,
+      "ms": 47,
+      "ok": true,
+      "body": {
+        "ok": true,
+        "service": "api",
+        "type": "live"
+      }
+    },
+    {
+      "name": "health.ready",
+      "method": "GET",
+      "path": "/health/ready",
+      "status": 200,
+      "ms": 19,
+      "ok": true,
+      "body": {
+        "ok": true,
+        "service": "api",
+        "type": "ready"
+      }
+    },
+    {
+      "name": "login:student@demo.local",
+      "method": "POST",
+      "path": "/auth/login",
+      "status": 200,
+      "ms": 361,
+      "ok": true,
+      "body": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMTAwMDciLCJlbWFpbCI6InN0dWRlbnRAZGVtby5sb2NhbCIsInJvbGUiOiJTVFVERU5UIiwiaWF0IjoxNzg3NjQ3OTkwLCJleHAiOjE3ODgyNTI3OTB9.tPG055n5cR15GYTfhtI4Gd4uzyIIUdexRyYeXr5eheI",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000010007",
+          "email": "student@demo.local",
+          "name": "张三",
+          "role": "STUDENT",
+          "avatarUrl": null,
+          "signature": null,
+          "emailVerified": true
+        }
+      }
+    },
+    {
+      "name": "login:teacher@demo.local",
+      "method": "POST",
+      "path": "/auth/login",
+      "status": 200,
+      "ms": 329,
+      "ok": true,
+      "body": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMTAwMDIiLCJlbWFpbCI6InRlYWNoZXJAZGVtby5sb2NhbCIsInJvbGUiOiJURUFDSEVSIiwiaWF0IjoxNzg3NjQ3OTkxLCJleHAiOjE3ODgyNTI3OTF9.-wjZTI_o3-k07SxnjeF5oKVVkCxftG0wXlDwkMXORO0",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000010002",
+          "email": "teacher@demo.local",
+          "name": "张老师",
+          "role": "TEACHER",
+          "avatarUrl": null,
+          "signature": "用心教学，欢迎选修我的课程。",
+          "emailVerified": true
+        }
+      }
+    },
+    {
+      "name": "uc06.labSets",
+      "method": "GET",
+      "path": "/courses/00000000-0000-4000-8000-00000001001c/lab-sets",
+      "status": 200,
+      "ms": 27,
+      "ok": true,
+      "body": {
+        "labSets": [
+          {
+            "id": "00000000-0000-4000-8000-00000001003c",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "title": "第1周 基础实验",
+            "description": "程序设计基础 · 第1周 基础实验（演示）",
+            "startAt": "2026-08-18T08:46:58.105Z",
+            "dueAt": "2026-09-01T08:46:58.105Z",
+            "allowMakeup": false,
+            "makeupDueAt": null,
+            "outsideAccessMode": "BLOCK",
+            "sortOrder": 0,
+            "createdAt": "2026-08-25T08:46:58.486Z",
+            "problemCount": 2
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010050",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "title": "第2周 进阶实验",
+            "description": "程序设计基础 · 第2周 进阶实验（演示）",
+            "startAt": "2026-08-22T08:46:58.105Z",
+            "dueAt": "2026-09-08T08:46:58.105Z",
+            "allowMakeup": true,
+            "makeupDueAt": "2026-09-13T08:46:58.105Z",
+            "outsideAccessMode": "BLOCK",
+            "sortOrder": 1,
+            "createdAt": "2026-08-25T08:46:58.632Z",
+            "problemCount": 1
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000001005b",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "title": "第3周 综合实验",
+            "description": "程序设计基础 · 第3周 综合实验（演示）",
+            "startAt": "2026-08-28T08:46:58.105Z",
+            "dueAt": "2026-09-15T08:46:58.105Z",
+            "allowMakeup": false,
+            "makeupDueAt": null,
+            "outsideAccessMode": "BLOCK",
+            "sortOrder": 2,
+            "createdAt": "2026-08-25T08:46:58.702Z",
+            "problemCount": 1
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000090020",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "title": "第4周 未开始实验（TC-LAB-002）",
+            "description": "startAt 在未来，学生端应显示「未开始」且不可提交。",
+            "startAt": "2026-09-08T08:46:58.105Z",
+            "dueAt": "2026-09-24T08:46:58.105Z",
+            "allowMakeup": false,
+            "makeupDueAt": null,
+            "outsideAccessMode": "BLOCK",
+            "sortOrder": 99,
+            "createdAt": "2026-08-25T08:47:04.191Z",
+            "problemCount": 1
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000090022",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "title": "打回测试实验集（TC-LAB-007）",
+            "description": "含张三已打回的实验提交。",
+            "startAt": "2026-08-20T08:46:58.105Z",
+            "dueAt": "2026-09-14T08:46:58.105Z",
+            "allowMakeup": true,
+            "makeupDueAt": "2026-09-24T08:46:58.105Z",
+            "outsideAccessMode": "BLOCK",
+            "sortOrder": 100,
+            "createdAt": "2026-08-25T08:47:04.211Z",
+            "problemCount": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "uc06.createSet",
+      "method": "POST",
+      "path": "/courses/00000000-0000-4000-8000-00000001001c/lab-sets",
+      "status": 201,
+      "ms": 46,
+      "ok": true,
+      "body": {
+        "labSet": {
+          "id": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+          "courseId": "00000000-0000-4000-8000-00000001001c",
+          "title": "D1-UC06 评测验证实验集",
+          "description": "吴本昭 D1 自动评测验证，勿用于教学评分。",
+          "startAt": "2026-08-25T08:52:11.312Z",
+          "dueAt": "2026-09-01T08:53:11.312Z",
+          "allowMakeup": true,
+          "makeupDueAt": "2026-09-04T08:53:11.312Z",
+          "outsideAccessMode": "BLOCK",
+          "sortOrder": 0,
+          "createdAt": "2026-08-25T08:53:11.322Z",
+          "problemCount": 0
+        }
+      }
+    },
+    {
+      "name": "uc06.createLab",
+      "method": "POST",
+      "path": "/courses/00000000-0000-4000-8000-00000001001c/labs",
+      "status": 200,
+      "ms": 24,
+      "ok": true,
+      "body": {
+        "lab": {
+          "id": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+          "courseId": "00000000-0000-4000-8000-00000001001c",
+          "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+          "title": "D1-Hello-JS",
+          "description": "输出 Hello",
+          "descriptionMd": null,
+          "language": "javascript",
+          "starterCode": "console.log(\"Hello\")\n",
+          "judgeMode": null,
+          "allowedLanguages": [],
+          "allowedFileExtensions": []
+        }
+      }
+    },
+    {
+      "name": "uc06.testcase",
+      "method": "POST",
+      "path": "/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28/testcases",
+      "status": 200,
+      "ms": 20,
+      "ok": true,
+      "body": {
+        "testCase": {
+          "id": "69d6a1eb-bf3b-409c-a94d-067c0b5d4a33",
+          "labId": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+          "input": "",
+          "expected": "Hello",
+          "hidden": false,
+          "weight": 1
+        }
+      }
+    },
+    {
+      "name": "uc06.submitAc",
+      "method": "POST",
+      "path": "/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28/submit",
+      "status": 200,
+      "ms": 81,
+      "ok": true,
+      "body": {
+        "submissionId": "9681e3d6-4e8c-4fef-a143-1a2132cecfe3",
+        "status": "PENDING"
+      }
+    },
+    {
+      "name": "poll:9681e3d6-4e8c-4fef-a143-1a2132cecfe3:0",
+      "method": "GET",
+      "path": "/submissions/9681e3d6-4e8c-4fef-a143-1a2132cecfe3",
+      "status": 200,
+      "ms": 15,
+      "ok": true,
+      "body": {
+        "submission": {
+          "id": "9681e3d6-4e8c-4fef-a143-1a2132cecfe3",
+          "labId": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+          "userId": "00000000-0000-4000-8000-000000010007",
+          "submissionKind": "CODE",
+          "language": "javascript",
+          "code": "console.log(\"Hello\")\n",
+          "fileName": null,
+          "fileStoredPath": null,
+          "status": "PENDING",
+          "score": null,
+          "resultJson": null,
+          "teacherComment": null,
+          "returnReason": null,
+          "returnCount": 0,
+          "returnedAt": null,
+          "gradedById": null,
+          "gradedAt": null,
+          "createdAt": "2026-08-25T08:53:11.431Z",
+          "lab": {
+            "id": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+            "title": "D1-Hello-JS",
+            "description": "输出 Hello",
+            "descriptionMd": null,
+            "language": "javascript",
+            "starterCode": "console.log(\"Hello\")\n",
+            "judgeMode": null,
+            "allowedLanguages": [],
+            "allowedFileExtensions": [],
+            "course": {
+              "id": "00000000-0000-4000-8000-00000001001c",
+              "title": "程序设计基础",
+              "description": "程序设计基础（CS101）演示课程：含作业、实验、资料、智能练习与样例提交。",
+              "category": "程序设计",
+              "teacherId": "00000000-0000-4000-8000-000000010002",
+              "published": true,
+              "createdAt": "2026-08-25T08:46:58.228Z",
+              "labWeight": 0.55,
+              "homeworkWeight": 0.45,
+              "startAt": "2026-07-26T08:46:58.105Z",
+              "endAt": "2026-12-23T08:46:58.105Z",
+              "knowledgeGraphJson": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"基础\"},{\"id\":\"n2\",\"label\":\"实验\"},{\"id\":\"n3\",\"label\":\"作业\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\"},{\"from\":\"n1\",\"to\":\"n3\"}]}",
+              "scheduleSlotsJson": "[{\"dayOfWeek\":1,\"periodStart\":1,\"periodEnd\":2,\"room\":\"教学楼 A201\"},{\"dayOfWeek\":4,\"periodStart\":5,\"periodEnd\":6,\"room\":\"实验楼 B101\"}]",
+              "courseCode": "CS101",
+              "credits": 3,
+              "capacity": 80,
+              "courseNature": "REQUIRED",
+              "subjectCategory": "CORE_MAJOR",
+              "offeringCollegeCode": "21",
+              "semesterKey": "2026-spring"
+            }
+          },
+          "user": {
+            "id": "00000000-0000-4000-8000-000000010007",
+            "name": "张三",
+            "email": "student@demo.local"
+          }
+        }
+      }
+    },
+    {
+      "name": "poll:9681e3d6-4e8c-4fef-a143-1a2132cecfe3:1",
+      "method": "GET",
+      "path": "/submissions/9681e3d6-4e8c-4fef-a143-1a2132cecfe3",
+      "status": 200,
+      "ms": 11,
+      "ok": true,
+      "body": {
+        "submission": {
+          "id": "9681e3d6-4e8c-4fef-a143-1a2132cecfe3",
+          "labId": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+          "userId": "00000000-0000-4000-8000-000000010007",
+          "submissionKind": "CODE",
+          "language": "javascript",
+          "code": "console.log(\"Hello\")\n",
+          "fileName": null,
+          "fileStoredPath": null,
+          "status": "ACCEPTED",
+          "score": 100,
+          "resultJson": "{\"details\":[{\"testCaseId\":\"69d6a1eb-bf3b-409c-a94d-067c0b5d4a33\",\"pass\":true,\"hidden\":false,\"input\":\"\",\"expected\":\"Hello\",\"got\":\"Hello\"}]}",
+          "teacherComment": null,
+          "returnReason": null,
+          "returnCount": 0,
+          "returnedAt": null,
+          "gradedById": null,
+          "gradedAt": null,
+          "createdAt": "2026-08-25T08:53:11.431Z",
+          "lab": {
+            "id": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+            "title": "D1-Hello-JS",
+            "description": "输出 Hello",
+            "descriptionMd": null,
+            "language": "javascript",
+            "starterCode": "console.log(\"Hello\")\n",
+            "judgeMode": null,
+            "allowedLanguages": [],
+            "allowedFileExtensions": [],
+            "course": {
+              "id": "00000000-0000-4000-8000-00000001001c",
+              "title": "程序设计基础",
+              "description": "程序设计基础（CS101）演示课程：含作业、实验、资料、智能练习与样例提交。",
+              "category": "程序设计",
+              "teacherId": "00000000-0000-4000-8000-000000010002",
+              "published": true,
+              "createdAt": "2026-08-25T08:46:58.228Z",
+              "labWeight": 0.55,
+              "homeworkWeight": 0.45,
+              "startAt": "2026-07-26T08:46:58.105Z",
+              "endAt": "2026-12-23T08:46:58.105Z",
+              "knowledgeGraphJson": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"基础\"},{\"id\":\"n2\",\"label\":\"实验\"},{\"id\":\"n3\",\"label\":\"作业\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\"},{\"from\":\"n1\",\"to\":\"n3\"}]}",
+              "scheduleSlotsJson": "[{\"dayOfWeek\":1,\"periodStart\":1,\"periodEnd\":2,\"room\":\"教学楼 A201\"},{\"dayOfWeek\":4,\"periodStart\":5,\"periodEnd\":6,\"room\":\"实验楼 B101\"}]",
+              "courseCode": "CS101",
+              "credits": 3,
+              "capacity": 80,
+              "courseNature": "REQUIRED",
+              "subjectCategory": "CORE_MAJOR",
+              "offeringCollegeCode": "21",
+              "semesterKey": "2026-spring"
+            }
+          },
+          "user": {
+            "id": "00000000-0000-4000-8000-000000010007",
+            "name": "张三",
+            "email": "student@demo.local"
+          }
+        }
+      }
+    },
+    {
+      "name": "uc06.submitWa",
+      "method": "POST",
+      "path": "/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28/submit",
+      "status": 200,
+      "ms": 49,
+      "ok": true,
+      "body": {
+        "submissionId": "2414631b-1977-46bf-a1db-9844d8c3cdec",
+        "status": "PENDING"
+      }
+    },
+    {
+      "name": "poll:2414631b-1977-46bf-a1db-9844d8c3cdec:0",
+      "method": "GET",
+      "path": "/submissions/2414631b-1977-46bf-a1db-9844d8c3cdec",
+      "status": 200,
+      "ms": 18,
+      "ok": true,
+      "body": {
+        "submission": {
+          "id": "2414631b-1977-46bf-a1db-9844d8c3cdec",
+          "labId": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+          "userId": "00000000-0000-4000-8000-000000010007",
+          "submissionKind": "CODE",
+          "language": "javascript",
+          "code": "console.log(\"Hi\")\n",
+          "fileName": null,
+          "fileStoredPath": null,
+          "status": "JUDGING",
+          "score": null,
+          "resultJson": null,
+          "teacherComment": null,
+          "returnReason": null,
+          "returnCount": 0,
+          "returnedAt": null,
+          "gradedById": null,
+          "gradedAt": null,
+          "createdAt": "2026-08-25T08:53:12.543Z",
+          "lab": {
+            "id": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+            "title": "D1-Hello-JS",
+            "description": "输出 Hello",
+            "descriptionMd": null,
+            "language": "javascript",
+            "starterCode": "console.log(\"Hello\")\n",
+            "judgeMode": null,
+            "allowedLanguages": [],
+            "allowedFileExtensions": [],
+            "course": {
+              "id": "00000000-0000-4000-8000-00000001001c",
+              "title": "程序设计基础",
+              "description": "程序设计基础（CS101）演示课程：含作业、实验、资料、智能练习与样例提交。",
+              "category": "程序设计",
+              "teacherId": "00000000-0000-4000-8000-000000010002",
+              "published": true,
+              "createdAt": "2026-08-25T08:46:58.228Z",
+              "labWeight": 0.55,
+              "homeworkWeight": 0.45,
+              "startAt": "2026-07-26T08:46:58.105Z",
+              "endAt": "2026-12-23T08:46:58.105Z",
+              "knowledgeGraphJson": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"基础\"},{\"id\":\"n2\",\"label\":\"实验\"},{\"id\":\"n3\",\"label\":\"作业\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\"},{\"from\":\"n1\",\"to\":\"n3\"}]}",
+              "scheduleSlotsJson": "[{\"dayOfWeek\":1,\"periodStart\":1,\"periodEnd\":2,\"room\":\"教学楼 A201\"},{\"dayOfWeek\":4,\"periodStart\":5,\"periodEnd\":6,\"room\":\"实验楼 B101\"}]",
+              "courseCode": "CS101",
+              "credits": 3,
+              "capacity": 80,
+              "courseNature": "REQUIRED",
+              "subjectCategory": "CORE_MAJOR",
+              "offeringCollegeCode": "21",
+              "semesterKey": "2026-spring"
+            }
+          },
+          "user": {
+            "id": "00000000-0000-4000-8000-000000010007",
+            "name": "张三",
+            "email": "student@demo.local"
+          }
+        }
+      }
+    },
+    {
+      "name": "poll:2414631b-1977-46bf-a1db-9844d8c3cdec:1",
+      "method": "GET",
+      "path": "/submissions/2414631b-1977-46bf-a1db-9844d8c3cdec",
+      "status": 200,
+      "ms": 11,
+      "ok": true,
+      "body": {
+        "submission": {
+          "id": "2414631b-1977-46bf-a1db-9844d8c3cdec",
+          "labId": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+          "userId": "00000000-0000-4000-8000-000000010007",
+          "submissionKind": "CODE",
+          "language": "javascript",
+          "code": "console.log(\"Hi\")\n",
+          "fileName": null,
+          "fileStoredPath": null,
+          "status": "WRONG_ANSWER",
+          "score": 0,
+          "resultJson": "{\"details\":[{\"testCaseId\":\"69d6a1eb-bf3b-409c-a94d-067c0b5d4a33\",\"pass\":false,\"hidden\":false,\"input\":\"\",\"expected\":\"Hello\",\"got\":\"Hi\"}]}",
+          "teacherComment": null,
+          "returnReason": null,
+          "returnCount": 0,
+          "returnedAt": null,
+          "gradedById": null,
+          "gradedAt": null,
+          "createdAt": "2026-08-25T08:53:12.543Z",
+          "lab": {
+            "id": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+            "title": "D1-Hello-JS",
+            "description": "输出 Hello",
+            "descriptionMd": null,
+            "language": "javascript",
+            "starterCode": "console.log(\"Hello\")\n",
+            "judgeMode": null,
+            "allowedLanguages": [],
+            "allowedFileExtensions": [],
+            "course": {
+              "id": "00000000-0000-4000-8000-00000001001c",
+              "title": "程序设计基础",
+              "description": "程序设计基础（CS101）演示课程：含作业、实验、资料、智能练习与样例提交。",
+              "category": "程序设计",
+              "teacherId": "00000000-0000-4000-8000-000000010002",
+              "published": true,
+              "createdAt": "2026-08-25T08:46:58.228Z",
+              "labWeight": 0.55,
+              "homeworkWeight": 0.45,
+              "startAt": "2026-07-26T08:46:58.105Z",
+              "endAt": "2026-12-23T08:46:58.105Z",
+              "knowledgeGraphJson": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"基础\"},{\"id\":\"n2\",\"label\":\"实验\"},{\"id\":\"n3\",\"label\":\"作业\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\"},{\"from\":\"n1\",\"to\":\"n3\"}]}",
+              "scheduleSlotsJson": "[{\"dayOfWeek\":1,\"periodStart\":1,\"periodEnd\":2,\"room\":\"教学楼 A201\"},{\"dayOfWeek\":4,\"periodStart\":5,\"periodEnd\":6,\"room\":\"实验楼 B101\"}]",
+              "courseCode": "CS101",
+              "credits": 3,
+              "capacity": 80,
+              "courseNature": "REQUIRED",
+              "subjectCategory": "CORE_MAJOR",
+              "offeringCollegeCode": "21",
+              "semesterKey": "2026-spring"
+            }
+          },
+          "user": {
+            "id": "00000000-0000-4000-8000-000000010007",
+            "name": "张三",
+            "email": "student@demo.local"
+          }
+        }
+      }
+    },
+    {
+      "name": "uc06.return",
+      "method": "PATCH",
+      "path": "/submissions/2414631b-1977-46bf-a1db-9844d8c3cdec/return",
+      "status": 200,
+      "ms": 39,
+      "ok": true,
+      "body": {
+        "submission": {
+          "id": "2414631b-1977-46bf-a1db-9844d8c3cdec",
+          "labId": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+          "userId": "00000000-0000-4000-8000-000000010007",
+          "submissionKind": "CODE",
+          "language": "javascript",
+          "code": "console.log(\"Hi\")\n",
+          "fileName": null,
+          "fileStoredPath": null,
+          "status": "WRONG_ANSWER",
+          "score": 0,
+          "resultJson": "{\"details\":[{\"testCaseId\":\"69d6a1eb-bf3b-409c-a94d-067c0b5d4a33\",\"pass\":false,\"hidden\":false,\"input\":\"\",\"expected\":\"Hello\",\"got\":\"Hi\"}]}",
+          "teacherComment": null,
+          "returnReason": "D1 验证打回：输出不正确，请按样例修改后补交。",
+          "returnCount": 1,
+          "returnedAt": "2026-08-25T08:53:13.621Z",
+          "gradedById": null,
+          "gradedAt": null,
+          "createdAt": "2026-08-25T08:53:12.543Z"
+        }
+      }
+    },
+    {
+      "name": "uc06.makeup",
+      "method": "POST",
+      "path": "/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28/submit",
+      "status": 200,
+      "ms": 38,
+      "ok": true,
+      "body": {
+        "submissionId": "c5cfe5c5-9c68-4e9c-b107-9b44404ce23e",
+        "status": "PENDING"
+      }
+    },
+    {
+      "name": "poll:c5cfe5c5-9c68-4e9c-b107-9b44404ce23e:0",
+      "method": "GET",
+      "path": "/submissions/c5cfe5c5-9c68-4e9c-b107-9b44404ce23e",
+      "status": 200,
+      "ms": 9,
+      "ok": true,
+      "body": {
+        "submission": {
+          "id": "c5cfe5c5-9c68-4e9c-b107-9b44404ce23e",
+          "labId": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+          "userId": "00000000-0000-4000-8000-000000010007",
+          "submissionKind": "CODE",
+          "language": "javascript",
+          "code": "console.log(\"Hello\")\n",
+          "fileName": null,
+          "fileStoredPath": null,
+          "status": "JUDGING",
+          "score": null,
+          "resultJson": null,
+          "teacherComment": null,
+          "returnReason": null,
+          "returnCount": 0,
+          "returnedAt": null,
+          "gradedById": null,
+          "gradedAt": null,
+          "createdAt": "2026-08-25T08:53:13.659Z",
+          "lab": {
+            "id": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+            "title": "D1-Hello-JS",
+            "description": "输出 Hello",
+            "descriptionMd": null,
+            "language": "javascript",
+            "starterCode": "console.log(\"Hello\")\n",
+            "judgeMode": null,
+            "allowedLanguages": [],
+            "allowedFileExtensions": [],
+            "course": {
+              "id": "00000000-0000-4000-8000-00000001001c",
+              "title": "程序设计基础",
+              "description": "程序设计基础（CS101）演示课程：含作业、实验、资料、智能练习与样例提交。",
+              "category": "程序设计",
+              "teacherId": "00000000-0000-4000-8000-000000010002",
+              "published": true,
+              "createdAt": "2026-08-25T08:46:58.228Z",
+              "labWeight": 0.55,
+              "homeworkWeight": 0.45,
+              "startAt": "2026-07-26T08:46:58.105Z",
+              "endAt": "2026-12-23T08:46:58.105Z",
+              "knowledgeGraphJson": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"基础\"},{\"id\":\"n2\",\"label\":\"实验\"},{\"id\":\"n3\",\"label\":\"作业\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\"},{\"from\":\"n1\",\"to\":\"n3\"}]}",
+              "scheduleSlotsJson": "[{\"dayOfWeek\":1,\"periodStart\":1,\"periodEnd\":2,\"room\":\"教学楼 A201\"},{\"dayOfWeek\":4,\"periodStart\":5,\"periodEnd\":6,\"room\":\"实验楼 B101\"}]",
+              "courseCode": "CS101",
+              "credits": 3,
+              "capacity": 80,
+              "courseNature": "REQUIRED",
+              "subjectCategory": "CORE_MAJOR",
+              "offeringCollegeCode": "21",
+              "semesterKey": "2026-spring"
+            }
+          },
+          "user": {
+            "id": "00000000-0000-4000-8000-000000010007",
+            "name": "张三",
+            "email": "student@demo.local"
+          }
+        }
+      }
+    },
+    {
+      "name": "poll:c5cfe5c5-9c68-4e9c-b107-9b44404ce23e:1",
+      "method": "GET",
+      "path": "/submissions/c5cfe5c5-9c68-4e9c-b107-9b44404ce23e",
+      "status": 200,
+      "ms": 13,
+      "ok": true,
+      "body": {
+        "submission": {
+          "id": "c5cfe5c5-9c68-4e9c-b107-9b44404ce23e",
+          "labId": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+          "userId": "00000000-0000-4000-8000-000000010007",
+          "submissionKind": "CODE",
+          "language": "javascript",
+          "code": "console.log(\"Hello\")\n",
+          "fileName": null,
+          "fileStoredPath": null,
+          "status": "ACCEPTED",
+          "score": 100,
+          "resultJson": "{\"details\":[{\"testCaseId\":\"69d6a1eb-bf3b-409c-a94d-067c0b5d4a33\",\"pass\":true,\"hidden\":false,\"input\":\"\",\"expected\":\"Hello\",\"got\":\"Hello\"}]}",
+          "teacherComment": null,
+          "returnReason": null,
+          "returnCount": 0,
+          "returnedAt": null,
+          "gradedById": null,
+          "gradedAt": null,
+          "createdAt": "2026-08-25T08:53:13.659Z",
+          "lab": {
+            "id": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+            "title": "D1-Hello-JS",
+            "description": "输出 Hello",
+            "descriptionMd": null,
+            "language": "javascript",
+            "starterCode": "console.log(\"Hello\")\n",
+            "judgeMode": null,
+            "allowedLanguages": [],
+            "allowedFileExtensions": [],
+            "course": {
+              "id": "00000000-0000-4000-8000-00000001001c",
+              "title": "程序设计基础",
+              "description": "程序设计基础（CS101）演示课程：含作业、实验、资料、智能练习与样例提交。",
+              "category": "程序设计",
+              "teacherId": "00000000-0000-4000-8000-000000010002",
+              "published": true,
+              "createdAt": "2026-08-25T08:46:58.228Z",
+              "labWeight": 0.55,
+              "homeworkWeight": 0.45,
+              "startAt": "2026-07-26T08:46:58.105Z",
+              "endAt": "2026-12-23T08:46:58.105Z",
+              "knowledgeGraphJson": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"基础\"},{\"id\":\"n2\",\"label\":\"实验\"},{\"id\":\"n3\",\"label\":\"作业\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\"},{\"from\":\"n1\",\"to\":\"n3\"}]}",
+              "scheduleSlotsJson": "[{\"dayOfWeek\":1,\"periodStart\":1,\"periodEnd\":2,\"room\":\"教学楼 A201\"},{\"dayOfWeek\":4,\"periodStart\":5,\"periodEnd\":6,\"room\":\"实验楼 B101\"}]",
+              "courseCode": "CS101",
+              "credits": 3,
+              "capacity": 80,
+              "courseNature": "REQUIRED",
+              "subjectCategory": "CORE_MAJOR",
+              "offeringCollegeCode": "21",
+              "semesterKey": "2026-spring"
+            }
+          },
+          "user": {
+            "id": "00000000-0000-4000-8000-000000010007",
+            "name": "张三",
+            "email": "student@demo.local"
+          }
+        }
+      }
+    },
+    {
+      "name": "uc06.futureBlock",
+      "method": "POST",
+      "path": "/labs/00000000-0000-4000-8000-000000090021/submit",
+      "status": 403,
+      "ms": 13,
+      "ok": false,
+      "body": {
+        "error": "不在可访问时间内"
+      }
+    },
+    {
+      "name": "uc06.returnedSeed",
+      "method": "GET",
+      "path": "/submissions/00000000-0000-4000-8000-000000090024",
+      "status": 200,
+      "ms": 13,
+      "ok": true,
+      "body": {
+        "submission": {
+          "id": "00000000-0000-4000-8000-000000090024",
+          "labId": "00000000-0000-4000-8000-000000090023",
+          "userId": "00000000-0000-4000-8000-000000010007",
+          "submissionKind": "CODE",
+          "language": "javascript",
+          "code": "console.log(\"Hell\")\n",
+          "fileName": null,
+          "fileStoredPath": null,
+          "status": "WRONG_ANSWER",
+          "score": 0,
+          "resultJson": null,
+          "teacherComment": "输出不符，请按题解修改后重交。",
+          "returnReason": "输出与期望不符，请参考题解提示修改后重新提交。",
+          "returnCount": 1,
+          "returnedAt": "2026-08-24T08:46:58.105Z",
+          "gradedById": "00000000-0000-4000-8000-000000010002",
+          "gradedAt": "2026-08-24T08:46:58.105Z",
+          "createdAt": "2026-08-25T08:47:04.234Z",
+          "lab": {
+            "id": "00000000-0000-4000-8000-000000090023",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "labSetId": "00000000-0000-4000-8000-000000090022",
+            "title": "TC-LAB-007 打回测试题",
+            "description": "张三提交已被教师打回，需修改后重交。",
+            "descriptionMd": null,
+            "language": "javascript",
+            "starterCode": "console.log(\"Hello\")\n",
+            "judgeMode": null,
+            "allowedLanguages": [],
+            "allowedFileExtensions": [],
+            "course": {
+              "id": "00000000-0000-4000-8000-00000001001c",
+              "title": "程序设计基础",
+              "description": "程序设计基础（CS101）演示课程：含作业、实验、资料、智能练习与样例提交。",
+              "category": "程序设计",
+              "teacherId": "00000000-0000-4000-8000-000000010002",
+              "published": true,
+              "createdAt": "2026-08-25T08:46:58.228Z",
+              "labWeight": 0.55,
+              "homeworkWeight": 0.45,
+              "startAt": "2026-07-26T08:46:58.105Z",
+              "endAt": "2026-12-23T08:46:58.105Z",
+              "knowledgeGraphJson": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"基础\"},{\"id\":\"n2\",\"label\":\"实验\"},{\"id\":\"n3\",\"label\":\"作业\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\"},{\"from\":\"n1\",\"to\":\"n3\"}]}",
+              "scheduleSlotsJson": "[{\"dayOfWeek\":1,\"periodStart\":1,\"periodEnd\":2,\"room\":\"教学楼 A201\"},{\"dayOfWeek\":4,\"periodStart\":5,\"periodEnd\":6,\"room\":\"实验楼 B101\"}]",
+              "courseCode": "CS101",
+              "credits": 3,
+              "capacity": 80,
+              "courseNature": "REQUIRED",
+              "subjectCategory": "CORE_MAJOR",
+              "offeringCollegeCode": "21",
+              "semesterKey": "2026-spring"
+            }
+          },
+          "user": {
+            "id": "00000000-0000-4000-8000-000000010007",
+            "name": "张三",
+            "email": "student@demo.local"
+          }
+        }
+      }
+    },
+    {
+      "name": "uc07.tags",
+      "method": "GET",
+      "path": "/courses/00000000-0000-4000-8000-00000001001c/practice/tags",
+      "status": 200,
+      "ms": 15,
+      "ok": true,
+      "body": {
+        "tags": [
+          "程序设计 > AI出题 > 复习",
+          "程序设计 > 基础概念",
+          "程序设计 > 字符串",
+          "程序设计 > 应用",
+          "程序设计 > 数据库",
+          "程序设计 > 栈",
+          "程序设计 > 树",
+          "程序设计 > 核心概念理解",
+          "程序设计 > 算法分析",
+          "程序设计 > 线性表",
+          "程序设计 > 综合",
+          "程序设计 > 编程练习",
+          "程序设计 > 设计",
+          "程序设计 > 输入输出"
+        ]
+      }
+    },
+    {
+      "name": "uc07.smart",
+      "method": "POST",
+      "path": "/courses/00000000-0000-4000-8000-00000001001c/practice/sessions",
+      "status": 200,
+      "ms": 64,
+      "ok": true,
+      "body": {
+        "session": {
+          "id": "a13de4ad-815d-4c31-bc3c-9de4d403f7ca",
+          "mode": "SMART",
+          "status": "IN_PROGRESS",
+          "maxScore": 10,
+          "items": [
+            {
+              "id": "e62b62ec-90ac-418e-9e9e-53675273f208",
+              "orderIndex": 0,
+              "question": {
+                "id": "00000000-0000-4000-8000-00000001006e",
+                "type": "SHORT_ANSWER",
+                "stem": "举例说明程序设计在实验或作业中的应用。",
+                "options": null,
+                "tagPath": "程序设计 > 应用",
+                "difficulty": "MEDIUM",
+                "language": null,
+                "attemptCount": 19,
+                "correctRate": 0.3684210526315789
+              }
+            },
+            {
+              "id": "9803aab3-0131-4929-b096-5ac9f42c73ea",
+              "orderIndex": 1,
+              "question": {
+                "id": "00000000-0000-4000-8000-000000010065",
+                "type": "CHOICE",
+                "stem": "程序设计基础：下列表述正确的是？",
+                "options": [
+                  {
+                    "id": "a",
+                    "text": "隐藏实现细节、降低耦合"
+                  },
+                  {
+                    "id": "b",
+                    "text": "高效排序与分治算法"
+                  },
+                  {
+                    "id": "c",
+                    "text": "实际工程场景中的问题建模"
+                  },
+                  {
+                    "id": "d",
+                    "text": "与课程无关的硬件驱动"
+                  }
+                ],
+                "tagPath": "程序设计 > 核心概念理解",
+                "difficulty": "EASY",
+                "language": null,
+                "attemptCount": 20,
+                "correctRate": 0.6
+              }
+            },
+            {
+              "id": "bd143cc5-0cf0-4738-988f-d6a8e44e9ba6",
+              "orderIndex": 2,
+              "question": {
+                "id": "00000000-0000-4000-8000-00000001006d",
+                "type": "SHORT_ANSWER",
+                "stem": "简述程序设计基础中一个核心概念及其学习意义。",
+                "options": null,
+                "tagPath": "程序设计 > 综合",
+                "difficulty": "MEDIUM",
+                "language": null,
+                "attemptCount": 18,
+                "correctRate": 0.3333333333333333
+              }
+            },
+            {
+              "id": "37f11307-1c2a-4960-b0e6-0b96fa8f3640",
+              "orderIndex": 3,
+              "question": {
+                "id": "00000000-0000-4000-8000-000000010066",
+                "type": "CHOICE",
+                "stem": "关于程序设计，时间复杂度 O(n log n) 常见于？",
+                "options": [
+                  {
+                    "id": "a",
+                    "text": "隐藏实现细节、降低耦合"
+                  },
+                  {
+                    "id": "b",
+                    "text": "高效排序与分治算法"
+                  },
+                  {
+                    "id": "c",
+                    "text": "实际工程场景中的问题建模"
+                  },
+                  {
+                    "id": "d",
+                    "text": "与课程无关的硬件驱动"
+                  }
+                ],
+                "tagPath": "程序设计 > 算法分析",
+                "difficulty": "MEDIUM",
+                "language": null,
+                "attemptCount": 21,
+                "correctRate": 0.6190476190476191
+              }
+            },
+            {
+              "id": "5be7c174-0860-41e5-858b-3dc16f924a90",
+              "orderIndex": 4,
+              "question": {
+                "id": "00000000-0000-4000-8000-00000001006f",
+                "type": "SHORT_ANSWER",
+                "stem": "什么是程序设计中的「模块化」思想？",
+                "options": null,
+                "tagPath": "程序设计 > 设计",
+                "difficulty": "EASY",
+                "language": null,
+                "attemptCount": 20,
+                "correctRate": 0.4
+              }
+            },
+            {
+              "id": "a11a67da-90fd-4468-a18d-64e2a0136f7f",
+              "orderIndex": 5,
+              "question": {
+                "id": "00000000-0000-4000-8000-000000010069",
+                "type": "FILL",
+                "stem": "程序设计中，顺序表随机访问的时间复杂度为 O(____)。",
+                "options": null,
+                "tagPath": "程序设计 > 线性表",
+                "difficulty": "EASY",
+                "language": null,
+                "attemptCount": 19,
+                "correctRate": 0.7368421052631579
+              }
+            },
+            {
+              "id": "2cab1311-695d-4896-99a8-4d8055ca1d45",
+              "orderIndex": 6,
+              "question": {
+                "id": "00000000-0000-4000-8000-00000001006b",
+                "type": "FILL",
+                "stem": "二叉树前序遍历的顺序为：____ → 左 → 右。",
+                "options": null,
+                "tagPath": "程序设计 > 树",
+                "difficulty": "MEDIUM",
+                "language": null,
+                "attemptCount": 21,
+                "correctRate": 0.7619047619047619
+              }
+            },
+            {
+              "id": "37349ab2-0284-47f6-8634-3bfd83320a4c",
+              "orderIndex": 7,
+              "question": {
+                "id": "00000000-0000-4000-8000-00000001006c",
+                "type": "FILL",
+                "stem": "关系数据库中，用于唯一标识元组的是 ____ 键。",
+                "options": null,
+                "tagPath": "程序设计 > 数据库",
+                "difficulty": "EASY",
+                "language": null,
+                "attemptCount": 22,
+                "correctRate": 0.7727272727272727
+              }
+            },
+            {
+              "id": "c27fd1ff-9cfd-4e15-b402-d60a8f11c260",
+              "orderIndex": 8,
+              "question": {
+                "id": "00000000-0000-4000-8000-000000010072",
+                "type": "CODE",
+                "stem": "编写程序：读入一行字符串，输出其长度。",
+                "options": null,
+                "tagPath": "程序设计 > 字符串",
+                "difficulty": "MEDIUM",
+                "language": "python",
+                "attemptCount": 38,
+                "correctRate": 0.39473684210526316
+              }
+            },
+            {
+              "id": "e1e974fe-8e70-4a10-aca5-98c350a3f399",
+              "orderIndex": 9,
+              "question": {
+                "id": "00000000-0000-4000-8000-000000010068",
+                "type": "CHOICE",
+                "stem": "以下哪项属于程序设计的典型应用？",
+                "options": [
+                  {
+                    "id": "a",
+                    "text": "隐藏实现细节、降低耦合"
+                  },
+                  {
+                    "id": "b",
+                    "text": "高效排序与分治算法"
+                  },
+                  {
+                    "id": "c",
+                    "text": "实际工程场景中的问题建模"
+                  },
+                  {
+                    "id": "d",
+                    "text": "与课程无关的硬件驱动"
+                  }
+                ],
+                "tagPath": "程序设计 > 应用",
+                "difficulty": "MEDIUM",
+                "language": null,
+                "attemptCount": 23,
+                "correctRate": 0.6521739130434783
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "uc07.answer:e62b62ec-90ac-418e-9e9e-53675273f208",
+      "method": "PATCH",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/items/e62b62ec-90ac-418e-9e9e-53675273f208",
+      "status": 200,
+      "ms": 19,
+      "ok": true,
+      "body": {
+        "item": {
+          "id": "e62b62ec-90ac-418e-9e9e-53675273f208"
+        }
+      }
+    },
+    {
+      "name": "uc07.answer:9803aab3-0131-4929-b096-5ac9f42c73ea",
+      "method": "PATCH",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/items/9803aab3-0131-4929-b096-5ac9f42c73ea",
+      "status": 200,
+      "ms": 17,
+      "ok": true,
+      "body": {
+        "item": {
+          "id": "9803aab3-0131-4929-b096-5ac9f42c73ea"
+        }
+      }
+    },
+    {
+      "name": "uc07.answer:bd143cc5-0cf0-4738-988f-d6a8e44e9ba6",
+      "method": "PATCH",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/items/bd143cc5-0cf0-4738-988f-d6a8e44e9ba6",
+      "status": 200,
+      "ms": 11,
+      "ok": true,
+      "body": {
+        "item": {
+          "id": "bd143cc5-0cf0-4738-988f-d6a8e44e9ba6"
+        }
+      }
+    },
+    {
+      "name": "uc07.answer:37f11307-1c2a-4960-b0e6-0b96fa8f3640",
+      "method": "PATCH",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/items/37f11307-1c2a-4960-b0e6-0b96fa8f3640",
+      "status": 200,
+      "ms": 11,
+      "ok": true,
+      "body": {
+        "item": {
+          "id": "37f11307-1c2a-4960-b0e6-0b96fa8f3640"
+        }
+      }
+    },
+    {
+      "name": "uc07.answer:5be7c174-0860-41e5-858b-3dc16f924a90",
+      "method": "PATCH",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/items/5be7c174-0860-41e5-858b-3dc16f924a90",
+      "status": 200,
+      "ms": 12,
+      "ok": true,
+      "body": {
+        "item": {
+          "id": "5be7c174-0860-41e5-858b-3dc16f924a90"
+        }
+      }
+    },
+    {
+      "name": "uc07.answer:a11a67da-90fd-4468-a18d-64e2a0136f7f",
+      "method": "PATCH",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/items/a11a67da-90fd-4468-a18d-64e2a0136f7f",
+      "status": 200,
+      "ms": 11,
+      "ok": true,
+      "body": {
+        "item": {
+          "id": "a11a67da-90fd-4468-a18d-64e2a0136f7f"
+        }
+      }
+    },
+    {
+      "name": "uc07.answer:2cab1311-695d-4896-99a8-4d8055ca1d45",
+      "method": "PATCH",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/items/2cab1311-695d-4896-99a8-4d8055ca1d45",
+      "status": 200,
+      "ms": 8,
+      "ok": true,
+      "body": {
+        "item": {
+          "id": "2cab1311-695d-4896-99a8-4d8055ca1d45"
+        }
+      }
+    },
+    {
+      "name": "uc07.answer:37349ab2-0284-47f6-8634-3bfd83320a4c",
+      "method": "PATCH",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/items/37349ab2-0284-47f6-8634-3bfd83320a4c",
+      "status": 200,
+      "ms": 11,
+      "ok": true,
+      "body": {
+        "item": {
+          "id": "37349ab2-0284-47f6-8634-3bfd83320a4c"
+        }
+      }
+    },
+    {
+      "name": "uc07.answer:c27fd1ff-9cfd-4e15-b402-d60a8f11c260",
+      "method": "PATCH",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/items/c27fd1ff-9cfd-4e15-b402-d60a8f11c260",
+      "status": 200,
+      "ms": 11,
+      "ok": true,
+      "body": {
+        "item": {
+          "id": "c27fd1ff-9cfd-4e15-b402-d60a8f11c260"
+        }
+      }
+    },
+    {
+      "name": "uc07.answer:e1e974fe-8e70-4a10-aca5-98c350a3f399",
+      "method": "PATCH",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/items/e1e974fe-8e70-4a10-aca5-98c350a3f399",
+      "status": 200,
+      "ms": 8,
+      "ok": true,
+      "body": {
+        "item": {
+          "id": "e1e974fe-8e70-4a10-aca5-98c350a3f399"
+        }
+      }
+    },
+    {
+      "name": "uc07.submit",
+      "method": "POST",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/submit",
+      "status": 200,
+      "ms": 1086,
+      "ok": true,
+      "body": {
+        "session": {
+          "id": "a13de4ad-815d-4c31-bc3c-9de4d403f7ca",
+          "score": 1.5,
+          "maxScore": 10,
+          "status": "GRADED"
+        },
+        "removedFromWrongBook": 0
+      }
+    },
+    {
+      "name": "uc07.mine",
+      "method": "GET",
+      "path": "/courses/00000000-0000-4000-8000-00000001001c/practice/sessions/mine",
+      "status": 200,
+      "ms": 12,
+      "ok": true,
+      "body": {
+        "sessions": [
+          {
+            "id": "a13de4ad-815d-4c31-bc3c-9de4d403f7ca",
+            "mode": "SMART",
+            "status": "GRADED",
+            "score": 1.5,
+            "maxScore": 10,
+            "createdAt": "2026-08-25T08:53:14.788Z",
+            "submittedAt": "2026-08-25T08:53:16.018Z",
+            "itemCount": 10
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000104e7",
+            "mode": "SMART",
+            "status": "GRADED",
+            "score": 80,
+            "maxScore": 100,
+            "createdAt": "2026-08-25T08:47:04.044Z",
+            "submittedAt": "2026-08-23T08:46:58.105Z",
+            "itemCount": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "uc07.wrongBook",
+      "method": "GET",
+      "path": "/wrong-book/mine",
+      "status": 200,
+      "ms": 5,
+      "ok": true,
+      "body": {
+        "entries": [
+          {
+            "id": "509efe3c-4d78-4609-93c9-c5ffe54859ce",
+            "userId": "00000000-0000-4000-8000-000000010007",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "homeworkId": null,
+            "practiceQuestionId": "00000000-0000-4000-8000-000000010068",
+            "title": "以下哪项属于程序设计的典型应用？",
+            "content": "【错因分析】你在「程序设计 > 应用」相关题目上的作答与预期不一致。\n可能原因：概念混淆、步骤遗漏或边界条件未考虑。\n你的作答摘要：\"a\"\n建议对照解析：本题考查程序设计中「应用」相关知识点，请参考课程讲义与实验说明。",
+            "mastered": false,
+            "createdAt": "2026-08-25T08:53:16.015Z"
+          },
+          {
+            "id": "d8066868-fe00-4234-a2a9-6a45f8095e85",
+            "userId": "00000000-0000-4000-8000-000000010007",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "homeworkId": null,
+            "practiceQuestionId": "00000000-0000-4000-8000-000000010072",
+            "title": "编写程序：读入一行字符串，输出其长度。",
+            "content": "【错因分析】你在「程序设计 > 字符串」相关题目上的作答与预期不一致。\n可能原因：概念混淆、步骤遗漏或边界条件未考虑。\n你的作答摘要：\"A\"\n建议对照解析：参考实现：\n```python\ns = input()\nprint(len(s))\n```",
+            "mastered": false,
+            "createdAt": "2026-08-25T08:53:16.001Z"
+          },
+          {
+            "id": "22217db7-c4a1-48c5-b1a8-ec10cc839a28",
+            "userId": "00000000-0000-4000-8000-000000010007",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "homeworkId": null,
+            "practiceQuestionId": "00000000-0000-4000-8000-00000001006c",
+            "title": "关系数据库中，用于唯一标识元组的是 ____ 键。",
+            "content": "【错因分析】你在「程序设计 > 数据库」相关题目上的作答与预期不一致。\n可能原因：概念混淆、步骤遗漏或边界条件未考虑。\n你的作答摘要：\"A\"\n建议对照解析：标准答案：主。数据库是程序设计基础的重要基础。",
+            "mastered": false,
+            "createdAt": "2026-08-25T08:53:15.082Z"
+          },
+          {
+            "id": "e397d0b9-510b-4b3a-9667-d41956b628f9",
+            "userId": "00000000-0000-4000-8000-000000010007",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "homeworkId": null,
+            "practiceQuestionId": "00000000-0000-4000-8000-00000001006b",
+            "title": "二叉树前序遍历的顺序为：____ → 左 → 右。",
+            "content": "【错因分析】你在「程序设计 > 树」相关题目上的作答与预期不一致。\n可能原因：概念混淆、步骤遗漏或边界条件未考虑。\n你的作答摘要：\"A\"\n建议对照解析：标准答案：根。树是程序设计基础的重要基础。",
+            "mastered": false,
+            "createdAt": "2026-08-25T08:53:15.067Z"
+          },
+          {
+            "id": "5b364931-93e4-493b-b7af-14ff09060f59",
+            "userId": "00000000-0000-4000-8000-000000010007",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "homeworkId": null,
+            "practiceQuestionId": "00000000-0000-4000-8000-000000010069",
+            "title": "程序设计中，顺序表随机访问的时间复杂度为 O(____)。",
+            "content": "【错因分析】你在「程序设计 > 线性表」相关题目上的作答与预期不一致。\n可能原因：概念混淆、步骤遗漏或边界条件未考虑。\n你的作答摘要：\"A\"\n建议对照解析：标准答案：1。线性表是程序设计基础的重要基础。",
+            "mastered": false,
+            "createdAt": "2026-08-25T08:53:15.050Z"
+          },
+          {
+            "id": "11862d56-b57c-465f-b791-d3b072cfd954",
+            "userId": "00000000-0000-4000-8000-000000010007",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "homeworkId": null,
+            "practiceQuestionId": "00000000-0000-4000-8000-00000001006f",
+            "title": "什么是程序设计中的「模块化」思想？",
+            "content": "【错因分析】你在「程序设计 > 设计」相关题目上的作答与预期不一致。\n可能原因：概念混淆、步骤遗漏或边界条件未考虑。\n你的作答摘要：\"A\"\n建议对照解析：参考答案应包含「模块」等要点，并结合程序设计基础课堂内容展开。",
+            "mastered": false,
+            "createdAt": "2026-08-25T08:53:15.034Z"
+          },
+          {
+            "id": "7b2fc10a-a7f2-4ed5-aedf-bce822af1bfa",
+            "userId": "00000000-0000-4000-8000-000000010007",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "homeworkId": null,
+            "practiceQuestionId": "00000000-0000-4000-8000-000000010066",
+            "title": "关于程序设计，时间复杂度 O(n log n) 常见于？",
+            "content": "【错因分析】你在「程序设计 > 算法分析」相关题目上的作答与预期不一致。\n可能原因：概念混淆、步骤遗漏或边界条件未考虑。\n你的作答摘要：\"a\"\n建议对照解析：本题考查程序设计中「算法分析」相关知识点，请参考课程讲义与实验说明。",
+            "mastered": false,
+            "createdAt": "2026-08-25T08:53:15.017Z"
+          },
+          {
+            "id": "2bf8f64a-39dd-4fe0-b6b6-1320ae8e09aa",
+            "userId": "00000000-0000-4000-8000-000000010007",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "homeworkId": null,
+            "practiceQuestionId": "00000000-0000-4000-8000-00000001006d",
+            "title": "简述程序设计基础中一个核心概念及其学习意义。",
+            "content": "【错因分析】你在「程序设计 > 综合」相关题目上的作答与预期不一致。\n可能原因：概念混淆、步骤遗漏或边界条件未考虑。\n你的作答摘要：\"A\"\n建议对照解析：参考答案应包含「理解」等要点，并结合程序设计基础课堂内容展开。",
+            "mastered": false,
+            "createdAt": "2026-08-25T08:53:14.999Z"
+          },
+          {
+            "id": "ad696584-3fb6-4b0b-bf5c-3aaddc75fad4",
+            "userId": "00000000-0000-4000-8000-000000010007",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "homeworkId": null,
+            "practiceQuestionId": "00000000-0000-4000-8000-000000010065",
+            "title": "程序设计基础：下列表述正确的是？",
+            "content": "【错因分析】你在「程序设计 > 核心概念理解」相关题目上的作答与预期不一致。\n可能原因：概念混淆、步骤遗漏或边界条件未考虑。\n你的作答摘要：\"a\"\n建议对照解析：本题考查程序设计中「核心概念理解」相关知识点，请参考课程讲义与实验说明。",
+            "mastered": false,
+            "createdAt": "2026-08-25T08:53:14.982Z"
+          },
+          {
+            "id": "73607f48-0b5a-463e-8e6c-49f06aefb61b",
+            "userId": "00000000-0000-4000-8000-000000010007",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "homeworkId": null,
+            "practiceQuestionId": "00000000-0000-4000-8000-00000001006e",
+            "title": "举例说明程序设计在实验或作业中的应用。",
+            "content": "【错因分析】你在「程序设计 > 应用」相关题目上的作答与预期不一致。\n可能原因：概念混淆、步骤遗漏或边界条件未考虑。\n你的作答摘要：\"A\"\n建议对照解析：参考答案应包含「实验」等要点，并结合程序设计基础课堂内容展开。",
+            "mastered": false,
+            "createdAt": "2026-08-25T08:53:14.966Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000104eb",
+            "userId": "00000000-0000-4000-8000-000000010007",
+            "courseId": "00000000-0000-4000-8000-00000001001c",
+            "homeworkId": null,
+            "practiceQuestionId": "00000000-0000-4000-8000-000000010067",
+            "title": "程序设计基础中「抽象」的主要作用是？",
+            "content": "智能练习错题：需复习相关知识点后重练。",
+            "mastered": false,
+            "createdAt": "2026-08-25T08:47:04.085Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "uc07.hint",
+      "method": "POST",
+      "path": "/practice/sessions/a13de4ad-815d-4c31-bc3c-9de4d403f7ca/items/e62b62ec-90ac-418e-9e9e-53675273f208/hint",
+      "status": 200,
+      "ms": 20,
+      "ok": true,
+      "body": {
+        "hint": "【解题思路】本题考点：程序设计 > 应用。\n建议先明确题目要求，列出相关概念或伪代码步骤；若卡住，可标出不确定的环节再追问「再详细一点」。",
+        "hints": [
+          "【解题思路】本题考点：程序设计 > 应用。\n建议先明确题目要求，列出相关概念或伪代码步骤；若卡住，可标出不确定的环节再追问「再详细一点」。"
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "我不太会这道题，请给我分步解题思路，引导我自己思考，不要直接给出最终答案。"
+          },
+          {
+            "role": "assistant",
+            "content": "【解题思路】本题考点：程序设计 > 应用。\n建议先明确题目要求，列出相关概念或伪代码步骤；若卡住，可标出不确定的环节再追问「再详细一点」。"
+          }
+        ],
+        "source": "heuristic",
+        "model": null,
+        "notice": "AI 可在 backend/.env 配置（与作业批改相同：Ollama 或 OpenAI / DeepSeek 等）；未配置时将使用规则提示。"
+      }
+    },
+    {
+      "name": "uc07.stats",
+      "method": "GET",
+      "path": "/courses/00000000-0000-4000-8000-00000001001c/practice/stats",
+      "status": 200,
+      "ms": 16,
+      "ok": true,
+      "body": {
+        "questionCount": 15,
+        "feedbackByType": [
+          {
+            "_count": 1,
+            "type": "UNCLEAR"
+          }
+        ],
+        "questions": [
+          {
+            "id": "00000000-0000-4000-8000-000000010067",
+            "stem": "程序设计基础中「抽象」的主要作用是？",
+            "attemptCount": 22,
+            "correctRate": 0.6363636363636364,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000001006a",
+            "stem": "栈的插入删除操作发生在同一端，称为 ____ 特性。",
+            "attemptCount": 20,
+            "correctRate": 0.75,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010070",
+            "stem": "编写程序：读入两个整数，输出它们的和。",
+            "attemptCount": 36,
+            "correctRate": 0.6944444444444444,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010071",
+            "stem": "编写程序：读入一个整数 n，输出 1 到 n 的和。",
+            "attemptCount": 37,
+            "correctRate": 0.3783783783783784,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010073",
+            "stem": "【AI 待确认】程序设计基础：以下哪项最适合作为期末复习重点？",
+            "attemptCount": 0,
+            "correctRate": null,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010065",
+            "stem": "程序设计基础：下列表述正确的是？",
+            "attemptCount": 21,
+            "correctRate": 0.5714285714285714,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000001006d",
+            "stem": "简述程序设计基础中一个核心概念及其学习意义。",
+            "attemptCount": 19,
+            "correctRate": 0.3157894736842105,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010066",
+            "stem": "关于程序设计，时间复杂度 O(n log n) 常见于？",
+            "attemptCount": 22,
+            "correctRate": 0.5909090909090909,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000001006f",
+            "stem": "什么是程序设计中的「模块化」思想？",
+            "attemptCount": 21,
+            "correctRate": 0.38095238095238093,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010069",
+            "stem": "程序设计中，顺序表随机访问的时间复杂度为 O(____)。",
+            "attemptCount": 20,
+            "correctRate": 0.7,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000001006b",
+            "stem": "二叉树前序遍历的顺序为：____ → 左 → 右。",
+            "attemptCount": 22,
+            "correctRate": 0.7272727272727273,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000001006c",
+            "stem": "关系数据库中，用于唯一标识元组的是 ____ 键。",
+            "attemptCount": 23,
+            "correctRate": 0.7391304347826086,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010072",
+            "stem": "编写程序：读入一行字符串，输出其长度。",
+            "attemptCount": 39,
+            "correctRate": 0.38461538461538464,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000010068",
+            "stem": "以下哪项属于程序设计的典型应用？",
+            "attemptCount": 24,
+            "correctRate": 0.625,
+            "feedbackCount": 0
+          },
+          {
+            "id": "00000000-0000-4000-8000-00000001006e",
+            "stem": "举例说明程序设计在实验或作业中的应用。",
+            "attemptCount": 20,
+            "correctRate": 0.35,
+            "feedbackCount": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "uc08.post",
+      "method": "POST",
+      "path": "/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28/discussions",
+      "status": 200,
+      "ms": 54,
+      "ok": true,
+      "body": {
+        "post": {
+          "id": "4b920e1e-522c-402f-b5f4-2c200c7de9de",
+          "courseId": "00000000-0000-4000-8000-00000001001c",
+          "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+          "labId": "730464a2-d84f-4f9e-8442-773f9eaf0a28",
+          "userId": "00000000-0000-4000-8000-000000010007",
+          "title": "D1-UC08 讨论验证",
+          "body": "请问样例输出是否需要换行？ @教师",
+          "pinned": false,
+          "resolved": false,
+          "anonymous": false,
+          "viewCount": 0,
+          "createdAt": "2026-08-25T08:53:16.093Z",
+          "updatedAt": "2026-08-25T08:53:16.093Z",
+          "user": {
+            "id": "00000000-0000-4000-8000-000000010007",
+            "name": "张三"
+          },
+          "_count": {
+            "comments": 0
+          },
+          "linkPath": "/courses/00000000-0000-4000-8000-00000001001c/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28/discussions/4b920e1e-522c-402f-b5f4-2c200c7de9de"
+        }
+      }
+    },
+    {
+      "name": "uc08.comment",
+      "method": "POST",
+      "path": "/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28/discussions/4b920e1e-522c-402f-b5f4-2c200c7de9de/comments",
+      "status": 200,
+      "ms": 37,
+      "ok": true,
+      "body": {
+        "comment": {
+          "id": "65bc2ada-8877-481e-8452-51c60d15a214",
+          "postId": "4b920e1e-522c-402f-b5f4-2c200c7de9de",
+          "userId": "00000000-0000-4000-8000-000000010007",
+          "parentId": null,
+          "body": "补充：我已按 Hello 输出重交。",
+          "anonymous": false,
+          "createdAt": "2026-08-25T08:53:16.145Z",
+          "updatedAt": "2026-08-25T08:53:16.145Z",
+          "user": {
+            "id": "00000000-0000-4000-8000-000000010007",
+            "name": "张三"
+          }
+        }
+      }
+    },
+    {
+      "name": "uc08.unreadTeacher",
+      "method": "GET",
+      "path": "/notifications/unread-count",
+      "status": 200,
+      "ms": 6,
+      "ok": true,
+      "body": {
+        "count": 5
+      }
+    },
+    {
+      "name": "uc08.listTeacher",
+      "method": "GET",
+      "path": "/notifications",
+      "status": 200,
+      "ms": 9,
+      "ok": true,
+      "body": {
+        "notifications": [
+          {
+            "id": "6454585f-71f0-45a9-aa50-bac3bd249f0b",
+            "type": "DISCUSSION",
+            "title": "回复：D1-UC08 讨论验证",
+            "body": "有人在讨论区 @ 了你",
+            "linkPath": "/courses/00000000-0000-4000-8000-00000001001c/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28/discussions/4b920e1e-522c-402f-b5f4-2c200c7de9de",
+            "announcementId": null,
+            "homeworkId": null,
+            "materialId": null,
+            "labSetId": null,
+            "read": false,
+            "createdAt": "2026-08-25T08:53:16.160Z",
+            "announcementDeleted": false,
+            "courseId": null
+          },
+          {
+            "id": "3268e014-b9de-4e7f-bda1-b881977af8ae",
+            "type": "DISCUSSION",
+            "title": "讨论：D1-UC08 讨论验证",
+            "body": "有人在讨论区 @ 了你",
+            "linkPath": "/courses/00000000-0000-4000-8000-00000001001c/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28/discussions/4b920e1e-522c-402f-b5f4-2c200c7de9de",
+            "announcementId": null,
+            "homeworkId": null,
+            "materialId": null,
+            "labSetId": null,
+            "read": false,
+            "createdAt": "2026-08-25T08:53:16.119Z",
+            "announcementDeleted": false,
+            "courseId": null
+          },
+          {
+            "id": "38f73e31-10d4-4e91-b1a3-70b3f5dae927",
+            "type": "LAB_SUBMITTED",
+            "title": "实验提交：D1-Hello-JS",
+            "body": "有学生提交了实验，请及时查看。",
+            "linkPath": "/teacher/courses/00000000-0000-4000-8000-00000001001c/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28",
+            "announcementId": null,
+            "homeworkId": null,
+            "materialId": null,
+            "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+            "read": false,
+            "createdAt": "2026-08-25T08:53:13.670Z",
+            "announcementDeleted": false,
+            "courseId": "00000000-0000-4000-8000-00000001001c"
+          },
+          {
+            "id": "82b5981e-e9f2-4d0e-8465-8f79dcc210e8",
+            "type": "LAB_SUBMITTED",
+            "title": "实验提交：D1-Hello-JS",
+            "body": "有学生提交了实验，请及时查看。",
+            "linkPath": "/teacher/courses/00000000-0000-4000-8000-00000001001c/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28",
+            "announcementId": null,
+            "homeworkId": null,
+            "materialId": null,
+            "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+            "read": false,
+            "createdAt": "2026-08-25T08:53:12.558Z",
+            "announcementDeleted": false,
+            "courseId": "00000000-0000-4000-8000-00000001001c"
+          },
+          {
+            "id": "a450134f-ad47-4ec8-a6a7-b1acde47ca49",
+            "type": "LAB_SUBMITTED",
+            "title": "实验提交：D1-Hello-JS",
+            "body": "有学生提交了实验，请及时查看。",
+            "linkPath": "/teacher/courses/00000000-0000-4000-8000-00000001001c/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28",
+            "announcementId": null,
+            "homeworkId": null,
+            "materialId": null,
+            "labSetId": "92bce595-ff15-4390-a091-c40a1f8dec2a",
+            "read": false,
+            "createdAt": "2026-08-25T08:53:11.478Z",
+            "announcementDeleted": false,
+            "courseId": "00000000-0000-4000-8000-00000001001c"
+          }
+        ],
+        "page": 1,
+        "pageSize": 20,
+        "total": 5
+      }
+    },
+    {
+      "name": "uc08.list",
+      "method": "GET",
+      "path": "/labs/730464a2-d84f-4f9e-8442-773f9eaf0a28/discussions",
+      "status": 200,
+      "ms": 15,
+      "ok": true,
+      "body": {
+        "posts": [
+          {
+            "id": "4b920e1e-522c-402f-b5f4-2c200c7de9de",
+            "title": "D1-UC08 讨论验证",
+            "body": "请问样例输出是否需要换行？ @教师",
+            "pinned": false,
+            "resolved": false,
+            "viewCount": 0,
+            "commentCount": 1,
+            "createdAt": "2026-08-25T08:53:16.093Z",
+            "author": {
+              "id": "00000000-0000-4000-8000-000000010007",
+              "name": "张三",
+              "isTeacher": false,
+              "isAnonymous": false
+            }
+          }
+        ],
+        "hot": [
+          {
+            "id": "4b920e1e-522c-402f-b5f4-2c200c7de9de",
+            "title": "D1-UC08 讨论验证",
+            "body": "请问样例输出是否需要换行？ @教师",
+            "pinned": false,
+            "resolved": false,
+            "viewCount": 0,
+            "commentCount": 1,
+            "createdAt": "2026-08-25T08:53:16.093Z",
+            "author": {
+              "id": "00000000-0000-4000-8000-000000010007",
+              "name": "张三",
+              "isTeacher": false,
+              "isAnonymous": false
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

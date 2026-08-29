@@ -17,6 +17,7 @@ import gradesRoutes from "./routes/grades.js";
 import discussionsRoutes from "./routes/discussions.js";
 import aiHelpRoutes from "./routes/ai-help.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import adminRoutes from "./routes/admin.js";
 import enrollmentRoutes from "./routes/enrollment.js";
 import announcementsRoutes from "./routes/announcements.js";
 import notificationsRoutes from "./routes/notifications.js";
@@ -82,6 +83,7 @@ async function main() {
   await app.register(homeworkStudentRoutes);
   await app.register(gradesRoutes);
   await app.register(dashboardRoutes);
+  await app.register(adminRoutes);
   await app.register(enrollmentRoutes);
   await app.register(announcementsRoutes);
   await app.register(notificationsRoutes);
