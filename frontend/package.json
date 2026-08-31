@@ -19,6 +19,7 @@
     "react-dom": "^19.1.0",
     "react-markdown": "^9.1.0",
     "react-router-dom": "^7.17.0",
+    "teaching-platform": "file:..",
     "xlsx": "^0.18.5"
   },
   "overrides": {
