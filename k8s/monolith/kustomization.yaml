@@ -12,3 +12,26 @@ resources:
 labels:
   - pairs:
       app.kubernetes.io/part-of: teaching-platform
+
+# ✅ 新增：为所有 Deployment 和 Job 添加 imagePullSecrets
+patchesStrategicMerge:
+  - |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: not-important
+    spec:
+      template:
+        spec:
+          imagePullSecrets:
+          - name: ghcr-pull
+  - |-
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: not-important
+    spec:
+      template:
+        spec:
+          imagePullSecrets:
+          - name: ghcr-pull
