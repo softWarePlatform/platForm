@@ -13,25 +13,5 @@ labels:
   - pairs:
       app.kubernetes.io/part-of: teaching-platform
 
-# ✅ 新增：为所有 Deployment 和 Job 添加 imagePullSecrets
-patchesStrategicMerge:
-  - |-
-    apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-      name: not-important
-    spec:
-      template:
-        spec:
-          imagePullSecrets:
-          - name: ghcr-pull
-  - |-
-    apiVersion: batch/v1
-    kind: Job
-    metadata:
-      name: not-important
-    spec:
-      template:
-        spec:
-          imagePullSecrets:
-          - name: ghcr-pull
+# API、Web、Worker 已在各自清单中声明 ghcr-pull。
+# db-migrate 也已声明 ghcr-pull，由工作流单独创建并等待完成后才部署应用。
