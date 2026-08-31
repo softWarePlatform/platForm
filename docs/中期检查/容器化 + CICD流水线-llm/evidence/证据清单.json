@@ -1,0 +1,181 @@
+{
+  "copiedAt": "2026-08-31T09:26:42.9636192+08:00",
+  "repositoryHead": "bbca53a810bc46a151144d4a623d453b5c0ddec6",
+  "note": "仅归档现有文件，未重新运行测试或远程流水线。源路径相对于项目根目录，目标路径相对于本证据目录的上一级（容器化 + CICD流水线-llm）。",
+  "files": [
+    {
+      "source": ".github/workflows/ci-cd.yml",
+      "destination": "evidence/配置快照/ci-cd.yml",
+      "bytes": 16531,
+      "sha256": "CD51B867548DF461DBAFDD3B5C7DF48EC16CBAD93F090474721CE8DFC4CD9013"
+    },
+    {
+      "source": "docker-compose.yml",
+      "destination": "evidence/配置快照/docker-compose.yml",
+      "bytes": 3431,
+      "sha256": "1587795A04B6BD0B83AB3B5C830856B4EEBC458AFCD5A820D953373E18C8C5B8"
+    },
+    {
+      "source": "docker-compose.k8s-build.yml",
+      "destination": "evidence/配置快照/docker-compose.k8s-build.yml",
+      "bytes": 390,
+      "sha256": "CB6575DB312AAD7B9FF0DD0763052C1DE28EF6EE169FA4664D2A2D5057781EDD"
+    },
+    {
+      "source": "backend/Dockerfile",
+      "destination": "evidence/配置快照/backend/Dockerfile",
+      "bytes": 1040,
+      "sha256": "B33F2184F44E61AD518AD7697F659F55F04506FFC2F10E6FCCDDE280BEA2DF4D"
+    },
+    {
+      "source": "nginx/Dockerfile",
+      "destination": "evidence/配置快照/nginx/Dockerfile",
+      "bytes": 438,
+      "sha256": "D5A058B97ADB1C93ECB98ECDA5799F3AF6C09764BC15800958918022F5816B60"
+    },
+    {
+      "source": "judge-worker/Dockerfile",
+      "destination": "evidence/配置快照/judge-worker/Dockerfile",
+      "bytes": 1386,
+      "sha256": "19BDCD0146568504F3359970A6C9E1DC1CA815B0AAF6BAEACDEF4474D399BDEB"
+    },
+    {
+      "source": "package.json",
+      "destination": "evidence/配置快照/package.json",
+      "bytes": 1602,
+      "sha256": "61C5842833590FDC71D6DEA2FC911A69954C8832229F5A27039B21F6CA79635B"
+    },
+    {
+      "source": "scripts/ci-integration.mjs",
+      "destination": "evidence/配置快照/scripts/ci-integration.mjs",
+      "bytes": 3625,
+      "sha256": "9F3699819F67AE0D4AA77C277B55A62E399AD7FC3CDDAC739D0D04080F3B74C3"
+    },
+    {
+      "source": "scripts/verify-ci-failure-block.mjs",
+      "destination": "evidence/配置快照/scripts/verify-ci-failure-block.mjs",
+      "bytes": 1643,
+      "sha256": "91D5B62DE2DB3B09857AEFCF296C8EAB24AABF77CCCC1E20E78E59CE9F718D9D"
+    },
+    {
+      "source": "k8s/monolith/api.yaml",
+      "destination": "evidence/配置快照/k8s/monolith/api.yaml",
+      "bytes": 2427,
+      "sha256": "8E66E519FB9A2177FB019528C0AF41387B2B9A510D97986F3CBD05F83E4A5BA5"
+    },
+    {
+      "source": "k8s/monolith/ingress.yaml",
+      "destination": "evidence/配置快照/k8s/monolith/ingress.yaml",
+      "bytes": 446,
+      "sha256": "6043F861ED7F1F6433474DBC76A0CC93980D09522A14CF2C625D349D3061E69B"
+    },
+    {
+      "source": "k8s/monolith/judge-worker.yaml",
+      "destination": "evidence/配置快照/k8s/monolith/judge-worker.yaml",
+      "bytes": 1332,
+      "sha256": "78A153570F16482ABFB10B615BD10C978031B7784412514089A571FC041E663D"
+    },
+    {
+      "source": "k8s/monolith/kustomization.yaml",
+      "destination": "evidence/配置快照/k8s/monolith/kustomization.yaml",
+      "bytes": 305,
+      "sha256": "15AAE8FFA4ACFFB25C92D5F37FB1311901DAC13AD3764DDB82BE5BACE1FE3376"
+    },
+    {
+      "source": "k8s/monolith/migrate-job.yaml",
+      "destination": "evidence/配置快照/k8s/monolith/migrate-job.yaml",
+      "bytes": 958,
+      "sha256": "8E489B04A72A7460F33DE5BEB24C1016F0028551ECFE5FAB0041757D57AF6615"
+    },
+    {
+      "source": "k8s/monolith/namespace.yaml",
+      "destination": "evidence/配置快照/k8s/monolith/namespace.yaml",
+      "bytes": 132,
+      "sha256": "8195F45E7527B68613AE5660CDC0425AD1DA1BA9B2A42F7944A247515F4E0C51"
+    },
+    {
+      "source": "k8s/monolith/postgres.yaml",
+      "destination": "evidence/配置快照/k8s/monolith/postgres.yaml",
+      "bytes": 2171,
+      "sha256": "6A8DB29F9640A6C5A922BF3738877F9F7E4DD876C6E8B1D01121977AE7E54E46"
+    },
+    {
+      "source": "k8s/monolith/redis.yaml",
+      "destination": "evidence/配置快照/k8s/monolith/redis.yaml",
+      "bytes": 1167,
+      "sha256": "896958DA3FEC886688FAA4C309AE3CB3D6E1DB9FC44CEAA913D0B69B734F8CC5"
+    },
+    {
+      "source": "k8s/monolith/web.yaml",
+      "destination": "evidence/配置快照/k8s/monolith/web.yaml",
+      "bytes": 1220,
+      "sha256": "25F9278CF506E5D26B798BA551ADC684320ED1558ED9BDAA9624EDFDD0DEAC4E"
+    },
+    {
+      "source": "k8s/local/kustomization.yaml",
+      "destination": "evidence/配置快照/k8s/local/kustomization.yaml",
+      "bytes": 514,
+      "sha256": "4F939333362B2B3AD2E406B8A18165683D7CF0DC7CB6EE9E68AC2761BAE57FE9"
+    },
+    {
+      "source": "test-results/api-use-cases.json",
+      "destination": "evidence/运行结果/api-use-cases.json",
+      "bytes": 3191,
+      "sha256": "1D971B3B1EB634C1E9664249869CAD4322593FF1659FB15DA46C1B827EE41888"
+    },
+    {
+      "source": "test-results/e2e-local.json",
+      "destination": "evidence/运行结果/e2e-local.json",
+      "bytes": 8228,
+      "sha256": "F9A6590B153B96C8ED86E6A6930FD2E91F11D80ECB17CA6C9F5AF0D8DA363750"
+    },
+    {
+      "source": "test-results/e2e-k8s.json",
+      "destination": "evidence/运行结果/e2e-k8s.json",
+      "bytes": 8199,
+      "sha256": "253EBE337C3B43B3E72ED470A0899777F464405FE0BCFB9FDE9CE3C6A9716C5B"
+    },
+    {
+      "source": "test-results/e2e-kubernetes-restored.json",
+      "destination": "evidence/运行结果/e2e-kubernetes-restored.json",
+      "bytes": 8259,
+      "sha256": "30F5C2D78CD43D43D6D182667CAA2516A2B03026998A9040E76A9056EDB2AE67"
+    },
+    {
+      "source": "test-results/ci-failure-blocking.json",
+      "destination": "evidence/运行结果/ci-failure-blocking.json",
+      "bytes": 424,
+      "sha256": "66C6379F3806702E366330E67243D9F8E79127AF3C29BFAB68A9C644E2B7D79C"
+    },
+    {
+      "source": "docs/李/2026-8-26/evidence/ci-integration.json",
+      "destination": "evidence/运行结果/ci-integration.json",
+      "bytes": 1171,
+      "sha256": "6F39CF0CE56B7E7BD7344206F98E9193743A9481838449695F3B9CFB6696C8AE"
+    },
+    {
+      "source": "docs/范文歆/2026-8-28/02-D4-CI-CD测试阶段验证记录.md",
+      "destination": "evidence/运行结果/02-D4-CI-CD测试阶段验证记录.md",
+      "bytes": 1287,
+      "sha256": "ABCC8A33334C043BB6041922ED15EC5ADC56008B473F8971A9DC1D3F358077DB"
+    },
+    {
+      "source": "docs/范文歆/2026-8-28/03-D5-K8s-E2E回归报告.md",
+      "destination": "evidence/运行结果/03-D5-K8s-E2E回归报告.md",
+      "bytes": 1751,
+      "sha256": "C79C01AE16781DF4F845D53194B286C77FDAD6D43223FA55AF36A88C7452482E"
+    },
+    {
+      "source": "docs/范文歆/2026-8-28/K8s-Web页面.png",
+      "destination": "evidence/运行结果/K8s-Web页面.png",
+      "bytes": 45092,
+      "sha256": "96A4E519E1EEEFA1D143CAF113E73D79196A6E7F8ACF2D268AE0853B35766C67"
+    },
+    {
+      "source": "docs/范文歆/2026-8-29/00-D6-测试完成记录.md",
+      "destination": "evidence/运行结果/00-D6-测试完成记录.md",
+      "bytes": 2949,
+      "sha256": "3D5EE73EAD7ACD622C6AA679298459FEADC97FE80C627A0E202185CFC36E4552"
+    }
+  ]
+}
