@@ -41,6 +41,40 @@ function Assert-RequiredEnvironment {
   }
 }
 
+function Assert-DatabaseConfiguration {
+  try {
+    $databaseUri = [Uri]$env:DATABASE_URL
+  }
+  catch {
+    throw "DATABASE_URL is not a valid PostgreSQL connection URL."
+  }
+
+  $userInfo = $databaseUri.UserInfo.Split(":", 2)
+  if ($userInfo.Count -ne 2) {
+    throw "DATABASE_URL must include a username and password."
+  }
+
+  $databaseUser = [Uri]::UnescapeDataString($userInfo[0])
+  $databasePassword = [Uri]::UnescapeDataString($userInfo[1])
+  $databaseName = $databaseUri.AbsolutePath.TrimStart("/")
+  if ($databaseUri.Scheme -notin @("postgresql", "postgres")) {
+    throw "DATABASE_URL must use the postgresql:// or postgres:// scheme."
+  }
+  if ($databaseUri.Host -ne "postgres" -or $databaseUri.Port -ne 5432) {
+    throw "DATABASE_URL must target the in-cluster PostgreSQL service at postgres:5432."
+  }
+  if ($databaseUser -ne "platform" -or $databaseName -ne "teaching_platform") {
+    throw "DATABASE_URL must use the platform role and teaching_platform database."
+  }
+  if (-not [string]::Equals(
+    $databasePassword,
+    $env:POSTGRES_PASSWORD,
+    [StringComparison]::Ordinal
+  )) {
+    throw "The password in DATABASE_URL must exactly match POSTGRES_PASSWORD."
+  }
+}
+
 function Invoke-KubectlChecked {
   param(
     [Parameter(Mandatory)]
@@ -75,7 +109,115 @@ function Apply-SecretYaml {
   }
 }
 
+function Sync-PostgresRolePassword {
+  $escapedPassword = $env:POSTGRES_PASSWORD.Replace("'", "''")
+  $sql = "ALTER ROLE platform WITH LOGIN PASSWORD '$escapedPassword';"
+  $output = $sql | & kubectl --namespace $Namespace exec -i statefulset/postgres -- `
+    psql --set=ON_ERROR_STOP=1 --username platform --dbname postgres 2>&1
+  $exitCode = $LASTEXITCODE
+  $output | Tee-Object -FilePath (Join-Path $evidencePath "sync-postgres-password.log")
+  if ($exitCode -ne 0) {
+    throw "Failed to synchronize the PostgreSQL platform role password with platform-secrets."
+  }
+}
+
+function Get-JobCounter {
+  param(
+    [AllowNull()]
+    [object]$Status,
+    [Parameter(Mandatory)]
+    [string]$Name
+  )
+
+  if ($null -eq $Status) {
+    return 0
+  }
+  $property = $Status.PSObject.Properties[$Name]
+  if ($null -eq $property -or $null -eq $property.Value) {
+    return 0
+  }
+  return [int]$property.Value
+}
+
+function Write-MigrationLogs {
+  $logs = & kubectl --namespace $Namespace logs `
+    -l job-name=db-migrate `
+    --all-containers=true `
+    --prefix=true 2>&1
+  $exitCode = $LASTEXITCODE
+  $logs | Tee-Object -FilePath (Join-Path $evidencePath "migration.log")
+  if ($exitCode -ne 0) {
+    Write-Warning "Migration Pod logs could not be collected."
+  }
+}
+
+function Get-OptionalPropertyValue {
+  param(
+    [AllowNull()]
+    [object]$InputObject,
+    [Parameter(Mandatory)]
+    [string]$Name,
+    [AllowNull()]
+    [object]$DefaultValue = $null
+  )
+
+  if ($null -eq $InputObject) {
+    return $DefaultValue
+  }
+  $property = $InputObject.PSObject.Properties[$Name]
+  if ($null -eq $property -or $null -eq $property.Value) {
+    return $DefaultValue
+  }
+  return $property.Value
+}
+
+function Wait-MigrationJob {
+  $deadline = [DateTimeOffset]::UtcNow.AddSeconds(330)
+  $observations = [Collections.Generic.List[string]]::new()
+
+  while ([DateTimeOffset]::UtcNow -lt $deadline) {
+    $jobJson = & kubectl --namespace $Namespace get job db-migrate -o json 2>&1
+    if ($LASTEXITCODE -ne 0) {
+      $jobJson | Tee-Object -FilePath (Join-Path $evidencePath "migration-status-error.log")
+      throw "Unable to read the database migration Job status."
+    }
+
+    $job = ($jobJson -join "`n") | ConvertFrom-Json
+    $status = Get-OptionalPropertyValue -InputObject $job -Name "status"
+    $succeeded = Get-JobCounter -Status $status -Name "succeeded"
+    $failed = Get-JobCounter -Status $status -Name "failed"
+    $active = Get-JobCounter -Status $status -Name "active"
+    $observations.Add("$(Get-Date -Format o) active=$active succeeded=$succeeded failed=$failed")
+
+    if ($succeeded -ge 1) {
+      $observations | Set-Content -LiteralPath (Join-Path $evidencePath "migration-wait.log") -Encoding utf8
+      Write-MigrationLogs
+      return
+    }
+
+    $conditions = @(Get-OptionalPropertyValue -InputObject $status -Name "conditions" -DefaultValue @())
+    $failedCondition = @($conditions | Where-Object {
+      (Get-OptionalPropertyValue -InputObject $_ -Name "type") -eq "Failed" -and
+      (Get-OptionalPropertyValue -InputObject $_ -Name "status") -eq "True"
+    })
+    if ($failedCondition.Count -gt 0) {
+      $observations | Set-Content -LiteralPath (Join-Path $evidencePath "migration-wait.log") -Encoding utf8
+      Write-MigrationLogs
+      $reason = Get-OptionalPropertyValue -InputObject $failedCondition[0] -Name "reason" -DefaultValue "Unknown"
+      $message = Get-OptionalPropertyValue -InputObject $failedCondition[0] -Name "message" -DefaultValue "No failure message was reported."
+      throw "Database migration Job failed ($reason): $message"
+    }
+
+    Start-Sleep -Seconds 5
+  }
+
+  $observations | Set-Content -LiteralPath (Join-Path $evidencePath "migration-wait.log") -Encoding utf8
+  Write-MigrationLogs
+  throw "Database migration Job timed out."
+}
+
 Assert-RequiredEnvironment
+Assert-DatabaseConfiguration
 
 Invoke-KubectlChecked `
   -Arguments @("config", "current-context") `
@@ -127,6 +269,7 @@ Invoke-KubectlChecked `
   -Arguments @("--namespace", $Namespace, "rollout", "status", "statefulset/postgres", "--timeout=180s") `
   -LogName "rollout-postgres.log" `
   -FailureMessage "PostgreSQL did not become ready."
+Sync-PostgresRolePassword
 Invoke-KubectlChecked `
   -Arguments @("--namespace", $Namespace, "rollout", "status", "deployment/redis", "--timeout=180s") `
   -LogName "rollout-redis.log" `
@@ -152,18 +295,7 @@ Invoke-KubectlChecked `
   -LogName "apply-migration.log" `
   -FailureMessage "Failed to create the migration Job."
 
-$migrationWait = & kubectl --namespace $Namespace wait --for=condition=complete job/db-migrate --timeout=300s 2>&1
-$migrationWaitExitCode = $LASTEXITCODE
-$migrationWait | Tee-Object -FilePath (Join-Path $evidencePath "migration-wait.log")
-$migrationLogs = & kubectl --namespace $Namespace logs job/db-migrate 2>&1
-$migrationLogsExitCode = $LASTEXITCODE
-$migrationLogs | Tee-Object -FilePath (Join-Path $evidencePath "migration.log")
-if ($migrationWaitExitCode -ne 0) {
-  throw "Database migration failed or timed out."
-}
-if ($migrationLogsExitCode -ne 0) {
-  throw "Database migration completed, but its logs could not be collected."
-}
+Wait-MigrationJob
 
 $renderedManifest = & kubectl kustomize (Join-Path $repoRoot "k8s/monolith") 2>&1
 if ($LASTEXITCODE -ne 0) {

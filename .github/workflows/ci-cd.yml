@@ -13,6 +13,11 @@ on:
         required: false
         type: boolean
         default: false
+      simulate_failure:
+        description: Fail after tests to verify that image build and deployment are blocked
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -139,6 +144,12 @@ jobs:
           E2E_REPORT_PATH: test-results/e2e-github-actions.json
         run: npm run test:e2e
 
+      - name: Simulate pipeline failure
+        if: github.event_name == 'workflow_dispatch' && inputs.simulate_failure
+        run: |
+          echo "Intentional CI failure requested; image build and deployment must remain blocked."
+          exit 1
+
       - name: Upload test evidence
         if: always()
         uses: actions/upload-artifact@v7
@@ -146,7 +157,7 @@ jobs:
           name: test-results-${{ github.run_id }}
           path: test-results/
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 90
 
   images:
     name: Build ${{ matrix.component }} image
@@ -259,14 +270,10 @@ jobs:
               }
             }
           )
-          if ($missing.Count -eq 0) {
-            "ready=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          } elseif ("${{ inputs.deploy }}" -eq "true") {
+          if ($missing.Count -gt 0) {
             throw "Missing required production secrets: $($missing -join ' ')"
-          } else {
-            "ready=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-            Write-Host "::warning::Deployment skipped: production environment secrets not configured ($($missing -join ' ')). Configure the 'production' environment secrets to enable deployment."
           }
+          "ready=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Check out repository
         if: steps.deployment-config.outputs.ready == 'true'
@@ -295,109 +302,21 @@ jobs:
             throw "The self-hosted runner cannot reach the Kubernetes API. Ensure the local cluster is running."
           }
 
-      - name: Create namespace and runtime secrets
-        if: steps.deployment-config.outputs.ready == 'true'
-        shell: powershell
-        run: |
-          kubectl apply -f k8s/monolith/namespace.yaml
-          if ($LASTEXITCODE -ne 0) { throw "Failed to apply the Kubernetes namespace." }
-
-          $platformSecret = kubectl --namespace teaching-platform create secret generic platform-secrets `
-            --from-literal=POSTGRES_USER=platform `
-            "--from-literal=POSTGRES_PASSWORD=$env:POSTGRES_PASSWORD" `
-            --from-literal=POSTGRES_DB=teaching_platform `
-            "--from-literal=DATABASE_URL=$env:DATABASE_URL" `
-            "--from-literal=JWT_SECRET=$env:JWT_SECRET" `
-            "--from-literal=CORS_ORIGIN=$env:CORS_ORIGIN" `
-            --dry-run=client -o yaml
-          if ($LASTEXITCODE -ne 0) { throw "Failed to render platform-secrets." }
-          $platformSecret | kubectl apply -f -
-          if ($LASTEXITCODE -ne 0) { throw "Failed to apply platform-secrets." }
-
-          $registrySecret = kubectl --namespace teaching-platform create secret docker-registry ghcr-pull `
-            --docker-server=ghcr.io `
-            "--docker-username=$env:GHCR_USERNAME" `
-            "--docker-password=$env:GHCR_PAT" `
-            --dry-run=client -o yaml
-          if ($LASTEXITCODE -ne 0) { throw "Failed to render the GHCR pull secret." }
-          $registrySecret | kubectl apply -f -
-          if ($LASTEXITCODE -ne 0) { throw "Failed to apply the GHCR pull secret." }
-
-      - name: Prepare database and run migrations
-        if: steps.deployment-config.outputs.ready == 'true'
-        shell: powershell
-        run: |
-          $imagePrefix = "ghcr.io/$($env:GITHUB_REPOSITORY_OWNER.ToLowerInvariant())/teaching-platform"
-          kubectl --namespace teaching-platform apply -f k8s/monolith/postgres.yaml
-          if ($LASTEXITCODE -ne 0) { throw "Failed to apply PostgreSQL resources." }
-          kubectl --namespace teaching-platform apply -f k8s/monolith/redis.yaml
-          if ($LASTEXITCODE -ne 0) { throw "Failed to apply Redis resources." }
-          kubectl --namespace teaching-platform rollout status statefulset/postgres --timeout=180s
-          if ($LASTEXITCODE -ne 0) { throw "PostgreSQL did not become ready." }
-          kubectl --namespace teaching-platform rollout status deployment/redis --timeout=180s
-          if ($LASTEXITCODE -ne 0) { throw "Redis did not become ready." }
-
-          $migrationPath = Join-Path $env:RUNNER_TEMP "migrate-job.yaml"
-          $migrationManifest = (Get-Content -Raw -Encoding UTF8 k8s/monolith/migrate-job.yaml).Replace(
-            "teaching-platform-migrate:dev",
-            "$imagePrefix-migrate:sha-$env:GITHUB_SHA"
-          )
-          [IO.File]::WriteAllText($migrationPath, $migrationManifest, [Text.UTF8Encoding]::new($false))
-          kubectl --namespace teaching-platform delete job db-migrate --ignore-not-found
-          if ($LASTEXITCODE -ne 0) { throw "Failed to remove the previous migration job." }
-          kubectl apply -f $migrationPath
-          if ($LASTEXITCODE -ne 0) { throw "Failed to create the migration job." }
-          kubectl --namespace teaching-platform wait --for=condition=complete job/db-migrate --timeout=300s
-          if ($LASTEXITCODE -ne 0) {
-            kubectl --namespace teaching-platform logs job/db-migrate
-            throw "Database migration failed or timed out."
-          }
-          kubectl --namespace teaching-platform logs job/db-migrate
-          if ($LASTEXITCODE -ne 0) { throw "Failed to read migration logs." }
-
       - name: Deploy current commit
         if: steps.deployment-config.outputs.ready == 'true'
         shell: powershell
         run: |
           $imagePrefix = "ghcr.io/$($env:GITHUB_REPOSITORY_OWNER.ToLowerInvariant())/teaching-platform"
-          $platformPath = Join-Path $env:RUNNER_TEMP "platform.yaml"
-          $renderedManifest = kubectl kustomize k8s/monolith
-          if ($LASTEXITCODE -ne 0) { throw "Failed to render the Kubernetes manifests." }
-          $platformManifest = (($renderedManifest -join "`n") + "`n")
-          $platformManifest = $platformManifest.Replace(
-            "teaching-platform-api:dev",
-            "$imagePrefix-api:sha-$env:GITHUB_SHA"
-          )
-          $platformManifest = $platformManifest.Replace(
-            "teaching-platform-web:dev",
-            "$imagePrefix-web:sha-$env:GITHUB_SHA"
-          )
-          $platformManifest = $platformManifest.Replace(
-            "teaching-platform-judge-worker:dev",
-            "$imagePrefix-judge-worker:sha-$env:GITHUB_SHA"
-          )
-          [IO.File]::WriteAllText($platformPath, $platformManifest, [Text.UTF8Encoding]::new($false))
-          kubectl apply -f $platformPath
-          if ($LASTEXITCODE -ne 0) { throw "Failed to deploy the current commit." }
+          & ./scripts/deploy-k8s.ps1 `
+            -ImagePrefix $imagePrefix `
+            -GitSha $env:GITHUB_SHA `
+            -EvidenceDirectory "test-results/deployment"
 
-      - name: Verify rollout
-        if: steps.deployment-config.outputs.ready == 'true'
-        shell: powershell
-        run: |
-          kubectl --namespace teaching-platform rollout status deployment/api --timeout=300s
-          if ($LASTEXITCODE -ne 0) { throw "API rollout failed or timed out." }
-          kubectl --namespace teaching-platform rollout status deployment/judge-worker --timeout=300s
-          if ($LASTEXITCODE -ne 0) { throw "Judge worker rollout failed or timed out." }
-          kubectl --namespace teaching-platform rollout status deployment/web --timeout=180s
-          if ($LASTEXITCODE -ne 0) { throw "Web rollout failed or timed out." }
-          $apiPod = kubectl --namespace teaching-platform get pod `
-            -l app.kubernetes.io/name=api `
-            -o "jsonpath={.items[0].metadata.name}"
-          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($apiPod)) {
-            throw "Unable to find the API pod."
-          }
-          $healthCheck = "Promise.all(['/health/live','/health/ready'].map(path=>fetch('http://127.0.0.1:3000'+path).then(response=>{if(!response.ok)throw new Error(path+' '+response.status)})))"
-          kubectl --namespace teaching-platform exec $apiPod.Trim() -- node -e $healthCheck
-          if ($LASTEXITCODE -ne 0) { throw "API health verification failed." }
-          kubectl --namespace teaching-platform get pods,services
-          if ($LASTEXITCODE -ne 0) { throw "Failed to list deployed resources." }
+      - name: Upload deployment evidence
+        if: always() && steps.deployment-config.outputs.ready == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: deployment-results-${{ github.run_id }}
+          path: test-results/deployment/
+          if-no-files-found: warn
+          retention-days: 90

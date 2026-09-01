@@ -208,6 +208,12 @@ if ($LASTEXITCODE -ne 0) { throw "Invalid Kubernetes manifests" }
 
 Kubernetes 默认入口为 NodePort `http://localhost:30080`。Ingress 使用 `teaching-platform.local`，需要集群已安装 NGINX Ingress Controller。
 
+若当前本地 Kubernetes 运行在未映射 NodePort 的 Docker/WSL 网络中，可执行以下命令并保持终端运行，然后访问 `http://localhost:30080`：
+
+```powershell
+kubectl --namespace teaching-platform port-forward service/web 30080:80
+```
+
 ## 7. GitHub 环境配置
 
 `production` Environment 需要以下 Secrets：
@@ -216,17 +222,24 @@ Kubernetes 默认入口为 NodePort `http://localhost:30080`。Ingress 使用 `t
 | --- | --- |
 | `KUBE_CONFIG_B64` | kubeconfig 文件的 Base64 单行文本 |
 | `POSTGRES_PASSWORD` | Kubernetes PostgreSQL 密码 |
-| `DATABASE_URL` | 集群内 PostgreSQL 连接串 |
+| `DATABASE_URL` | 集群内 PostgreSQL 连接串；其中密码必须与 `POSTGRES_PASSWORD` 完全一致 |
 | `JWT_SECRET` | JWT 签名密钥 |
 | `CORS_ORIGIN` | 生产 Web 来源 |
 | `GHCR_USERNAME` | GHCR 拉取账号 |
 | `GHCR_PAT` | 具有 `read:packages` 的令牌 |
 
+`DATABASE_URL` 应使用以下格式，其中 `<encoded-password>` 是与 `POSTGRES_PASSWORD` 相同的密码；若密码含 `@`、`:`、`/`、`%` 等 URL 特殊字符，需要先进行百分号编码：
+
+```text
+postgresql://platform:<encoded-password>@postgres:5432/teaching_platform?schema=public
+```
+
 部署 Job 使用 `[self-hosted, Windows, X64, k8s-local]` Runner。Runner 必须持续在线、安装 kubectl，并能够访问目标 Kubernetes 集群。
 
 ## 8. 常见故障
 
-- `migrate` 失败：查看 `docker compose logs migrate`，确认 `DATABASE_URL` 和数据库健康状态；
+- 本地 Compose 的 `migrate` 失败：查看 `docker compose logs migrate`，确认 `DATABASE_URL` 和数据库健康状态；
+- Kubernetes 迁移出现 Prisma `P1000`：确认 `production` Environment 中 `DATABASE_URL` 内嵌密码与 `POSTGRES_PASSWORD` 完全一致。PostgreSQL 官方镜像只会在空数据目录首次初始化时使用 `POSTGRES_PASSWORD`；部署脚本会在保留 PVC 数据的前提下同步 `platform` 角色密码，再执行迁移；
 - API readiness 失败：检查 PostgreSQL、Redis 和 `JWT_SECRET`；
 - Worker 无结果：检查 Redis、Worker 日志以及 `/app/uploads` 共享卷；
 - 宿主机 `6379` 已被占用：在 `.env` 中设置 `REDIS_PORT=6380`；容器内仍使用 `redis:6379`；

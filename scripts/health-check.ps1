@@ -58,6 +58,12 @@ Invoke-KubectlChecked `
   -LogName "health-check.log" `
   -FailureMessage "API live/readiness verification failed."
 
+$webHealthExpression = "fetch('http://web/').then(response=>{console.log('web status '+response.status);if(!response.ok)throw new Error('web '+response.status)})"
+Invoke-KubectlChecked `
+  -Arguments @("--namespace", $Namespace, "exec", $apiPodName, "--", "node", "-e", $webHealthExpression) `
+  -LogName "web-health-check.log" `
+  -FailureMessage "Web service verification failed."
+
 Invoke-KubectlChecked `
   -Arguments @("--namespace", $Namespace, "get", "pods,services,pvc,jobs", "-o", "wide") `
   -LogName "cluster-resources.log" `
@@ -69,6 +75,7 @@ Invoke-KubectlChecked `
   apiPod = $apiPodName
   live = "passed"
   ready = "passed"
+  web = "passed"
   rollout = "passed"
 } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidencePath "health-summary.json") -Encoding utf8
 
