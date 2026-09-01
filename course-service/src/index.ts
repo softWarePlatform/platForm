@@ -8,7 +8,9 @@ import announcementsRoutes from "./routes/announcements.js";
 import authRoutes from "./routes/auth.js";
 import coursesRoutes from "./routes/courses.js";
 import enrollmentRoutes from "./routes/enrollment.js";
+import dashboardRoutes from "./routes/dashboard.js";
 import healthRoutes from "./routes/health.js";
+import internalRoutes from "./routes/internal.js";
 import materialsRoutes from "./routes/materials.js";
 import notificationsRoutes from "./routes/notifications.js";
 
@@ -20,10 +22,12 @@ async function main() {
   await app.register(authRoutes);
   await app.register(coursesRoutes);
   await app.register(enrollmentRoutes);
+  await app.register(dashboardRoutes);
   await app.register(announcementsRoutes);
   await app.register(materialsRoutes);
   await app.register(notificationsRoutes);
   await app.register(adminRoutes);
+  await app.register(internalRoutes);
 
   await app.listen({ port: config.port, host: "0.0.0.0" });
 }

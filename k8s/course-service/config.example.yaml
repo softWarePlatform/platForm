@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: course-service-config
+data:
+  CORS_ORIGIN: http://localhost
+  HOMEWORK_SERVICE_URL: http://homework-grade-service:3002
+  LAB_SERVICE_URL: http://lab-practice-service:3003

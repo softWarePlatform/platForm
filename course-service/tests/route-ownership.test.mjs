@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { courseServiceRouteOwnership } from "../src/route-ownership.js";
+import { courseServiceRouteOwnership } from "../dist/route-ownership.js";
 
-test("课程服务登记全部公开路由族，Dashboard 标记为等待远程汇总", () => {
+test("课程服务登记全部公开路由族，Dashboard 使用远程 HTTP 汇总", () => {
   assert.deepEqual(
     courseServiceRouteOwnership.map((route) => route.path),
     [
@@ -18,6 +18,6 @@ test("课程服务登记全部公开路由族，Dashboard 标记为等待远程�
   );
   assert.equal(
     courseServiceRouteOwnership.find((route) => route.path === "/api/dashboard/**")?.status,
-    "blocked-by-remote-summary",
+    "implemented-with-http-aggregation",
   );
 });

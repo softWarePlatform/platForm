@@ -6,4 +6,7 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET ?? "course-service-local-secret-change-me",
   internalServiceToken: process.env.INTERNAL_SERVICE_TOKEN ?? "course-service-internal-local-token",
   uploadDir: process.env.UPLOAD_DIR ?? "./uploads",
+  homeworkServiceUrl: process.env.HOMEWORK_SERVICE_URL?.replace(/\/$/, "") ?? "",
+  labServiceUrl: process.env.LAB_SERVICE_URL?.replace(/\/$/, "") ?? "",
+  upstreamTimeoutMs: Number(process.env.UPSTREAM_TIMEOUT_MS ?? 1200),
 };

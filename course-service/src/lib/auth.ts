@@ -38,7 +38,7 @@ export function authRequired(...roles: Role[]) {
   };
 }
 
-export function internalRequired(request: FastifyRequest, reply: FastifyReply) {
+export async function internalRequired(request: FastifyRequest, reply: FastifyReply) {
   if (request.headers["x-internal-service-token"] !== config.internalServiceToken) {
     return reply.code(401).send({ code: "INTERNAL_UNAUTHORIZED", message: "内部调用身份无效", requestId: request.id });
   }

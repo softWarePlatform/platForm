@@ -21,6 +21,7 @@ async function login(email) {
 
 const bearer = (token) => ({ authorization: `Bearer ${token}` });
 const json = (token, body) => ({ ...bearer(token), "content-type": "application/json", ...body });
+const internal = (extra = {}) => ({ "x-internal-service-token": process.env.INTERNAL_SERVICE_TOKEN ?? "course-service-internal-local-token", "x-request-id": "course-api-smoke", ...extra });
 
 const live = await call("/health/live");
 const ready = await call("/health/ready");
@@ -62,6 +63,38 @@ const enrolled = await call(`/enrollment/courses/${primary.id}/enroll`, { method
 assert.equal(enrolled.status, 201);
 const conflict = await call(`/enrollment/courses/${conflicting.id}/enroll`, { method: "POST", headers: json(student), body: "{}" });
 assert.equal(conflict.status, 409);
+
+const rejectedInternal = await call("/internal/users/00000000-0000-0000-0000-000000000000");
+assert.equal(rejectedInternal.status, 401);
+const studentMe = await call("/auth/me", { headers: bearer(student) });
+assert.equal(studentMe.status, 200);
+const internalUser = await call(`/internal/users/${studentMe.body.user.id}`, { headers: internal() });
+assert.equal(internalUser.status, 200);
+assert.equal(internalUser.body.user.role, "STUDENT");
+const access = await call(`/internal/courses/${primary.id}/access/${studentMe.body.user.id}`, { headers: internal() });
+assert.equal(access.status, 200);
+assert.equal(access.body.access.isEnrolled, true);
+const roster = await call(`/internal/courses/${primary.id}/enrollments`, { headers: internal() });
+assert.equal(roster.status, 200);
+assert.ok(roster.body.enrollments.some((row) => row.user.id === studentMe.body.user.id));
+const summaries = await call("/internal/dashboard/course-summaries:batch", { method: "POST", headers: { ...internal(), "content-type": "application/json" }, body: JSON.stringify({ courseIds: [primary.id] }) });
+assert.equal(summaries.status, 200);
+assert.equal(summaries.body.summaries[0].courseId, primary.id);
+const missingKey = await call("/internal/notifications", { method: "POST", headers: { ...internal(), "content-type": "application/json" }, body: JSON.stringify({ userId: studentMe.body.user.id, title: "缺少幂等键" }) });
+assert.equal(missingKey.status, 400);
+const notificationPayload = JSON.stringify({ userId: studentMe.body.user.id, type: "HOMEWORK", title: "内部通知冒烟", body: "来自服务调用", linkPath: "/homework/smoke" });
+const idempotencyKey = `api-smoke-${Date.now()}`;
+const notification = await call("/internal/notifications", { method: "POST", headers: { ...internal({ "content-type": "application/json", "idempotency-key": idempotencyKey }) }, body: notificationPayload });
+assert.equal(notification.status, 201);
+const notificationReplay = await call("/internal/notifications", { method: "POST", headers: { ...internal({ "content-type": "application/json", "idempotency-key": idempotencyKey }) }, body: notificationPayload });
+assert.equal(notificationReplay.status, 200);
+assert.equal(notificationReplay.body.idempotentReplay, true);
+assert.equal(notificationReplay.body.notification.id, notification.body.notification.id);
+const dashboard = await call("/dashboard/me", { headers: bearer(student) });
+assert.equal(dashboard.status, 200);
+assert.equal(dashboard.body.dependencies.homework.status, "UNAVAILABLE");
+assert.equal(dashboard.body.dependencies.lab.status, "UNAVAILABLE");
+assert.equal(dashboard.body.courses.find((course) => course.id === primary.id).homework, null);
 
 const announcement = await call(`/courses/${primary.id}/announcements`, {
   method: "POST",

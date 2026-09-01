@@ -6,5 +6,5 @@ export const courseServiceRouteOwnership = [
   { path: "/api/materials/**", source: "backend/src/routes/course-materials.ts", status: "next" },
   { path: "/api/notifications/**", source: "backend/src/routes/notifications.ts", status: "next" },
   { path: "/api/admin/**", source: "backend/src/routes/admin.ts", status: "next" },
-  { path: "/api/dashboard/**", source: "backend/src/routes/dashboard.ts", status: "blocked-by-remote-summary" },
+  { path: "/api/dashboard/**", source: "backend/src/routes/dashboard.ts", status: "implemented-with-http-aggregation" },
 ] as const;

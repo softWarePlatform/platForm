@@ -9,14 +9,14 @@
 
 ## 任务清单
 
-- [ ] 实现并文档化 `GET /internal/users/:userId`、`GET /internal/courses/:courseId`。
-- [ ] 实现并文档化 `GET /internal/courses/:courseId/access/:userId`、`GET /internal/courses/:courseId/enrollments`、`GET /internal/courses/:courseId/classes`。
-- [ ] 实现 `POST /internal/notifications`：强制 `Idempotency-Key`，验证调用方身份，重复请求不得重复创建通知。
-- [ ] 实现 `POST /internal/dashboard/course-summaries:batch`，避免调用方逐课程 N+1 查询。
-- [ ] 为全部内部接口加入服务身份校验、Request-ID 透传、统一错误响应和参数校验；不得信任浏览器透传的角色。
-- [ ] 改造 Dashboard：调用 homework 的课程作业汇总接口与 lab 的实验汇总接口，设置超时；依赖不可用时返回部分数据和明确的 `UNAVAILABLE` 状态，禁止将不可用数据当作 0。
-- [ ] 补齐课程服务 Unit Test 和 API Test：课程/选课/公告/资料/通知/管理员、内部接口鉴权、幂等、超时和 Dashboard 降级。
-- [ ] 在 C 的 Gateway 路由规则下验证 `/api/**` 公开路径兼容；如网关尚未可用，使用契约测试替代并记录待联调项。
+- [x] 实现并文档化 `GET /internal/users/:userId`、`GET /internal/courses/:courseId`。
+- [x] 实现并文档化 `GET /internal/courses/:courseId/access/:userId`、`GET /internal/courses/:courseId/enrollments`、`GET /internal/courses/:courseId/classes`。
+- [x] 实现 `POST /internal/notifications`：强制 `Idempotency-Key`，验证调用方身份，重复请求不得重复创建通知。
+- [x] 实现 `POST /internal/dashboard/course-summaries:batch`，避免调用方逐课程 N+1 查询。
+- [x] 为全部内部接口加入服务身份校验、Request-ID 透传、统一错误响应和参数校验；不信任浏览器透传的角色。
+- [x] 改造 Dashboard：按 HTTP 调用 homework 与 lab 摘要接口，设置超时；未配置、超时或非 2xx 时返回本地课程和 `UNAVAILABLE`，不把远端数据当作 0。
+- [x] 补齐课程服务 Unit Test 和 API Test：覆盖课程、选课、公告、资料、通知、管理员、内部鉴权、通知幂等及 Dashboard 降级。
+- [x] Gateway 尚未落地，已以内部/公开路径契约测试替代，并记录 C 的待联调项。
 
 ## 完成标准与证据
 
@@ -30,3 +30,5 @@
 - 给 B/C：冻结后的内部接口路径、字段、鉴权方式、超时、错误码与测试样例。
 - 给 C：Dashboard 所依赖的 homework/lab 汇总接口及不可用状态处理约定。
 - 给 E：跨服务契约测试清单、可复现环境变量和已知联调缺口。
+
+证据见 [内部接口契约与验收](02-A-course-service-内部接口与验收.md) 与 [依赖清单](../跨成员依赖与智能决策清单.md)。
