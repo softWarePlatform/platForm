@@ -2,16 +2,16 @@
 
 ## 已可提供的能力
 
-| 类别 | 公开路径（服务直连） |
-| --- | --- |
-| 认证 | `POST /auth/register`、`POST /auth/login`、`GET /auth/me` |
-| 课程 | `GET/POST /courses`、`GET/PATCH /courses/:id`、`POST /courses/:id/publish`、`GET /courses/mine` |
-| 选课 | `GET /enrollment/status`、`GET /enrollment/catalog`、`POST/DELETE /enrollment/courses/:courseId/enroll`、`POST /enrollment/courses/:courseId/waitlist` |
-| 公告 | `GET/POST /courses/:courseId/announcements`、`POST /announcements/:id/read` |
-| 资料 | `GET/POST /courses/:courseId/materials`、`POST /materials/:id/favorite`、`GET /materials/:id/download` |
-| 通知 | `GET /notifications`、`GET /notifications/unread-count`、`PATCH /notifications/:id/read` |
-| 管理 | `GET /admin/users`、`GET/PUT /admin/enrollment-period`、`GET /admin/enrollment-logs` |
-| 健康 | `GET /health/live`、`GET /health/ready` |
+| 类别  | 公开路径（服务直连）                                                                                                                                          |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 认证  | `POST /auth/register`、`POST /auth/login`、`GET /auth/me`                                                                                             |
+| 课程  | `GET/POST /courses`、`GET/PATCH /courses/:id`、`POST /courses/:id/publish`、`GET /courses/mine`                                                        |
+| 选课  | `GET /enrollment/status`、`GET /enrollment/catalog`、`POST/DELETE /enrollment/courses/:courseId/enroll`、`POST /enrollment/courses/:courseId/waitlist` |
+| 公告  | `GET/POST /courses/:courseId/announcements`、`POST /announcements/:id/read`                                                                          |
+| 资料  | `GET/POST /courses/:courseId/materials`、`POST /materials/:id/favorite`、`GET /materials/:id/download`                                                |
+| 通知  | `GET /notifications`、`GET /notifications/unread-count`、`PATCH /notifications/:id/read`                                                              |
+| 管理  | `GET /admin/users`、`GET/PUT /admin/enrollment-period`、`GET /admin/enrollment-logs`                                                                  |
+| 健康  | `GET /health/live`、`GET /health/ready`                                                                                                              |
 
 服务地址为 `http://localhost:3001`；本地账户为 `admin@course.local`、`teacher@course.local`、`student@course.local`，密码均为 `Course123456`。
 
