@@ -588,13 +588,19 @@ const labsRoutes: FastifyPluginAsync = async (app) => {
     if (!assertCanSubmitLab(lab, req.auth!.role, req.auth!.sub, reply)) return;
 
     const judgeConfig = getJudgeConfigFromLab(lab);
-    const submission = await createCodeSubmission({
-      labId: id,
-      userId: req.auth!.sub,
-      code: body.data.code,
-      language: body.data.language,
-      judgeConfig,
-    });
+    let submission;
+    try {
+      submission = await createCodeSubmission({
+        labId: id,
+        userId: req.auth!.sub,
+        code: body.data.code,
+        language: body.data.language,
+        judgeConfig,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "提交失败";
+      return reply.code(400).send({ error: msg });
+    }
     if (req.auth!.role === "STUDENT") {
       await notifyCourseStaffAndAdmins({
         courseId: lab.courseId,

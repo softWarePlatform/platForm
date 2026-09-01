@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>B-08 Judge Worker 故障实验</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 36px; background: #f4f7fb; color: #172033; font-family: "Microsoft YaHei", system-ui, sans-serif; }
+    main { width: 1080px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 30px; }
+    .meta { margin-bottom: 24px; color: #5b6476; }
+    .card { margin: 0 0 28px; padding: 28px; border-radius: 16px; background: white; box-shadow: 0 8px 28px rgba(30, 50, 80, .10); }
+    .card.fault { border-left: 8px solid #e9a23b; }
+    .card.recovery { border-left: 8px solid #25a36f; }
+    h2 { margin: 0 0 18px; font-size: 24px; }
+    .badge { display: inline-block; margin-left: 10px; padding: 4px 10px; border-radius: 999px; font-size: 14px; vertical-align: 3px; }
+    .fault .badge { color: #8a5200; background: #fff1d6; }
+    .recovery .badge { color: #09623f; background: #daf6e9; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .metric { min-height: 92px; padding: 15px; border: 1px solid #dfe6ef; border-radius: 10px; }
+    .label { color: #657086; font-size: 14px; }
+    .value { margin-top: 8px; font: 700 20px Consolas, monospace; }
+    .ok { color: #16835a; }
+    .pending { color: #b56b00; }
+    pre { margin: 18px 0 0; padding: 16px; border-radius: 10px; background: #172033; color: #edf4ff; line-height: 1.55; overflow: hidden; }
+    footer { color: #657086; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>B-08 Judge Worker 故障处理实验</h1>
+    <div class="meta">docker-desktop · teaching-platform · 2026-09-01 19:57—20:03 CST</div>
+
+    <section id="fault" class="card fault">
+      <h2>故障阶段 <span class="badge">Worker 已停止</span></h2>
+      <div class="grid">
+        <div class="metric"><div class="label">Judge Worker</div><div class="value pending">0 replicas</div></div>
+        <div class="metric"><div class="label">提交接口</div><div class="value ok">HTTP 200</div></div>
+        <div class="metric"><div class="label">5 秒后状态</div><div class="value pending">PENDING</div></div>
+        <div class="metric"><div class="label">API</div><div class="value ok">HTTP 200</div></div>
+        <div class="metric"><div class="label">Web</div><div class="value ok">HTTP 200</div></div>
+        <div class="metric"><div class="label">其他核心 Pod</div><div class="value ok">4 Running</div></div>
+      </div>
+      <pre>submissionId: ae32a076-ad18-4959-bb03-354a8d9d0916
+api / postgres / redis / web: Running
+结论: 任务已保存，其他服务未被 Worker 故障拖垮</pre>
+    </section>
+
+    <section id="recovery" class="card recovery">
+      <h2>恢复阶段 <span class="badge">验证通过</span></h2>
+      <div class="grid">
+        <div class="metric"><div class="label">Judge Worker</div><div class="value ok">1/1 Running</div></div>
+        <div class="metric"><div class="label">最终状态</div><div class="value ok">ACCEPTED</div></div>
+        <div class="metric"><div class="label">最终得分</div><div class="value ok">100</div></div>
+        <div class="metric"><div class="label">API</div><div class="value ok">HTTP 200</div></div>
+        <div class="metric"><div class="label">Web</div><div class="value ok">HTTP 200</div></div>
+        <div class="metric"><div class="label">队列监听</div><div class="value ok">已恢复</div></div>
+      </div>
+      <pre>Judge worker listening on judge-submissions
+submissionId: ae32a076-ad18-4959-bb03-354a8d9d0916
+结论: 原 PENDING 任务恢复后自动完成评测</pre>
+    </section>
+    <footer>数据来源：本次 kubectl、API 请求及 Pod 日志的实际输出；不包含令牌或口令。</footer>
+  </main>
+</body>
+</html>

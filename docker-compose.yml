@@ -3,6 +3,8 @@ x-app-environment: &app-environment
   NODE_ENV: production
   DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/${POSTGRES_DB:-teaching_platform}?schema=public
   REDIS_URL: redis://redis:6379
+  JUDGE_QUEUE_NAME: judge-submissions
+  INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-dev-internal-token-change-me}
   UPLOAD_DIR: /app/uploads
 
 services:
@@ -96,6 +98,38 @@ services:
       retries: 12
       start_period: 15s
 
+  lab-practice-service:
+    build:
+      context: .
+      dockerfile: lab-practice-service/Dockerfile
+      target: runtime
+    environment:
+      <<: *app-environment
+      PORT: "3001"
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-long-random-string}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+    volumes:
+      - api_uploads:/app/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    expose:
+      - "3001"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
   judge-worker:
     build:
       context: .
@@ -120,6 +154,8 @@ services:
       - "${WEB_PORT:-8080}:80"
     depends_on:
       api:
+        condition: service_healthy
+      lab-practice-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health/live >/dev/null || exit 1"]

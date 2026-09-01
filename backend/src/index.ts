@@ -25,6 +25,7 @@ import homeworkStudentRoutes from "./routes/homework-student.js";
 import practiceRoutes from "./routes/practice.js";
 import { resolveHomeworkAi } from "./lib/homework-ai-config.js";
 import { startLabReminderScheduler } from "./lib/lab-reminders.js";
+import { startJudgeDispatcher } from "./lib/judge-dispatcher.js";
 
 function parseOrigins(): boolean | string | string[] {
   const raw = config.corsOrigin;
@@ -98,8 +99,13 @@ async function main() {
   );
 
   const stopLabReminders = startLabReminderScheduler(app.log);
+  const stopJudgeDispatcher = startJudgeDispatcher({
+    onResult: (result) => app.log.info(result, "pending judge submissions dispatched"),
+    onError: (error) => app.log.error(error, "pending judge dispatch failed"),
+  });
   app.addHook("onClose", async () => {
     stopLabReminders();
+    stopJudgeDispatcher();
   });
 
   await app.listen({ port: config.port, host: "0.0.0.0" });

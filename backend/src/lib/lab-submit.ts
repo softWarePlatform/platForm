@@ -2,10 +2,11 @@ import { readFile } from "node:fs/promises";
 import type { FastifyReply } from "fastify";
 import { SubmissionStatus, type Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
-import { getJudgeQueue } from "./queue.js";
+import { tryEnqueueJudgeSubmission } from "./judge-dispatcher.js";
 import {
   extensionAllowed,
   labJudgeSelect,
+  requireAllowedJudgeLanguage,
   resolveLabJudgeConfig,
   type LabJudgeConfig,
   type LabJudgeSource,
@@ -106,13 +107,17 @@ export async function createCodeSubmission(opts: {
   const { labId, userId, code, language, judgeConfig } = opts;
   const lab = await loadLabForSubmit(labId);
   if (lab) await checkReturnQuotaBeforeSubmit(lab, userId);
+  const selectedLanguage = requireAllowedJudgeLanguage(
+    language ?? lab?.language ?? "",
+    judgeConfig.allowedLanguages,
+  );
   if (judgeConfig.judgeMode === "MANUAL") {
     const data = {
       labId,
       userId,
       submissionKind: "CODE",
       code,
-      language: language ?? null,
+      language: selectedLanguage,
       status: "PENDING_REVIEW" as SubmissionStatus,
       resultJson: JSON.stringify({ note: "等待教师手动批改" }),
     } as Prisma.SubmissionUncheckedCreateInput;
@@ -123,11 +128,11 @@ export async function createCodeSubmission(opts: {
     userId,
     submissionKind: "CODE",
     code,
-    language: language ?? null,
+    language: selectedLanguage,
     status: SubmissionStatus.PENDING,
   } as Prisma.SubmissionUncheckedCreateInput;
   const submission = await prisma.submission.create({ data });
-  await getJudgeQueue().add("judge", { submissionId: submission.id }, { jobId: submission.id });
+  await tryEnqueueJudgeSubmission(submission.id);
   return submission;
 }
 
@@ -144,14 +149,12 @@ export async function createFileSubmission(opts: {
   const labRow = await loadLabForSubmit(labId);
   if (labRow) await checkReturnQuotaBeforeSubmit(labRow, userId);
 
-  if (!judgeConfig.allowedLanguages.includes(language)) {
-    throw new Error("不允许的提交语言");
-  }
+  const selectedLanguage = requireAllowedJudgeLanguage(language, judgeConfig.allowedLanguages);
   if (!extensionAllowed(fileName, judgeConfig.allowedFileExtensions)) {
     throw new Error("不允许的文件类型");
   }
 
-  const status: SubmissionStatus =
+  const finalStatus: SubmissionStatus =
     judgeConfig.judgeMode === "MANUAL"
       ? ("PENDING_REVIEW" as SubmissionStatus)
       : SubmissionStatus.PENDING;
@@ -160,10 +163,11 @@ export async function createFileSubmission(opts: {
     labId,
     userId,
     submissionKind: "FILE",
-    language,
+    language: selectedLanguage,
     code: "",
     fileName,
-    status,
+    // 文件尚未持久化时不能暴露为可入队的 PENDING。
+    status: "PENDING_REVIEW" as SubmissionStatus,
     resultJson:
       judgeConfig.judgeMode === "MANUAL"
         ? JSON.stringify({ note: "等待教师手动批改" })
@@ -172,14 +176,26 @@ export async function createFileSubmission(opts: {
 
   const submission = await prisma.submission.create({ data });
 
-  const { storedPath, fileName: storedName } = await saveSubmissionFile(
-    submission.id,
-    fileName,
-    fileBuf,
-  );
+  let storedPath: string;
+  let storedName: string;
+  try {
+    const saved = await saveSubmissionFile(submission.id, fileName, fileBuf);
+    storedPath = saved.storedPath;
+    storedName = saved.fileName;
+  } catch (error) {
+    await prisma.submission.update({
+      where: { id: submission.id },
+      data: {
+        status: "ERROR",
+        resultJson: JSON.stringify({ error: "提交文件保存失败" }),
+      },
+    });
+    throw error;
+  }
   const patch = {
     fileStoredPath: storedPath,
     fileName: storedName,
+    status: finalStatus,
   } as Prisma.SubmissionUncheckedUpdateInput;
   await prisma.submission.update({
     where: { id: submission.id },
@@ -187,7 +203,7 @@ export async function createFileSubmission(opts: {
   });
 
   if (judgeConfig.judgeMode === "AUTO") {
-    await getJudgeQueue().add("judge", { submissionId: submission.id }, { jobId: submission.id });
+    await tryEnqueueJudgeSubmission(submission.id);
   }
 
   return prisma.submission.findUniqueOrThrow({ where: { id: submission.id } });

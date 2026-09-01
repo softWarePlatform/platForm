@@ -860,6 +860,7 @@ model WrongBookEntry {
   userId             String
   courseId           String?
   homeworkId         String?
+  sourceKey          String?  @unique
   practiceQuestionId String?
   title              String
   content            String   @db.Text

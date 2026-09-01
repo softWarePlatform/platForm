@@ -55,6 +55,10 @@ spec:
                   key: DATABASE_URL
             - name: REDIS_URL
               value: redis://redis:6379
+            - name: JUDGE_QUEUE_NAME
+              value: judge-submissions
+            - name: UPLOAD_DIR
+              value: /app/uploads
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

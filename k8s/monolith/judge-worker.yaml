@@ -28,6 +28,10 @@ spec:
                   key: DATABASE_URL
             - name: REDIS_URL
               value: redis://redis:6379
+            - name: JUDGE_QUEUE_NAME
+              value: judge-submissions
+            - name: UPLOAD_DIR
+              value: /app/uploads
             - name: JUDGE_TIMEOUT_MS
               value: "8000"
           startupProbe:
@@ -47,3 +51,10 @@ spec:
             limits:
               cpu: "1"
               memory: 512Mi
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: api-uploads

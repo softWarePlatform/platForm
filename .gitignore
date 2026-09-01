@@ -57,3 +57,6 @@ backend/uploads/
 .turbo/
 tmp/
 temp/
+
+# Local GitHub Actions self-hosted runner (contains machine credentials)
+actions-runner/

@@ -11,6 +11,12 @@ import { PrismaClient } from "@prisma/client";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { normalizeOutput, runCode, type RunnerLanguage } from "./runner.js";
+import { parseRunnerLanguage } from "./judge-language.js";
+import {
+  JudgeInfrastructureError,
+  infrastructureFailurePayload,
+  retryAttemptsExhausted,
+} from "./judge-errors.js";
 
 /** 与 backend 默认目录一致；worker 的 cwd 是 judge-worker，不能再用 process.cwd()/uploads */
 const UPLOAD_ROOT =
@@ -21,25 +27,22 @@ const prisma = new PrismaClient({
 });
 
 const redisUrl = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
-const queueName = "judge-submissions";
+const queueName = process.env.JUDGE_QUEUE_NAME?.trim() || "judge-submissions";
 const defaultTimeout = Number(process.env.JUDGE_TIMEOUT_MS ?? 8000);
 
 const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
-
-function mapLanguage(dbLang: string): RunnerLanguage {
-  if (dbLang === "python") return "python";
-  return "javascript";
-}
 
 const worker = new Worker(
   queueName,
   async (job) => {
     const submissionId = job.data.submissionId as string;
 
-    await prisma.submission.updateMany({
-      where: { id: submissionId },
+    const claimed = await prisma.submission.updateMany({
+      where: { id: submissionId, status: { in: ["PENDING", "JUDGING"] } },
       data: { status: "JUDGING" },
     });
+    // 重复任务或已处于业务终态的提交无需再次执行。
+    if (claimed.count === 0) return;
 
     const submission = await prisma.submission.findUnique({
       where: { id: submissionId },
@@ -54,27 +57,32 @@ const worker = new Worker(
 
     if (!submission) return;
 
-    if (submission.status === "PENDING_REVIEW") return;
-
     let code = submission.code;
     const runLang = submission.language ?? submission.lab.language;
     if (submission.submissionKind === "FILE" && submission.fileStoredPath) {
       const abs = join(UPLOAD_ROOT, ...submission.fileStoredPath.split("/").filter(Boolean));
       try {
         code = await readFile(abs, "utf8");
-      } catch {
-        await prisma.submission.update({
-          where: { id: submissionId },
-          data: {
-            status: "ERROR",
-            resultJson: JSON.stringify({ error: "提交文件无法读取" }),
-          },
-        });
-        return;
+      } catch (error) {
+        throw new JudgeInfrastructureError("提交文件无法读取", { cause: error });
       }
     }
 
-    const lang = mapLanguage(runLang);
+    const lang: RunnerLanguage | null = parseRunnerLanguage(runLang);
+    if (!lang) {
+      await prisma.submission.update({
+        where: { id: submissionId },
+        data: {
+          status: "ERROR",
+          score: 0,
+          resultJson: JSON.stringify({
+            error: "不支持的评测语言",
+            language: runLang,
+          }),
+        },
+      });
+      return;
+    }
     const testCases = [...submission.lab.testCases].sort((a, b) => a.id.localeCompare(b.id));
 
     if (testCases.length === 0) {
@@ -102,6 +110,10 @@ const worker = new Worker(
           stdin: tc.input.endsWith("\n") ? tc.input : `${tc.input}\n`,
           timeoutMs: defaultTimeout,
         });
+
+        if (run.spawnError) {
+          throw new JudgeInfrastructureError("评测运行器无法启动");
+        }
 
         if (run.timedOut || run.exitCode === null) {
           await prisma.submission.update({
@@ -168,22 +180,36 @@ const worker = new Worker(
           resultJson: JSON.stringify({ details }),
         },
       });
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      await prisma.submission.update({
-        where: { id: submissionId },
-        data: {
-          status: "ERROR",
-          resultJson: JSON.stringify({ error: message.slice(0, 4000) }),
-        },
-      });
+    } catch (error) {
+      if (error instanceof JudgeInfrastructureError) throw error;
+      throw new JudgeInfrastructureError("评测执行过程异常", { cause: error });
     }
   },
   { connection, concurrency: 4 },
 );
 
-worker.on("failed", (job, err) => {
-  console.error("Job failed", job?.id, err);
+worker.on("failed", (job, error) => {
+  console.error("Job failed", job?.id, error);
+  if (!job) return;
+
+  const maxAttempts = job.opts.attempts ?? 1;
+  if (!retryAttemptsExhausted(job.attemptsMade, maxAttempts)) return;
+
+  const submissionId = job.data.submissionId as string | undefined;
+  if (!submissionId) return;
+
+  void prisma.submission
+    .updateMany({
+      where: { id: submissionId, status: { in: ["PENDING", "JUDGING"] } },
+      data: {
+        status: "ERROR",
+        score: 0,
+        resultJson: JSON.stringify(infrastructureFailurePayload(error, job.attemptsMade)),
+      },
+    })
+    .catch((updateError) => {
+      console.error("Unable to persist exhausted judge failure", submissionId, updateError);
+    });
 });
 
 console.log(`Judge worker listening on ${queueName}`);

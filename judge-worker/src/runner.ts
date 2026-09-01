@@ -10,7 +10,13 @@ export async function runCode(opts: {
   code: string;
   stdin: string;
   timeoutMs: number;
-}): Promise<{ stdout: string; stderr: string; exitCode: number | null; timedOut: boolean }> {
+}): Promise<{
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  timedOut: boolean;
+  spawnError: string | null;
+}> {
   const dir = await mkdtemp(path.join(os.tmpdir(), "judge-"));
   const ext = opts.language === "python" ? "py" : "js";
   const file = path.join(dir, `main.${ext}`);
@@ -36,13 +42,17 @@ export async function runCode(opts: {
 
   let exitCode: number | null = null;
   let timedOut = false;
+  let spawnError: string | null = null;
 
   const exitPromise = new Promise<void>((resolve) => {
     child.on("close", (code) => {
       exitCode = code;
       resolve();
     });
-    child.on("error", () => resolve());
+    child.on("error", (error) => {
+      spawnError = error.message;
+      resolve();
+    });
   });
 
   child.stdin?.write(opts.stdin);
@@ -70,6 +80,7 @@ export async function runCode(opts: {
     stderr: stderr.trimEnd(),
     exitCode,
     timedOut,
+    spawnError,
   };
 }
 

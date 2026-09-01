@@ -1,0 +1,52 @@
+{
+  "task": "B-08",
+  "experiment": "Judge Worker stop and recovery",
+  "environment": {
+    "capturedAtLocal": "2026-09-01 19:57-20:03 +08:00",
+    "kubernetesContext": "docker-desktop",
+    "namespace": "teaching-platform",
+    "access": "kubectl port-forward service/web 18080:80"
+  },
+  "baseline": {
+    "judgeWorker": "1/1 Running",
+    "workerLog": "Judge worker listening on judge-submissions",
+    "apiHttpStatus": 200,
+    "webHttpStatus": 200
+  },
+  "fault": {
+    "injection": "kubectl scale deployment/judge-worker --replicas=0",
+    "judgeWorkerRequestedReplicas": 0,
+    "remainingRunningPods": ["api", "postgres", "redis", "web"],
+    "submissionId": "ae32a076-ad18-4959-bb03-354a8d9d0916",
+    "submitHttpStatus": 200,
+    "submitStatus": "PENDING",
+    "statusAfterFiveSeconds": "PENDING",
+    "apiHttpStatus": 200,
+    "webHttpStatus": 200
+  },
+  "recovery": {
+    "action": "kubectl scale deployment/judge-worker --replicas=1",
+    "judgeWorker": "1/1 Running",
+    "submissionId": "ae32a076-ad18-4959-bb03-354a8d9d0916",
+    "finalStatus": "ACCEPTED",
+    "finalScore": 100,
+    "workerLog": "Judge worker listening on judge-submissions",
+    "apiHttpStatus": 200,
+    "webHttpStatus": 200
+  },
+  "acceptance": {
+    "submissionSurvivesWorkerOutage": true,
+    "otherServicesRemainAvailable": true,
+    "queuedSubmissionCompletesAfterRecovery": true,
+    "workerRestored": true,
+    "passed": true
+  },
+  "testData": {
+    "isolatedPrefix": "B08",
+    "courseId": "57dbe057-92f7-46cd-99f8-d56b2af8f92d",
+    "labSetId": "5d779150-7350-46fb-8158-8ecc1ad7a6a5",
+    "labId": "d7e4e3b4-fba6-456b-8a7f-d1e99c707dbc",
+    "retainedForReverification": true,
+    "credentialStoredInRepository": false
+  }
+}
