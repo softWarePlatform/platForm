@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum HomeworkSubmissionType {
+  INDIVIDUAL
+  GROUP
+}
+
+enum HomeworkAnswerMode {
+  RICH_TEXT
+  FILE
+  RICH_TEXT_OR_FILE
+}
+
+enum HomeworkRedoGradePolicy {
+  REPLACE
+  KEEP_MAX
+}
+
+enum HomeworkRedoRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Homework {
+  id                        String                  @id @default(uuid())
+  courseId                  String
+  targetClassId             String?
+  title                     String
+  description               String?
+  descriptionMd             String?
+  dueAt                     DateTime?
+  published                 Boolean                 @default(false)
+  publishedAt               DateTime?
+  allowLate                 Boolean                 @default(false)
+  latePenaltyPercentPerDay  Float?
+  lateMaxDays               Int?
+  allowRedo                 Boolean                 @default(false)
+  maxRedoCount              Int?
+  submissionType            HomeworkSubmissionType  @default(INDIVIDUAL)
+  maxGroupSize              Int?
+  answerMode                HomeworkAnswerMode      @default(RICH_TEXT)
+  allowMultipleSubmits      Boolean                 @default(false)
+  requireAttachment         Boolean                 @default(false)
+  redoReasonRequired        Boolean                 @default(false)
+  redoGradePolicy           HomeworkRedoGradePolicy @default(KEEP_MAX)
+  rubricJson                String?
+  rubricStoredPath          String?
+  rubricFileName            String?
+  requirementsUpdatedAt     DateTime?
+
+  submissions  HomeworkSubmission[]
+  questions    HomeworkQuestion[]
+  attachments  HomeworkAttachment[]
+  revisions    HomeworkRevision[]
+  redoRequests HomeworkRedoRequest[]
+
+  @@index([courseId])
+}
+
+model HomeworkAttachment {
+  id         String   @id @default(uuid())
+  homeworkId String
+  fileName   String
+  storedPath String
+  mimeType   String?
+  sizeBytes  Int
+  createdAt  DateTime @default(now())
+
+  homework Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+
+  @@index([homeworkId])
+}
+
+model HomeworkRevision {
+  id           String   @id @default(uuid())
+  homeworkId   String
+  userId       String
+  summary      String
+  snapshotJson String
+  createdAt    DateTime @default(now())
+
+  homework Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+
+  @@index([homeworkId])
+}
+
+model HomeworkSubmission {
+  id                 String    @id @default(uuid())
+  homeworkId         String
+  userId             String
+  content            String    @default("")
+  draftContent       String?
+  requirementsReadAt DateTime?
+  score              Float?
+  feedback           String?
+  graded             Boolean   @default(false)
+  released           Boolean   @default(false)
+  releasedAt         DateTime?
+  locked             Boolean   @default(false)
+  submittedAt        DateTime?
+  returnReason       String?
+  returnCount        Int       @default(0)
+  redoUsedCount      Int       @default(0)
+  isLate             Boolean   @default(false)
+  lateDays           Int?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  homework          Homework                     @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  versions          HomeworkSubmissionVersion[]
+  files             HomeworkStudentFile[]
+  knowledgeAnalysis HomeworkKnowledgeAnalysis?
+
+  @@unique([homeworkId, userId])
+}
+
+model HomeworkSubmissionVersion {
+  id           String    @id @default(uuid())
+  submissionId String
+  version      Int
+  content      String    @default("")
+  submittedAt  DateTime  @default(now())
+  isLate       Boolean   @default(false)
+  lateDays     Int?
+  score        Float?
+  feedback     String?
+  graded       Boolean   @default(false)
+  released     Boolean   @default(false)
+
+  submission HomeworkSubmission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  files      HomeworkStudentFile[]
+
+  @@unique([submissionId, version])
+  @@index([submissionId])
+}
+
+model HomeworkStudentFile {
+  id           String   @id @default(uuid())
+  submissionId String
+  versionId    String?
+  fileName     String
+  storedPath   String
+  mimeType     String?
+  sizeBytes    Int
+  createdAt    DateTime @default(now())
+
+  submission HomeworkSubmission         @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  version    HomeworkSubmissionVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+
+  @@index([submissionId])
+}
+
+model HomeworkRedoRequest {
+  id           String                    @id @default(uuid())
+  homeworkId   String
+  userId       String
+  reason       String?
+  status       HomeworkRedoRequestStatus @default(PENDING)
+  rejectReason String?
+  reviewedById String?
+  reviewedAt   DateTime?
+  createdAt    DateTime                  @default(now())
+
+  homework Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+
+  @@index([homeworkId, userId])
+}
+
+model HomeworkKnowledgeAnalysis {
+  id           String   @id @default(uuid())
+  submissionId String   @unique
+  payloadJson  String   @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  submission HomeworkSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model HomeworkQuestion {
+  id           String    @id @default(uuid())
+  homeworkId   String
+  userId       String
+  question     String
+  answer       String?
+  answeredById String?
+  createdAt    DateTime  @default(now())
+  answeredAt   DateTime?
+
+  homework Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+
+  @@index([homeworkId])
+}
+
+model GradingConfig {
+  id              String   @id @default(uuid())
+  courseId        String   @unique
+  labWeight       Decimal  @db.Decimal(4, 3)
+  homeworkWeight  Decimal  @db.Decimal(4, 3)
+  updatedById     String
+  version         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

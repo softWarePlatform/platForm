@@ -1,0 +1,24 @@
+{
+  "name": "teaching-platform-api-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "tsc && node dist/index.js",
+    "test": "tsx --test tests/*.test.ts",
+    "test:api": "node tests/api-smoke.mjs"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "^10.3.0",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.1",
+    "undici": "^7.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
