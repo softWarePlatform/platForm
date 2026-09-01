@@ -8,5 +8,5 @@ export const config = {
   uploadDir: process.env.UPLOAD_DIR ?? "./uploads",
   homeworkServiceUrl: process.env.HOMEWORK_SERVICE_URL?.replace(/\/$/, "") ?? "",
   labServiceUrl: process.env.LAB_SERVICE_URL?.replace(/\/$/, "") ?? "",
-  upstreamTimeoutMs: Number(process.env.UPSTREAM_TIMEOUT_MS ?? 1200),
+  upstreamTimeoutMs: Number(process.env.UPSTREAM_TIMEOUT_MS ?? 2000),
 };

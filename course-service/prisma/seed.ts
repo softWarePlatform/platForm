@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.internalNotificationRequest.deleteMany();
   await prisma.materialFavorite.deleteMany();
   await prisma.courseMaterial.deleteMany();
   await prisma.announcementMark.deleteMany();

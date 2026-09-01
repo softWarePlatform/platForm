@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { internalRequired } from "../lib/auth.js";
 import { courseAccess } from "../lib/course-access.js";
@@ -6,7 +7,7 @@ import { prisma } from "../lib/prisma.js";
 
 const id = z.string().uuid();
 const notificationBody = z.object({
-  userId: id,
+  userIds: z.array(id).min(1).max(500),
   type: z.string().min(1).max(64).default("SYSTEM"),
   title: z.string().min(1).max(200),
   body: z.string().max(2000).optional(),
@@ -27,7 +28,7 @@ const internalRoutes: FastifyPluginAsync = async (app) => {
     if (!params.success) return badRequest(reply, request.id, "用户 ID 无效");
     const user = await prisma.user.findUnique({ where: { id: params.data.userId }, select: { id: true, email: true, name: true, role: true } });
     if (!user) return reply.code(404).send({ code: "USER_NOT_FOUND", message: "用户不存在", requestId: request.id });
-    return { user, requestId: request.id };
+    return { user: { ...user, status: "ACTIVE" }, requestId: request.id };
   });
 
   app.get("/internal/courses/:courseId", async (request, reply) => {
@@ -49,7 +50,16 @@ const internalRoutes: FastifyPluginAsync = async (app) => {
     const access = await courseAccess(user.id, user.role, params.data.courseId);
     if (!access.course) return reply.code(404).send({ code: "COURSE_NOT_FOUND", message: "课程不存在", requestId: request.id });
     return {
-      access: { userId: user.id, courseId: access.course.id, role: user.role, canView: access.canView, isTeacher: access.isTeacher, isEnrolled: Boolean(access.enrollment), classId: access.enrollment?.classId ?? null },
+      access: {
+        userId: user.id,
+        courseId: access.course.id,
+        role: user.role,
+        canView: access.canView,
+        isTeacher: access.isTeacher,
+        isEnrolled: Boolean(access.enrollment),
+        classId: access.enrollment?.classId ?? null,
+        classIds: access.enrollment?.classId ? [access.enrollment.classId] : [],
+      },
       requestId: request.id,
     };
   });
@@ -57,14 +67,33 @@ const internalRoutes: FastifyPluginAsync = async (app) => {
   app.get("/internal/courses/:courseId/enrollments", async (request, reply) => {
     const params = z.object({ courseId: id }).safeParse(request.params);
     if (!params.success) return badRequest(reply, request.id, "课程 ID 无效");
+    const query = z.object({
+      page: z.coerce.number().int().min(1).default(1),
+      pageSize: z.coerce.number().int().min(1).max(200).default(200),
+      classId: id.optional(),
+    }).safeParse(request.query);
+    if (!query.success) return badRequest(reply, request.id, "名单查询参数无效");
     const course = await prisma.course.findUnique({ where: { id: params.data.courseId }, select: { id: true } });
     if (!course) return reply.code(404).send({ code: "COURSE_NOT_FOUND", message: "课程不存在", requestId: request.id });
-    const enrollments = await prisma.enrollment.findMany({
-      where: { courseId: course.id },
-      orderBy: { user: { name: "asc" } },
-      include: { user: { select: { id: true, name: true, email: true, role: true } } },
-    });
-    return { enrollments: enrollments.map((row) => ({ user: row.user, classId: row.classId })), requestId: request.id };
+    const where = { courseId: course.id, ...(query.data.classId ? { classId: query.data.classId } : {}) };
+    const [total, enrollments] = await prisma.$transaction([
+      prisma.enrollment.count({ where }),
+      prisma.enrollment.findMany({
+        where,
+        skip: (query.data.page - 1) * query.data.pageSize,
+        take: query.data.pageSize,
+        orderBy: { user: { name: "asc" } },
+        include: { user: { select: { id: true, name: true, email: true, role: true } } },
+      }),
+    ]);
+    return {
+      courseId: course.id,
+      items: enrollments.map((row) => ({ ...row.user, classId: row.classId })),
+      total,
+      page: query.data.page,
+      pageSize: query.data.pageSize,
+      requestId: request.id,
+    };
   });
 
   app.get("/internal/courses/:courseId/classes", async (request, reply) => {
@@ -81,21 +110,35 @@ const internalRoutes: FastifyPluginAsync = async (app) => {
     if (typeof key !== "string" || key.trim().length < 8 || key.length > 200) return badRequest(reply, request.id, "必须提供 8 至 200 位 Idempotency-Key");
     const body = notificationBody.safeParse(request.body);
     if (!body.success) return badRequest(reply, request.id, "通知参数无效");
-    const user = await prisma.user.findUnique({ where: { id: body.data.userId }, select: { id: true } });
-    if (!user) return reply.code(404).send({ code: "USER_NOT_FOUND", message: "用户不存在", requestId: request.id });
+    const userIds = [...new Set(body.data.userIds)];
+    const users = await prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true } });
+    if (users.length !== userIds.length) return reply.code(404).send({ code: "USER_NOT_FOUND", message: "存在无效通知用户", requestId: request.id });
 
     const existing = await prisma.internalNotificationRequest.findUnique({ where: { idempotencyKey: key }, include: { notification: true } });
-    if (existing) return reply.send({ notification: existing.notification, idempotentReplay: true, requestId: request.id });
+    if (existing) return reply.send({ created: 0, deduped: existing.notificationCount, notification: existing.notification, idempotentReplay: true, requestId: request.id });
     try {
-      const created = await prisma.internalNotificationRequest.create({
-        data: { idempotencyKey: key, notification: { create: body.data } },
-        include: { notification: true },
+      const notifications = userIds.map((userId) => ({
+        id: randomUUID(),
+        userId,
+        type: body.data.type,
+        title: body.data.title,
+        body: body.data.body,
+        linkPath: body.data.linkPath,
+        homeworkId: body.data.homeworkId,
+        labSetId: body.data.labSetId,
+      }));
+      const created = await prisma.$transaction(async (tx) => {
+        await tx.siteNotification.createMany({ data: notifications });
+        return tx.internalNotificationRequest.create({
+          data: { idempotencyKey: key, notificationId: notifications[0]!.id, notificationCount: notifications.length },
+          include: { notification: true },
+        });
       });
-      return reply.code(201).send({ notification: created.notification, idempotentReplay: false, requestId: request.id });
+      return reply.code(201).send({ created: notifications.length, deduped: 0, notification: created.notification, idempotentReplay: false, requestId: request.id });
     } catch (error) {
       if ((error as { code?: string }).code !== "P2002") throw error;
       const replay = await prisma.internalNotificationRequest.findUniqueOrThrow({ where: { idempotencyKey: key }, include: { notification: true } });
-      return reply.send({ notification: replay.notification, idempotentReplay: true, requestId: request.id });
+      return reply.send({ created: 0, deduped: replay.notificationCount, notification: replay.notification, idempotentReplay: true, requestId: request.id });
     }
   });
 

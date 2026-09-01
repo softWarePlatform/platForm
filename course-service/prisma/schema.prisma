@@ -302,6 +302,7 @@ model InternalNotificationRequest {
   id             String           @id @default(uuid())
   idempotencyKey String           @unique
   notificationId String
+  notificationCount Int           @default(1)
   createdAt      DateTime         @default(now())
 
   notification SiteNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)

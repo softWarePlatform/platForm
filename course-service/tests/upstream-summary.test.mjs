@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { requestCourseSummaries } from "../dist/lib/upstream-summary.js";
+import { requestCourseSummaries, requestHomeworkSummary } from "../dist/lib/upstream-summary.js";
 
 test("上游摘要地址未配置时明确标记不可用", async () => {
   const result = await requestCourseSummaries("", { userId: "u", courseIds: ["c"] }, "req-1");
@@ -20,4 +20,15 @@ test("上游超时或中断时不把数据降级为零", async () => {
     throw error;
   });
   assert.deepEqual(result, { status: "UNAVAILABLE", data: null, reason: "TIMEOUT" });
+});
+
+test("作业摘要使用 C 已实现的单课程内部路径", async () => {
+  let requested = "";
+  const result = await requestHomeworkSummary("http://homework.test", "course-1", "req-4", async (url) => {
+    requested = url;
+    return new Response(JSON.stringify({ courseId: "course-1", homeworkCount: 2 }), { status: 200 });
+  });
+  assert.equal(requested, "http://homework.test/internal/courses/course-1/homework-summary");
+  assert.equal(result.status, "OK");
+  assert.equal(result.data.homeworkCount, 2);
 });
