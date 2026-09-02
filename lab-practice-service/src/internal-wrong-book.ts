@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { internalAuth } from "../../backend/src/lib/internal-auth.js";
+import { prisma } from "../../backend/src/lib/prisma.js";
+import { internalRequired } from "./internal-auth.js";
 import {
   saveHomeworkWrongBookEntries,
   type SaveHomeworkWrongBookInput,
@@ -10,6 +11,7 @@ import {
 type Options = {
   token?: string;
   saveEntries?: (input: SaveHomeworkWrongBookInput) => Promise<SavedWrongBookEntry[]>;
+  deleteEntries?: (homeworkId: string) => Promise<number>;
 };
 
 const bodySchema = z.object({
@@ -27,9 +29,59 @@ const bodySchema = z.object({
     .max(100),
 });
 
+const entrySchema = z.object({
+  userId: z.string().uuid(),
+  courseId: z.string().uuid(),
+  sourceType: z.literal("HOMEWORK"),
+  sourceId: z.string().uuid(),
+  title: z.string().trim().min(1).max(200),
+  content: z.string().trim().max(20_000),
+});
+
+const deleteParamsSchema = z.object({ homeworkId: z.string().uuid() });
+
 const internalWrongBookRoutes: FastifyPluginAsync<Options> = async (app, options) => {
-  const authenticate = internalAuth(options.token);
+  const authenticate = internalRequired(options.token);
   const saveEntries = options.saveEntries ?? saveHomeworkWrongBookEntries;
+  const deleteEntries = options.deleteEntries ?? (async (homeworkId: string) => {
+    const result = await prisma.wrongBookEntry.deleteMany({ where: { homeworkId } });
+    return result.count;
+  });
+
+  app.put(
+    "/internal/wrong-book/entries",
+    { preHandler: authenticate },
+    async (req, reply) => {
+      const idempotencyKey = req.headers["idempotency-key"];
+      if (typeof idempotencyKey !== "string" || idempotencyKey.trim() === "") {
+        return reply.code(400).send({ code: "IDEMPOTENCY_KEY_REQUIRED", message: "写入错题必须提供 Idempotency-Key", requestId: req.id });
+      }
+      const body = entrySchema.safeParse(req.body);
+      if (!body.success) {
+        return reply.code(400).send({ code: "INVALID_ARGUMENT", message: "错题数据格式无效", requestId: req.id });
+      }
+      const [entry] = await saveEntries({
+        userId: body.data.userId,
+        courseId: body.data.courseId,
+        homeworkId: body.data.sourceId,
+        entries: [{ title: body.data.title, content: body.data.content }],
+      });
+      return { entry, created: entry?.created ?? false, requestId: req.id };
+    },
+  );
+
+  app.delete(
+    "/internal/wrong-book/entries/HOMEWORK/:homeworkId",
+    { preHandler: authenticate },
+    async (req, reply) => {
+      const params = deleteParamsSchema.safeParse(req.params);
+      if (!params.success) {
+        return reply.code(400).send({ code: "INVALID_ARGUMENT", message: "作业 ID 格式无效", requestId: req.id });
+      }
+      const deleted = await deleteEntries(params.data.homeworkId);
+      return { deleted, requestId: req.id };
+    },
+  );
 
   app.post(
     "/internal/wrong-book/homework",

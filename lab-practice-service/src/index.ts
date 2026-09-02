@@ -1,8 +1,9 @@
 import "dotenv/config";
 import { buildApp } from "./app.js";
 import { startJudgeDispatcher } from "../../backend/src/lib/judge-dispatcher.js";
+import { labConfig } from "./config.js";
 
-const port = Number(process.env.PORT ?? 3001);
+const port = labConfig.port;
 
 const app = await buildApp();
 const stopJudgeDispatcher = startJudgeDispatcher({

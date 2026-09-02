@@ -16,7 +16,7 @@ npm run build
 npm start
 ```
 
-默认监听 `3001`：
+默认监听 `3003`：
 
 - `GET /health/live`：进程存活，不检查外部依赖。
 - `GET /health/ready`：同时检查 PostgreSQL 和 Redis。
@@ -26,12 +26,16 @@ npm start
 
 ## 实验成绩内部 API（B-02）
 
-调用方必须携带 `X-Internal-Token` 请求头，其值与服务的 `INTERNAL_API_TOKEN` 一致。
+调用方必须携带 `x-internal-service-token` 请求头，其值与服务的
+`INTERNAL_SERVICE_TOKEN` 一致。
 这些地址仅供其他后端服务使用，不通过前端 Nginx 的 `/api` 入口暴露：
 
 - `GET /internal/courses/:courseId/lab-grades/:userId`：查询一个学生。
 - `POST /internal/courses/:courseId/lab-grades/batch`：批量查询，请求体为
   `{ "userIds": ["用户 UUID"] }`，单次最多 500 人。
+- `GET /internal/courses/:courseId/lab-gradebook`：按 Course 名单返回全班实验成绩，供
+  Homework 成绩册一次拉取，避免 N+1 请求。
+- `POST /internal/courses/:courseId/lab-grades:batch`：冻结后的批量接口；斜杠版本暂时兼容。
 
 每个实验取学生历次提交的最高分；实验集均分只统计已有成绩的实验；实验总均分为各个
 有成绩实验集均分的算术平均。没有任何实验成绩时返回 `null`，不误写为零分。
@@ -39,11 +43,14 @@ npm start
 ## 错题内部 API（B-03）
 
 `POST /internal/wrong-book/homework` 供 Homework 服务写入作业产生的错题，同样必须携带
-`X-Internal-Token`。请求体包含 `userId`、`courseId`、`homeworkId` 和 `entries`；每项包含
+内部服务 Token。请求体包含 `userId`、`courseId`、`homeworkId` 和 `entries`；每项包含
 `title`、`content`，单次最多 100 项。
 
 接口按“用户 + 作业 + 标题”幂等写入：首次调用创建，重复调用更新内容，不生成重复记录，
 也不会重置用户已经设置的 `mastered` 状态。响应提供 `createdCount` 和 `updatedCount`。
+
+冻结后的正式写接口为 `PUT /internal/wrong-book/entries`，并要求 `Idempotency-Key`；
+`DELETE /internal/wrong-book/entries/HOMEWORK/:homeworkId` 用于删除某次作业来源的错题。
 
 ## 验证
 

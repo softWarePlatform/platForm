@@ -39,6 +39,11 @@ Invoke-KubectlChecked `
   -FailureMessage "Judge Worker rollout failed or timed out."
 
 Invoke-KubectlChecked `
+  -Arguments @("--namespace", $Namespace, "rollout", "status", "deployment/lab-practice-service", "--timeout=300s") `
+  -LogName "rollout-lab-practice-service.log" `
+  -FailureMessage "Lab Practice Service rollout failed or timed out."
+
+Invoke-KubectlChecked `
   -Arguments @("--namespace", $Namespace, "rollout", "status", "deployment/web", "--timeout=180s") `
   -LogName "rollout-web.log" `
   -FailureMessage "Web rollout failed or timed out."

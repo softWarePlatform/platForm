@@ -12,6 +12,7 @@ async function makeApp() {
   const app = Fastify();
   await app.register(internalLabGradesRoutes, {
     token: "test-internal-token",
+    loadUserIds: async () => [userId],
     loadReports: async (_courseId, userIds): Promise<LabGradeReport[]> =>
       userIds.map((id) => ({ userId: id, labAverage: 88, labSets: [] })),
   });
@@ -37,7 +38,7 @@ test("B-02 returns one student's lab grade", async (t) => {
   const response = await app.inject({
     method: "GET",
     url: `/internal/courses/${courseId}/lab-grades/${userId}`,
-    headers: { "x-internal-token": "test-internal-token" },
+    headers: { "x-internal-service-token": "test-internal-token" },
   });
 
   assert.equal(response.statusCode, 200);
@@ -52,7 +53,7 @@ test("B-02 returns grades for a batch of students", async (t) => {
   const response = await app.inject({
     method: "POST",
     url: `/internal/courses/${courseId}/lab-grades/batch`,
-    headers: { "x-internal-token": "test-internal-token" },
+    headers: { "x-internal-service-token": "test-internal-token" },
     payload: { userIds: [userId, secondUserId] },
   });
 
@@ -61,4 +62,21 @@ test("B-02 returns grades for a batch of students", async (t) => {
     response.json().grades.map((grade: { userId: string }) => grade.userId),
     [userId, secondUserId],
   );
+});
+
+test("B-02 returns the C contract lab gradebook", async (t) => {
+  const app = await makeApp();
+  t.after(() => app.close());
+  const response = await app.inject({
+    method: "GET",
+    url: `/internal/courses/${courseId}/lab-gradebook`,
+    headers: { "x-internal-service-token": "test-internal-token" },
+  });
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.json(), {
+    courseId,
+    labStatus: "OK",
+    labAverage: 88,
+    students: [{ userId, labAverage: 88 }],
+  });
 });

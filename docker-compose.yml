@@ -4,7 +4,7 @@ x-app-environment: &app-environment
   DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/${POSTGRES_DB:-teaching_platform}?schema=public
   REDIS_URL: redis://redis:6379
   JUDGE_QUEUE_NAME: judge-submissions
-  INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-dev-internal-token-change-me}
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-course-service-internal-local-token}
   UPLOAD_DIR: /app/uploads
 
 services:
@@ -105,7 +105,8 @@ services:
       target: runtime
     environment:
       <<: *app-environment
-      PORT: "3001"
+      PORT: "3003"
+      COURSE_SERVICE_URL: http://course-service:3001
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-long-random-string}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
     volumes:
@@ -116,14 +117,14 @@ services:
       redis:
         condition: service_healthy
     expose:
-      - "3001"
+      - "3003"
     healthcheck:
       test:
         [
           "CMD",
           "node",
           "-e",
-          "fetch('http://127.0.0.1:3001/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+          "fetch('http://127.0.0.1:3003/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
         ]
       interval: 10s
       timeout: 5s

@@ -76,6 +76,7 @@ jobs:
             backend/package-lock.json
             frontend/package-lock.json
             judge-worker/package-lock.json
+            lab-practice-service/package-lock.json
 
       - name: Install dependencies
         run: |
@@ -83,6 +84,7 @@ jobs:
           npm ci --prefix backend --no-audit --fund=false
           npm ci --prefix frontend --no-audit --fund=false
           npm ci --prefix judge-worker --no-audit --fund=false
+          npm ci --prefix lab-practice-service --no-audit --fund=false
 
       - name: Prepare database and Prisma clients
         run: |
@@ -95,7 +97,9 @@ jobs:
         run: npm run build
 
       - name: Run unit tests
-        run: npm run test:unit
+        run: |
+          npm run test:unit
+          npm test --prefix lab-practice-service
 
       - name: Start applications
         run: |
@@ -187,6 +191,10 @@ jobs:
             context: .
             dockerfile: ./judge-worker/Dockerfile
             target: runtime
+          - component: lab-practice-service
+            context: .
+            dockerfile: ./lab-practice-service/Dockerfile
+            target: runtime
 
     steps:
       - name: Check out repository
@@ -248,6 +256,7 @@ jobs:
       CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
+      INTERNAL_SERVICE_TOKEN: ${{ secrets.INTERNAL_SERVICE_TOKEN }}
 
     steps:
       - name: Check deployment configuration
@@ -261,7 +270,8 @@ jobs:
             "JWT_SECRET",
             "CORS_ORIGIN",
             "GHCR_USERNAME",
-            "GHCR_PAT"
+            "GHCR_PAT",
+            "INTERNAL_SERVICE_TOKEN"
           )
           $missing = @(
             foreach ($name in $required) {

@@ -16,7 +16,7 @@ RUN npm run build --prefix lab-practice-service
 FROM node:24-alpine AS runtime
 WORKDIR /app/lab-practice-service
 ENV NODE_ENV=production
-ENV PORT=3001
+ENV PORT=3003
 ENV UPLOAD_DIR=/app/uploads
 
 COPY lab-practice-service/package.json ./package.json
@@ -26,5 +26,5 @@ COPY --from=build /app/lab-practice-service/node_modules/.prisma ./node_modules/
 COPY --from=build /app/lab-practice-service/dist ./dist
 
 RUN mkdir -p /app/uploads
-EXPOSE 3001
+EXPOSE 3003
 CMD ["node", "dist/lab-practice-service/src/index.js"]

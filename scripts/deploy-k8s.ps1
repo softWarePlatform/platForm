@@ -27,7 +27,8 @@ function Assert-RequiredEnvironment {
     "JWT_SECRET",
     "CORS_ORIGIN",
     "GHCR_USERNAME",
-    "GHCR_PAT"
+    "GHCR_PAT",
+    "INTERNAL_SERVICE_TOKEN"
   )
   $missing = @(
     foreach ($name in $required) {
@@ -241,6 +242,7 @@ $platformSecretOutput = & kubectl --namespace $Namespace create secret generic p
   "--from-literal=DATABASE_URL=$env:DATABASE_URL" `
   "--from-literal=JWT_SECRET=$env:JWT_SECRET" `
   "--from-literal=CORS_ORIGIN=$env:CORS_ORIGIN" `
+  "--from-literal=INTERNAL_SERVICE_TOKEN=$env:INTERNAL_SERVICE_TOKEN" `
   --dry-run=client -o yaml 2>&1
 if ($LASTEXITCODE -ne 0) {
   throw "Failed to render platform-secrets."
@@ -306,7 +308,8 @@ $platformManifest = (($renderedManifest -join "`n") + "`n")
 $platformManifest = $platformManifest.Replace("teaching-platform-api:dev", "$normalizedPrefix-api:$imageTag")
 $platformManifest = $platformManifest.Replace("teaching-platform-web:dev", "$normalizedPrefix-web:$imageTag")
 $platformManifest = $platformManifest.Replace("teaching-platform-judge-worker:dev", "$normalizedPrefix-judge-worker:$imageTag")
-if ($platformManifest -match "teaching-platform-(api|web|judge-worker):dev") {
+$platformManifest = $platformManifest.Replace("teaching-platform-lab-practice-service:dev", "$normalizedPrefix-lab-practice-service:$imageTag")
+if ($platformManifest -match "teaching-platform-(api|web|judge-worker|lab-practice-service):dev") {
   throw "One or more application image placeholders were not replaced."
 }
 $platformPath = Join-Path $evidencePath "platform.rendered.yaml"

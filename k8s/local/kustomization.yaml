@@ -17,6 +17,12 @@ patches:
         path: /spec/template/spec/imagePullSecrets
   - target:
       kind: Deployment
+      name: lab-practice-service
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/imagePullSecrets
+  - target:
+      kind: Deployment
       name: web
     patch: |-
       - op: remove
