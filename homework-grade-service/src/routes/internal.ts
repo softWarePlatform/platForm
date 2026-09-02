@@ -25,15 +25,6 @@ async function loadCourseHomework(courseId: string) {
   return { homeworks, submissions };
 }
 
-function timed<T>(promise: Promise<T>, ms: number, label: string) {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error(label)), ms);
-    }),
-  ]);
-}
-
 const internalRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", internalRequired);
 
@@ -118,11 +109,13 @@ const internalRoutes: FastifyPluginAsync = async (app) => {
     if (!params.success) return fail(reply, request, 400, "INVALID_COURSE_ID", "课程 ID 无效");
     const courseId = params.data.courseId;
     try {
-      const { homeworks, submissions } = await timed(loadCourseHomework(courseId), 5000, "homework-db-timeout");
-      const weights = await timed(readGradingWeights(courseId), 3000, "grading-config-timeout");
-      const lab = await fetchLabGradebook(courseId);
-      const roster = await fetchRoster(courseId);
-      const course = await fetchCourse(courseId);
+      const { homeworks, submissions } = await loadCourseHomework(courseId);
+      const weights = await readGradingWeights(courseId);
+      const [roster, course, lab] = await Promise.all([
+        fetchRoster(courseId),
+        fetchCourse(courseId),
+        fetchLabGradebook(courseId),
+      ]);
       const students = buildGradebookStudents({
         homeworks,
         submissions,

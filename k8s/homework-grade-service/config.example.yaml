@@ -1,0 +1,10 @@
+# 交给 D 集成。集群内用 Service DNS，不要写 127.0.0.1。
+# 生产镜像标签按 docs/李/2026-8-28/02-镜像版本号规范.md 换成 sha-<gitsha>，不要 latest。
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homework-grade-service-config
+data:
+  CORS_ORIGIN: http://localhost
+  COURSE_SERVICE_URL: http://course-service:3001
+  LAB_SERVICE_URL: http://lab-practice-service:3003

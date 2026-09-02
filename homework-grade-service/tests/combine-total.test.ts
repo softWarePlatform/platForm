@@ -24,3 +24,10 @@ test("两边都没有分数时不合成 0 分", () => {
   assert.equal(okEmpty.totalScore, null);
   assert.equal(okEmpty.provisionalTotal, null);
 });
+
+test("Lab 可用但该生没有实验分时总分仍为空，不当 0", () => {
+  const total = combineTotal(80, null, 0.6, 0.4, "OK");
+  assert.equal(total.totalScore, null);
+  assert.equal(total.labAverage, null);
+  assert.equal(total.provisionalTotal, 80 * 0.6);
+});

@@ -1,0 +1,13 @@
+# 交给 D 集成。下游必须是集群内 Service DNS。
+# 生产镜像标签按 docs/李/2026-8-28/02-镜像版本号规范.md 换成 sha-<gitsha>，不要 latest。
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-config
+data:
+  CORS_ORIGIN: http://localhost
+  COURSE_SERVICE_URL: http://course-service:3001
+  HOMEWORK_SERVICE_URL: http://homework-grade-service:3002
+  LAB_SERVICE_URL: http://lab-practice-service:3003
+  MONOLITH_URL: http://api:3000
+  RATE_LIMIT_MAX: "300"

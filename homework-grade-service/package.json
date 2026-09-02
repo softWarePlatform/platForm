@@ -9,6 +9,7 @@
     "start": "tsc && node dist/index.js",
     "test": "tsx --test tests/*.test.ts",
     "test:api": "node tests/api-smoke.mjs",
+    "test:gateway": "node ../api-gateway/tests/api-smoke.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed"
