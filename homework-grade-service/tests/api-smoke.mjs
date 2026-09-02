@@ -3,8 +3,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const base = (process.env.API_BASE_URL ?? "http://localhost:3002").replace(/\/$/, "");
-const courseBase = (process.env.COURSE_SERVICE_URL ?? "http://localhost:3001").replace(/\/$/, "");
+process.env.NO_PROXY = [process.env.NO_PROXY, "127.0.0.1", "localhost", "::1"].filter(Boolean).join(",");
+
+const base = (process.env.API_BASE_URL ?? "http://127.0.0.1:3002").replace(/\/$/, "");
+const courseBase = (process.env.COURSE_SERVICE_URL ?? "http://127.0.0.1:3001").replace(/\/$/, "");
 
 function envFromDotenv(name, fallback) {
   if (process.env[name]) return process.env[name];
@@ -34,6 +36,8 @@ assert.equal(live.body.service, "homework-grade-service");
 
 const unauthorized = await call(`${base}/homework/teaching`);
 assert.equal(unauthorized.status, 401);
+assert.equal(unauthorized.body.code, "UNAUTHORIZED");
+assert.ok(unauthorized.body.requestId);
 
 const courseLive = await call(`${courseBase}/health/live`);
 if (courseLive.status !== 200) {
@@ -119,6 +123,19 @@ const released = await call(`${base}/homework/${homeworkId}/release-grades`, {
 });
 assert.equal(released.status, 200);
 
+const wrongBook = await call(`${base}/homework/${homeworkId}/wrong-book`, {
+  method: "POST",
+  headers: json(student),
+  body: "{}",
+});
+assert.equal(wrongBook.status, 200, JSON.stringify(wrongBook.body));
+assert.notEqual(wrongBook.body.code, "WRONG_BOOK_NOT_READY");
+assert.ok(wrongBook.body.labStatus === "OK" || wrongBook.body.labStatus === "UNAVAILABLE");
+
+const mineWrong = await call(`${base}/wrong-book/mine`, { headers: { authorization: `Bearer ${student}` } });
+assert.equal(mineWrong.status, 404);
+assert.equal(mineWrong.body.code, "NOT_FOUND");
+
 const gradebook = await call(`${base}/courses/${primary.id}/gradebook`, { headers: { authorization: `Bearer ${teacher}` } });
 assert.equal(gradebook.status, 200);
 assert.equal(gradebook.body.labStatus, "UNAVAILABLE");
@@ -138,12 +155,15 @@ const noInternal = await call(`${base}/internal/courses/${primary.id}/final-grad
 assert.equal(noInternal.status, 401);
 assert.equal(noInternal.body.code, "INTERNAL_UNAUTHORIZED");
 
+const finalStarted = Date.now();
 const finalBook = await call(`${base}/internal/courses/${primary.id}/final-gradebook`, {
   headers: { "x-internal-service-token": internalToken },
 });
+const finalElapsedMs = Date.now() - finalStarted;
 assert.equal(finalBook.status, 200, JSON.stringify(finalBook.body));
 assert.equal(finalBook.body.labStatus, "UNAVAILABLE");
 assert.ok(Array.isArray(finalBook.body.students));
+assert.ok(finalElapsedMs < 8000, `final-gradebook took ${finalElapsedMs}ms`);
 for (const row of finalBook.body.students) {
   assert.equal(row.summary.totalScore, null);
   assert.notEqual(row.summary.labAverage, 0);

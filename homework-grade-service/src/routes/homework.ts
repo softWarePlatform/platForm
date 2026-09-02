@@ -2,7 +2,9 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/auth.js";
-import { notifyUsers, resolveCourseAccess } from "../lib/course-client.js";
+import { notifyUsers, resolveCourseAccess, sendAccessDenial, teacherAccessDenial, viewAccessDenial } from "../lib/course-client.js";
+import { deleteWrongBookEntries } from "../lib/lab-client.js";
+import { sendError } from "../lib/http-error.js";
 import {
   homeworkCreateSchema,
   homeworkPatchSchema,
@@ -43,7 +45,7 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
     const published = await prisma.homework.findMany({ where: { published: true }, orderBy: { dueAt: "asc" } });
     const visible = [];
     for (const hw of published) {
-      const access = await resolveCourseAccess(uid, request.auth!.role, hw.courseId, request.authorizationHeader);
+      const access = await resolveCourseAccess(uid, hw.courseId);
       if (access.canView) visible.push(serializeHomework(hw));
     }
     return { homeworks: visible };
@@ -52,10 +54,9 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
   app.post("/courses/:courseId/homework", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
     const params = z.object({ courseId: z.string().uuid() }).safeParse(request.params);
     const body = homeworkCreateSchema.safeParse(request.body);
-    if (!params.success || !body.success) return reply.code(400).send({ error: "参数无效" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, params.data.courseId, request.authorizationHeader);
-    if (!access.course) return reply.code(404).send({ error: "课程不存在" });
-    if (!access.isTeacher) return reply.code(403).send({ error: "无权操作" });
+    if (!params.success || !body.success) return sendError(reply, request, 400, "INVALID_BODY", "参数无效");
+    const access = await resolveCourseAccess(request.auth!.sub, params.data.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(access))) return;
     const settings = normalizeHomeworkSettingsInput(body.data);
     const hw = await prisma.homework.create({
       data: {
@@ -87,10 +88,9 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/courses/:courseId/homework", { preHandler: authRequired() }, async (request, reply) => {
     const params = z.object({ courseId: z.string().uuid() }).safeParse(request.params);
-    if (!params.success) return reply.code(400).send({ error: "课程 ID 无效" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, params.data.courseId, request.authorizationHeader);
-    if (!access.course) return reply.code(404).send({ error: "课程不存在" });
-    if (!access.canView) return reply.code(403).send({ error: "无权查看该课程作业" });
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "课程 ID 无效");
+    const access = await resolveCourseAccess(request.auth!.sub, params.data.courseId);
+    if (sendAccessDenial(reply, request, viewAccessDenial(access, "无权查看该课程作业"))) return;
     const where = access.isTeacher ? { courseId: params.data.courseId } : { courseId: params.data.courseId, published: true };
     const items = await prisma.homework.findMany({ where, orderBy: { title: "asc" } });
     return { homeworks: items.map(serializeHomework) };
@@ -98,23 +98,23 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/homework/:id", { preHandler: authRequired() }, async (request, reply) => {
     const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
-    if (!params.success) return reply.code(400).send({ error: "作业 ID 无效" });
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "作业 ID 无效");
     const hw = await prisma.homework.findUnique({ where: { id: params.data.id }, include: { attachments: { orderBy: { createdAt: "asc" } } } });
-    if (!hw) return reply.code(404).send({ error: "作业不存在" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, hw.courseId, request.authorizationHeader);
-    if (!access.canView) return reply.code(403).send({ error: "无权查看" });
-    if (!access.isTeacher && !hw.published) return reply.code(404).send({ error: "作业不存在" });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const access = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, viewAccessDenial(access))) return;
+    if (!access.isTeacher && !hw.published) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
     return { homework: serializeHomework(hw) };
   });
 
   app.patch("/homework/:id", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
     const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
     const body = homeworkPatchSchema.safeParse(request.body);
-    if (!params.success || !body.success) return reply.code(400).send({ error: "参数无效" });
+    if (!params.success || !body.success) return sendError(reply, request, 400, "INVALID_BODY", "参数无效");
     const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
-    if (!hw) return reply.code(404).send({ error: "作业不存在" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, hw.courseId, request.authorizationHeader);
-    if (!access.isTeacher) return reply.code(403).send({ error: "无权操作" });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const access = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(access))) return;
     const settings = normalizeHomeworkSettingsInput(body.data);
     const updated = await prisma.homework.update({
       where: { id: hw.id },
@@ -154,11 +154,11 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
   app.patch("/homework/:id/publish", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
     const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
     const body = z.object({ published: z.boolean().optional() }).safeParse(request.body ?? {});
-    if (!params.success) return reply.code(400).send({ error: "作业 ID 无效" });
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "作业 ID 无效");
     const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
-    if (!hw) return reply.code(404).send({ error: "作业不存在" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, hw.courseId, request.authorizationHeader);
-    if (!access.isTeacher) return reply.code(403).send({ error: "无权操作" });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const access = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(access))) return;
     const published = body.success ? (body.data.published ?? !hw.published) : !hw.published;
     const updated = await prisma.homework.update({
       where: { id: hw.id },
@@ -169,26 +169,29 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
 
   app.delete("/homework/:id", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
     const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
-    if (!params.success) return reply.code(400).send({ error: "作业 ID 无效" });
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "作业 ID 无效");
     const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
-    if (!hw) return reply.code(404).send({ error: "作业不存在" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, hw.courseId, request.authorizationHeader);
-    if (!access.isTeacher) return reply.code(403).send({ error: "无权操作" });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const access = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(access))) return;
     await prisma.homework.delete({ where: { id: hw.id } });
+    void deleteWrongBookEntries("HOMEWORK", hw.id).then((result) => {
+      if (!result.ok) console.warn("lab wrong-book delete skipped", result.status, hw.id);
+    });
     return { ok: true };
   });
 
   app.post("/homework/:id/submit", { preHandler: authRequired("STUDENT", "ADMIN") }, async (request, reply) => {
     const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
     const body = z.object({ content: z.string().max(50000) }).safeParse(request.body);
-    if (!params.success || !body.success) return reply.code(400).send({ error: "参数无效" });
+    if (!params.success || !body.success) return sendError(reply, request, 400, "INVALID_BODY", "参数无效");
     const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
-    if (!hw || !hw.published) return reply.code(404).send({ error: "作业不存在" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, hw.courseId, request.authorizationHeader);
-    if (!access.canView) return reply.code(403).send({ error: "无权提交" });
-    if (access.isTeacher && request.auth!.role !== "ADMIN") return reply.code(403).send({ error: "仅学生可提交" });
+    if (!hw || !hw.published) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const access = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, viewAccessDenial(access, "无权提交"))) return;
+    if (access.isTeacher && request.auth!.role !== "ADMIN") return sendError(reply, request, 403, "FORBIDDEN", "仅学生可提交");
     const late = computeLateMeta(hw);
-    if (!late.canSubmit) return reply.code(400).send({ error: late.lateHint ?? "已过截止时间" });
+    if (!late.canSubmit) return sendError(reply, request, 400, "LATE_SUBMISSION", late.lateHint ?? "已过截止时间");
     const sub = await prisma.$transaction(async (tx) => {
       const current = await tx.homeworkSubmission.upsert({
         where: { homeworkId_userId: { homeworkId: hw.id, userId: request.auth!.sub } },
@@ -226,11 +229,11 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/homework/:id/submissions", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
     const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
-    if (!params.success) return reply.code(400).send({ error: "作业 ID 无效" });
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "作业 ID 无效");
     const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
-    if (!hw) return reply.code(404).send({ error: "作业不存在" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, hw.courseId, request.authorizationHeader);
-    if (!access.isTeacher) return reply.code(403).send({ error: "无权操作" });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const access = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(access))) return;
     const submissions = await prisma.homeworkSubmission.findMany({ where: { homeworkId: hw.id }, orderBy: { updatedAt: "desc" } });
     return { submissions, rosterStatus: access.rosterStatus };
   });
@@ -238,13 +241,13 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
   app.patch("/homework/submissions/:sid/grade", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
     const params = z.object({ sid: z.string().uuid() }).safeParse(request.params);
     const body = z.object({ score: z.number().min(0).max(100), feedback: z.string().max(5000).optional() }).safeParse(request.body);
-    if (!params.success || !body.success) return reply.code(400).send({ error: "参数无效" });
+    if (!params.success || !body.success) return sendError(reply, request, 400, "INVALID_BODY", "参数无效");
     const sub = await prisma.homeworkSubmission.findUnique({ where: { id: params.data.sid } });
-    if (!sub) return reply.code(404).send({ error: "提交不存在" });
+    if (!sub) return sendError(reply, request, 404, "NOT_FOUND", "提交不存在");
     const hw = await prisma.homework.findUnique({ where: { id: sub.homeworkId } });
-    if (!hw) return reply.code(404).send({ error: "作业不存在" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, hw.courseId, request.authorizationHeader);
-    if (!access.isTeacher) return reply.code(403).send({ error: "无权操作" });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const access = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(access))) return;
     const lateDays = sub.lateDays ?? 0;
     const score = applyLatePenalty(body.data.score, lateDays, hw.latePenaltyPercentPerDay);
     const updated = await prisma.$transaction(async (tx) => {
@@ -263,11 +266,11 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
 
   app.patch("/homework/:id/release-grades", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
     const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
-    if (!params.success) return reply.code(400).send({ error: "作业 ID 无效" });
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "作业 ID 无效");
     const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
-    if (!hw) return reply.code(404).send({ error: "作业不存在" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, hw.courseId, request.authorizationHeader);
-    if (!access.isTeacher) return reply.code(403).send({ error: "无权操作" });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const access = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(access))) return;
     const result = await prisma.homeworkSubmission.updateMany({
       where: { homeworkId: hw.id, graded: true, released: false },
       data: { released: true, releasedAt: new Date() },
@@ -285,11 +288,11 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/homework/:id/questions", { preHandler: authRequired() }, async (request, reply) => {
     const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
-    if (!params.success) return reply.code(400).send({ error: "作业 ID 无效" });
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "作业 ID 无效");
     const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
-    if (!hw) return reply.code(404).send({ error: "作业不存在" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, hw.courseId, request.authorizationHeader);
-    if (!access.canView) return reply.code(403).send({ error: "无权查看" });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const access = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, viewAccessDenial(access))) return;
     const questions = await prisma.homeworkQuestion.findMany({ where: { homeworkId: hw.id }, orderBy: { createdAt: "asc" } });
     return { questions };
   });
@@ -297,11 +300,11 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
   app.post("/homework/:id/questions", { preHandler: authRequired("STUDENT", "ADMIN") }, async (request, reply) => {
     const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
     const body = z.object({ question: z.string().min(1).max(5000) }).safeParse(request.body);
-    if (!params.success || !body.success) return reply.code(400).send({ error: "参数无效" });
+    if (!params.success || !body.success) return sendError(reply, request, 400, "INVALID_BODY", "参数无效");
     const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
-    if (!hw) return reply.code(404).send({ error: "作业不存在" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, hw.courseId, request.authorizationHeader);
-    if (!access.canView) return reply.code(403).send({ error: "无权操作" });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const access = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, viewAccessDenial(access, "无权操作"))) return;
     const question = await prisma.homeworkQuestion.create({ data: { homeworkId: hw.id, userId: request.auth!.sub, question: body.data.question } });
     return reply.code(201).send({ question });
   });
@@ -309,13 +312,13 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
   app.patch("/homework/questions/:qid/answer", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
     const params = z.object({ qid: z.string().uuid() }).safeParse(request.params);
     const body = z.object({ answer: z.string().min(1).max(5000) }).safeParse(request.body);
-    if (!params.success || !body.success) return reply.code(400).send({ error: "参数无效" });
+    if (!params.success || !body.success) return sendError(reply, request, 400, "INVALID_BODY", "参数无效");
     const question = await prisma.homeworkQuestion.findUnique({ where: { id: params.data.qid } });
-    if (!question) return reply.code(404).send({ error: "问题不存在" });
+    if (!question) return sendError(reply, request, 404, "NOT_FOUND", "问题不存在");
     const hw = await prisma.homework.findUnique({ where: { id: question.homeworkId } });
-    if (!hw) return reply.code(404).send({ error: "作业不存在" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, hw.courseId, request.authorizationHeader);
-    if (!access.isTeacher) return reply.code(403).send({ error: "无权操作" });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const access = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(access))) return;
     const updated = await prisma.homeworkQuestion.update({
       where: { id: question.id },
       data: { answer: body.data.answer, answeredById: request.auth!.sub, answeredAt: new Date() },

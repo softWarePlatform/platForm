@@ -1,0 +1,28 @@
+{
+  "capturedAt": "2026-09-02",
+  "via": "Vite /api -> api-gateway :3081",
+  "courseId": "a34b8031-b8dd-41fb-a31c-6796781d8677",
+  "homeworkId": "1f03a1ef-eb48-453c-8bc8-317556e2865a",
+  "labDown": {
+    "status": 502,
+    "requestId": "w32-lab-down",
+    "body": {
+      "code": "BAD_GATEWAY",
+      "message": "lab 服务暂时不可用",
+      "requestId": "w32-lab-down"
+    }
+  },
+  "gradebook": {
+    "status": 200,
+    "requestId": "w32-gradebook",
+    "labStatus": "UNAVAILABLE",
+    "studentCount": 1,
+    "sampleStudentSummary": {
+      "labStatus": "UNAVAILABLE",
+      "totalScore": null,
+      "labAverage": null,
+      "homeworkAverage": 89.71428571428571,
+      "provisionalTotal": 53.82857142857142
+    }
+  }
+}

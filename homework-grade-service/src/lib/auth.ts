@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import jwt from "jsonwebtoken";
 import { config } from "./config.js";
 import { fetchMe } from "./course-client.js";
+import { sendError } from "./http-error.js";
 
 export type Role = "STUDENT" | "TEACHER" | "ADMIN";
 export type AuthPayload = { sub: string; email: string; role: Role };
@@ -46,13 +47,13 @@ export async function optionalAuth(request: FastifyRequest) {
 export function authRequired(...roles: Role[]) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     const auth = await resolveAuth(request);
-    if (!auth) return reply.code(401).send({ error: "未登录或令牌无效" });
-    if (roles.length && !roles.includes(auth.role)) return reply.code(403).send({ error: "权限不足" });
+    if (!auth) return sendError(reply, request, 401, "UNAUTHORIZED", "未登录或令牌无效");
+    if (roles.length && !roles.includes(auth.role)) return sendError(reply, request, 403, "FORBIDDEN", "权限不足");
     request.auth = auth;
   };
 }
 
-export function internalRequired(request: FastifyRequest, reply: FastifyReply) {
+export async function internalRequired(request: FastifyRequest, reply: FastifyReply) {
   if (request.headers["x-internal-service-token"] !== config.internalServiceToken) {
     return reply.code(401).send({
       code: "INTERNAL_UNAUTHORIZED",

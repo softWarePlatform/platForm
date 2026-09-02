@@ -2,7 +2,8 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/auth.js";
-import { resolveCourseAccess } from "../lib/course-client.js";
+import { resolveCourseAccess, sendAccessDenial, teacherAccessDenial } from "../lib/course-client.js";
+import { sendError } from "../lib/http-error.js";
 import { combineTotal, fetchLabGradebook } from "../lib/lab-client.js";
 import { buildGradebookStudents, homeworkAverage } from "../lib/gradebook.js";
 
@@ -17,10 +18,9 @@ async function gradingConfig(courseId: string, updatedById: string) {
 const gradesRoutes: FastifyPluginAsync = async (app) => {
   app.get("/courses/:courseId/grading-config", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
     const params = z.object({ courseId: z.string().uuid() }).safeParse(request.params);
-    if (!params.success) return reply.code(400).send({ error: "课程 ID 无效" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, params.data.courseId, request.authorizationHeader);
-    if (!access.course) return reply.code(404).send({ error: "课程不存在" });
-    if (!access.isTeacher) return reply.code(403).send({ error: "无权操作" });
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "课程 ID 无效");
+    const access = await resolveCourseAccess(request.auth!.sub, params.data.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(access))) return;
     const config = await gradingConfig(params.data.courseId, request.auth!.sub);
     return { config: { ...config, labWeight: Number(config.labWeight), homeworkWeight: Number(config.homeworkWeight), source: "grading-config" } };
   });
@@ -28,14 +28,13 @@ const gradesRoutes: FastifyPluginAsync = async (app) => {
   app.patch("/courses/:courseId/grading-config", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
     const params = z.object({ courseId: z.string().uuid() }).safeParse(request.params);
     const body = z.object({ labWeight: z.number().min(0).max(1), homeworkWeight: z.number().min(0).max(1), version: z.number().int().optional() }).safeParse(request.body);
-    if (!params.success || !body.success) return reply.code(400).send({ error: "参数无效" });
-    if (Math.abs(body.data.labWeight + body.data.homeworkWeight - 1) > 0.001) return reply.code(400).send({ error: "实验权重与作业权重之和必须为 1" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, params.data.courseId, request.authorizationHeader);
-    if (!access.course) return reply.code(404).send({ error: "课程不存在" });
-    if (!access.isTeacher) return reply.code(403).send({ error: "无权操作" });
+    if (!params.success || !body.success) return sendError(reply, request, 400, "INVALID_BODY", "参数无效");
+    if (Math.abs(body.data.labWeight + body.data.homeworkWeight - 1) > 0.001) return sendError(reply, request, 400, "INVALID_BODY", "实验权重与作业权重之和必须为 1");
+    const access = await resolveCourseAccess(request.auth!.sub, params.data.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(access))) return;
     const current = await gradingConfig(params.data.courseId, request.auth!.sub);
     if (body.data.version != null && body.data.version !== current.version) {
-      return reply.code(409).send({ error: "成绩配置已被他人更新", version: current.version });
+      return sendError(reply, request, 409, "VERSION_CONFLICT", "成绩配置已被他人更新", { version: current.version });
     }
     const updated = await prisma.gradingConfig.update({
       where: { courseId: params.data.courseId },
@@ -51,16 +50,17 @@ const gradesRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/courses/:courseId/gradebook", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
     const params = z.object({ courseId: z.string().uuid() }).safeParse(request.params);
-    if (!params.success) return reply.code(400).send({ error: "课程 ID 无效" });
-    const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, params.data.courseId, request.authorizationHeader);
-    if (!access.course) return reply.code(404).send({ error: "课程不存在" });
-    if (!access.isTeacher) return reply.code(403).send({ error: "无权操作" });
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "课程 ID 无效");
+    const access = await resolveCourseAccess(request.auth!.sub, params.data.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(access))) return;
     const config = await gradingConfig(params.data.courseId, request.auth!.sub);
     const labWeight = Number(config.labWeight);
     const homeworkWeight = Number(config.homeworkWeight);
-    const homeworks = await prisma.homework.findMany({ where: { courseId: params.data.courseId }, orderBy: { title: "asc" } });
+    const [homeworks, lab] = await Promise.all([
+      prisma.homework.findMany({ where: { courseId: params.data.courseId }, orderBy: { title: "asc" } }),
+      fetchLabGradebook(params.data.courseId, access.students.map((student) => student.id)),
+    ]);
     const submissions = await prisma.homeworkSubmission.findMany({ where: { homeworkId: { in: homeworks.map((item) => item.id) } } });
-    const lab = await fetchLabGradebook(params.data.courseId);
     const students = buildGradebookStudents({
       homeworks,
       submissions,
@@ -71,7 +71,7 @@ const gradesRoutes: FastifyPluginAsync = async (app) => {
     });
     return {
       courseId: params.data.courseId,
-      courseTitle: access.course.title,
+      courseTitle: access.course?.title ?? params.data.courseId,
       weights: { lab: labWeight, homework: homeworkWeight, version: config.version },
       labStatus: lab.labStatus,
       rosterStatus: access.rosterStatus,
@@ -92,14 +92,14 @@ const gradesRoutes: FastifyPluginAsync = async (app) => {
     }
     const courses = [];
     for (const [courseId, list] of byCourse) {
-      const access = await resolveCourseAccess(request.auth!.sub, request.auth!.role, courseId, request.authorizationHeader);
+      const access = await resolveCourseAccess(request.auth!.sub, courseId);
       const config = await gradingConfig(courseId, request.auth!.sub);
       const hwRows = list.map((hw) => {
         const sub = mine.find((item) => item.homeworkId === hw.id);
         return { score: sub?.released ? sub.score : null, graded: Boolean(sub?.graded && sub.released) };
       });
       const hwAvg = homeworkAverage(hwRows);
-      const lab = await fetchLabGradebook(courseId);
+      const lab = await fetchLabGradebook(courseId, [request.auth!.sub]);
       const total = combineTotal(hwAvg, lab.labAverage, Number(config.homeworkWeight), Number(config.labWeight), lab.labStatus);
       courses.push({
         courseId,

@@ -79,9 +79,14 @@ async function main() {
   await app.register(discussionsRoutes);
   await app.register(labsRoutes);
   await app.register(labFilesRoutes);
-  await app.register(homeworkRoutes);
-  await app.register(homeworkStudentRoutes);
-  await app.register(gradesRoutes);
+  if (process.env.MONOLITH_HOMEWORK_ROUTES === "1") {
+    await app.register(homeworkRoutes);
+    await app.register(homeworkStudentRoutes);
+    await app.register(gradesRoutes);
+    app.log.warn("monolith homework routes enabled; set MONOLITH_HOMEWORK_ROUTES=0 to use gateway → homework-grade-service:3002");
+  } else {
+    app.log.info("monolith homework routes off; homework traffic should go through gateway → :3002");
+  }
   await app.register(dashboardRoutes);
   await app.register(adminRoutes);
   await app.register(enrollmentRoutes);
