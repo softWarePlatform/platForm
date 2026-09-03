@@ -84,7 +84,8 @@ jobs:
           npm ci --prefix backend --no-audit --fund=false
           npm ci --prefix frontend --no-audit --fund=false
           npm ci --prefix judge-worker --no-audit --fund=false
-          npm ci --prefix lab-practice-service --no-audit --fund=false
+          npm ci --prefix lab-practice-service --ignore-scripts --no-audit --fund=false
+          npm run postinstall --prefix lab-practice-service
 
       - name: Prepare database and Prisma clients
         run: |
