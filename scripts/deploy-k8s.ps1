@@ -93,8 +93,16 @@ function Invoke-KubectlChecked {
     [string]$FailureMessage
   )
 
-  $output = & kubectl @Arguments 2>&1
-  $exitCode = $LASTEXITCODE
+  $previousErrorActionPreference = $ErrorActionPreference
+  try {
+    # Windows PowerShell turns native stderr into ErrorRecord objects. kubectl
+    # writes non-fatal warnings there, so judge success by its exit code.
+    $ErrorActionPreference = "Continue"
+    $output = & kubectl @Arguments 2>&1
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
   $output | Tee-Object -FilePath (Join-Path $evidencePath $LogName)
   if ($exitCode -ne 0) {
     throw $FailureMessage
@@ -109,8 +117,16 @@ function Apply-SecretYaml {
     [string]$Name
   )
 
-  $applyOutput = $Yaml | & kubectl apply -f - 2>&1
-  $exitCode = $LASTEXITCODE
+  $previousErrorActionPreference = $ErrorActionPreference
+  try {
+    # Existing imperative secrets may lack the last-applied annotation. That
+    # warning is harmless and kubectl adds the annotation during this apply.
+    $ErrorActionPreference = "Continue"
+    $applyOutput = $Yaml | & kubectl apply -f - 2>&1
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
   $applyOutput | Tee-Object -FilePath (Join-Path $evidencePath "apply-$Name.log")
   if ($exitCode -ne 0) {
     throw "Failed to apply Kubernetes secret $Name."
