@@ -12,12 +12,6 @@ services:
       dockerfile: Dockerfile.k8s-local
       target: migrate
 
-  legacy-migrate:
-    image: teaching-platform-migrate:dev
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.k8s-local
-      target: migrate
   api-gateway:
     image: teaching-platform-api-gateway:dev
     build:
@@ -38,12 +32,6 @@ services:
       dockerfile: Dockerfile
       target: migrate
 
-  course-migrate:
-    image: teaching-platform-course-migrate:dev
-    build:
-      context: ./course-service
-      dockerfile: Dockerfile
-      target: migrate
   homework-grade-service:
     image: teaching-platform-homework-grade-service:dev
     build:
@@ -58,12 +46,6 @@ services:
       dockerfile: Dockerfile
       target: migrate
 
-  homework-migrate:
-    image: teaching-platform-homework-migrate:dev
-    build:
-      context: ./homework-grade-service
-      dockerfile: Dockerfile
-      target: migrate
   lab-practice-service:
     image: teaching-platform-lab-practice-service:dev
     build:
@@ -78,12 +60,6 @@ services:
       dockerfile: lab-practice-service/Dockerfile
       target: migrate
 
-  lab-migrate:
-    image: teaching-platform-lab-migrate:dev
-    build:
-      context: .
-      dockerfile: lab-practice-service/Dockerfile
-      target: migrate
   judge-worker:
     image: teaching-platform-judge-worker:dev
     build:
