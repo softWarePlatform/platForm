@@ -6,7 +6,7 @@ import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest }
 import { Redis } from "ioredis";
 import { labConfig as config } from "./config.js";
 import { prisma } from "./prisma.js";
-import discussionsRoutes from "../../backend/src/routes/discussions.js";
+import discussionsRoutes from "./routes/discussions.js";
 import labFilesRoutes from "./routes/lab-files.js";
 import labOverviewRoutes from "./routes/lab-overview.js";
 import labSetsRoutes from "./routes/lab-sets.js";
