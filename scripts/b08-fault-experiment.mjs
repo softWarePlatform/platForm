@@ -1,6 +1,6 @@
 const base = process.env.B08_BASE_URL ?? "http://127.0.0.1:18080/api";
 const webBase = base.replace(/\/api\/?$/, "");
-const email = "b08-fault-teacher@demo.local";
+const email = process.env.B08_TEST_EMAIL ?? "b08-fault-teacher@demo.local";
 const password = process.env.B08_TEST_PASSWORD;
 if (!password || password.length < 12) {
   throw new Error("set B08_TEST_PASSWORD to the isolated test account password");

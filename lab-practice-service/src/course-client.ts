@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { labConfig } from "./config.js";
 
 export type CourseUser = {
@@ -48,6 +49,11 @@ function internalHeaders(requestId?: string, extra: Record<string, string> = {})
     ...(requestId ? { "x-request-id": requestId } : {}),
     ...extra,
   };
+}
+
+export function notificationIdempotencyKey(value: string) {
+  if (/^[\x20-\x7e]{8,200}$/.test(value)) return value;
+  return `sha256:${createHash("sha256").update(value, "utf8").digest("hex")}`;
 }
 
 async function courseJson(
@@ -140,7 +146,7 @@ export async function createCourseNotifications(input: {
     method: "POST",
     headers: internalHeaders(input.requestId, {
       "content-type": "application/json",
-      "idempotency-key": input.idempotencyKey,
+      "idempotency-key": notificationIdempotencyKey(input.idempotencyKey),
     }),
     body: JSON.stringify({
       userIds: [...new Set(input.userIds)],

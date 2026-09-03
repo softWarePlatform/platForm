@@ -25,7 +25,11 @@ $results = @()
 foreach ($step in $steps) {
   $logPath = Join-Path $resolvedOutput "$runId-$($step.Name).log"
   Write-Host "==> $($step.Name)"
-  & npm @($step.Arguments) *>&1 | Tee-Object -FilePath $logPath
+  # A hashtable member wrapped directly in @() is passed to native commands as
+  # one object on PowerShell 7.  Materialise a real string array first so npm
+  # receives each argument separately on both Windows PowerShell and pwsh.
+  [string[]]$npmArguments = $step.Arguments
+  & npm @npmArguments *>&1 | Tee-Object -FilePath $logPath
   $results += [ordered]@{
     name = $step.Name
     command = "npm $($step.Arguments -join ' ')"

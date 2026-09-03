@@ -6,7 +6,15 @@ import {
   fetchCourseInfo,
   fetchCourseUserIds,
   fetchCourseUsers,
+  notificationIdempotencyKey,
 } from "./course-client.js";
+
+test("notification idempotency keys are safe ASCII headers", () => {
+  assert.equal(notificationIdempotencyKey("lab-set:1"), "lab-set:1");
+  const encoded = notificationIdempotencyKey("实验提交：课程一");
+  assert.match(encoded, /^sha256:[a-f0-9]{64}$/);
+  assert.equal(encoded, notificationIdempotencyKey("实验提交：课程一"));
+});
 
 test("Course roster follows the frozen pageSize=200 contract and paginates", async () => {
   const originalFetch = globalThis.fetch;

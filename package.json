@@ -11,6 +11,7 @@
     "test:dao": "npm run test:dao --prefix backend",
     "test:api": "node tests/api/api-use-cases.test.mjs",
     "test:e2e": "node tests/e2e/all-use-cases.e2e.mjs",
+    "test:e2e:microservices": "node tests/e2e/microservices.e2e.mjs",
     "test:ci:failure-block": "npm test",
     "test:lab:unit": "npm test --prefix backend && npm test --prefix judge-worker",
     "test:lab": "node scripts/lab-regression.mjs",
@@ -24,6 +25,7 @@
     "db:seed": "npm run db:seed --prefix backend",
     "perf:smoke": "node scripts/smoke-load.mjs",
     "qa:perf": "node scripts/qa/performance-benchmark.mjs",
+    "qa:perf:fixture": "node scripts/qa/create-performance-fixture.mjs",
     "qa:microservices": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/qa/run-microservice-quality.ps1"
   },
   "devDependencies": {
