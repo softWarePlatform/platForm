@@ -26,6 +26,9 @@
     "perf:smoke": "node scripts/smoke-load.mjs",
     "qa:perf": "node scripts/qa/performance-benchmark.mjs",
     "qa:perf:fixture": "node scripts/qa/create-performance-fixture.mjs",
+    "qa:seed:rich": "node scripts/qa/create-rich-test-fixture.mjs",
+    "qa:seed:rich:verify": "node scripts/qa/verify-rich-test-fixture.mjs",
+    "qa:cross-service-resilience": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/qa/run-cross-service-resilience.ps1",
     "qa:microservices": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/qa/run-microservice-quality.ps1"
   },
   "devDependencies": {
