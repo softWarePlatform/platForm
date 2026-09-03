@@ -1,0 +1,17 @@
+{
+  "createdAt": "2026-09-03T10:40:52.379Z",
+  "environment": "monolith-k8s-20260903",
+  "baseUrl": "http://127.0.0.1:13000",
+  "datasetId": "qa-equivalent-fixture-1788432051412-50472",
+  "accounts": {
+    "teacher": "qa-perf-teacher-monolith-k8s-20260903-1788432051412-50472@example.test",
+    "student": "qa-perf-student-monolith-k8s-20260903-1788432051412-50472@example.test"
+  },
+  "resources": {
+    "courseId": "71e5e453-28a3-4e06-8480-4bcb4c5efeb3",
+    "homeworkId": "713f9927-b1ef-41c0-9e22-8b3915f0b40b",
+    "labSetId": "5604f518-6a82-4e71-829f-b29536a3df90",
+    "labId": "e92bcc72-6f98-4a4a-9644-f4d0370ed817"
+  },
+  "cleanup": "Retained as an isolated QA fixture. Do not use production data; remove only through a reviewed cleanup operation."
+}

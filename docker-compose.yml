@@ -81,6 +81,16 @@ services:
       db-init: { condition: service_completed_successfully }
     restart: "no"
 
+  course-seed:
+    profiles: ["tools"]
+    build: { context: ./course-service, dockerfile: Dockerfile, target: build }
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/course_service?schema=public
+    command: ["npm", "run", "db:seed"]
+    depends_on:
+      course-migrate: { condition: service_completed_successfully }
+    restart: "no"
+
   homework-migrate:
     build: { context: ./homework-grade-service, dockerfile: Dockerfile, target: migrate }
     environment:

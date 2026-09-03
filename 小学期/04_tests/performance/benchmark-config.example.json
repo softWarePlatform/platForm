@@ -1,0 +1,31 @@
+{
+  "environment": "compose-final",
+  "baseUrl": "http://127.0.0.1:8080/api",
+  "datasetId": "demo-seed-2026-final",
+  "sameMachineEvidence": "replace-with-host-and-date",
+  "runs": 3,
+  "concurrency": 10,
+  "requestsPerTarget": 30,
+  "requestTimeoutMs": 10000,
+  "resourceSnapshotFiles": [
+    "resources-before.txt",
+    "resources-after.txt"
+  ],
+  "targets": [
+    {
+      "name": "dashboard",
+      "path": "/dashboard/me",
+      "headers": { "authorization": "Bearer <temporary-test-token>" }
+    },
+    {
+      "name": "homework-mine",
+      "path": "/homework/mine",
+      "headers": { "authorization": "Bearer <temporary-test-token>" }
+    },
+    {
+      "name": "lab-overview",
+      "path": "/lab-sets/mine/overview",
+      "headers": { "authorization": "Bearer <temporary-test-token>" }
+    }
+  ]
+}

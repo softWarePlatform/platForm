@@ -1,0 +1,1546 @@
+{
+  "generatedAt": "2026-09-03T10:41:10.439Z",
+  "environment": "microservices-k8s-20260903",
+  "baseUrl": "http://127.0.0.1:18080/api",
+  "condition": {
+    "runs": 3,
+    "concurrency": 10,
+    "requestsPerTarget": 30,
+    "requestTimeoutMs": 10000,
+    "datasetId": "qa-equivalent-fixture-20260903",
+    "sameMachineEvidence": "Windows Docker Desktop Kubernetes port-forward 2026-09-03",
+    "resourceSnapshotFiles": []
+  },
+  "runs": [
+    {
+      "run": 1,
+      "startedAt": "2026-09-03T10:41:10.631Z",
+      "targets": [
+        {
+          "name": "dashboard",
+          "url": "http://127.0.0.1:18080/dashboard/me",
+          "requestHeaders": {
+            "authorization": "[redacted]"
+          },
+          "concurrency": 10,
+          "requests": 30,
+          "passed": 30,
+          "failed": 0,
+          "errorRate": 0,
+          "elapsedMs": 139.62,
+          "throughputQps": 214.87,
+          "avgMs": 75.86,
+          "p95Ms": 102.6,
+          "rawRequests": [
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 94.62
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 64.64
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 64.43
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 64.71
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 64.13
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 63.79
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 62.78
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 62.58
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 61.88
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 60.64
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 104.73
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 59.91
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 59.71
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 58.69
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 59.08
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 58.82
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 102.6
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 102.33
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 58.59
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 102.24
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 102.29
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 102.05
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 102.02
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 102.01
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 58.45
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 101.8
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 58.32
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 58.17
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 58.31
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 101.5
+            }
+          ]
+        },
+        {
+          "name": "homework-mine",
+          "url": "http://127.0.0.1:18080/homework/mine",
+          "requestHeaders": {
+            "authorization": "[redacted]"
+          },
+          "concurrency": 10,
+          "requests": 30,
+          "passed": 30,
+          "failed": 0,
+          "errorRate": 0,
+          "elapsedMs": 29.97,
+          "throughputQps": 1001,
+          "avgMs": 19.22,
+          "p95Ms": 27.85,
+          "rawRequests": [
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.54
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.12
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 6.82
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.38
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.06
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.23
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.93
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.09
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.7
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.62
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 27.77
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 27.62
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.25
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 27.32
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 27.96
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 27.85
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 27.13
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 27.09
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 13.7
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 27.02
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 26.77
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 26.47
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 26.13
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 25.83
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.63
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 25.16
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.8
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.67
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.5
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 24.58
+            }
+          ]
+        },
+        {
+          "name": "lab-overview",
+          "url": "http://127.0.0.1:18080/lab-sets/mine/overview",
+          "requestHeaders": {
+            "authorization": "[redacted]"
+          },
+          "concurrency": 10,
+          "requests": 30,
+          "passed": 30,
+          "failed": 0,
+          "errorRate": 0,
+          "elapsedMs": 20.09,
+          "throughputQps": 1493.28,
+          "avgMs": 16.81,
+          "p95Ms": 17.79,
+          "rawRequests": [
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.85
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.44
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.37
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.32
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.17
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.26
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.1
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.1
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.87
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.8
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.62
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.67
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.5
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.46
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.79
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.75
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.52
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.37
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.26
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.27
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.9
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.84
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.44
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.29
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.05
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.84
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.51
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.16
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.85
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "startedAt": "2026-09-03T10:41:10.729Z",
+      "targets": [
+        {
+          "name": "dashboard",
+          "url": "http://127.0.0.1:18080/dashboard/me",
+          "requestHeaders": {
+            "authorization": "[redacted]"
+          },
+          "concurrency": 10,
+          "requests": 30,
+          "passed": 30,
+          "failed": 0,
+          "errorRate": 0,
+          "elapsedMs": 44.15,
+          "throughputQps": 679.5,
+          "avgMs": 16.36,
+          "p95Ms": 38.11,
+          "rawRequests": [
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.76
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.54
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.23
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.43
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.01
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.04
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 13.44
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.96
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.77
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.32
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.46
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.9
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.61
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.55
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.13
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.07
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.93
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.84
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 38.5
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.7
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.5
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 38.11
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 37.8
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.17
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 37.78
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.09
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 9.98
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 9.87
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 37.35
+            }
+          ]
+        },
+        {
+          "name": "homework-mine",
+          "url": "http://127.0.0.1:18080/homework/mine",
+          "requestHeaders": {
+            "authorization": "[redacted]"
+          },
+          "concurrency": 10,
+          "requests": 30,
+          "passed": 30,
+          "failed": 0,
+          "errorRate": 0,
+          "elapsedMs": 35.26,
+          "throughputQps": 850.82,
+          "avgMs": 18.6,
+          "p95Ms": 34.03,
+          "rawRequests": [
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.85
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.37
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 34.59
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.74
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 34.03
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 33.87
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 13.67
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 13.78
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 13.58
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 33.52
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.05
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 33.73
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 33.24
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 33.47
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 33.37
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 33.32
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.57
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.9
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.66
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.48
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.53
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.49
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.49
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.45
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.28
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.22
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 12.05
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.87
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.96
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.82
+            }
+          ]
+        },
+        {
+          "name": "lab-overview",
+          "url": "http://127.0.0.1:18080/lab-sets/mine/overview",
+          "requestHeaders": {
+            "authorization": "[redacted]"
+          },
+          "concurrency": 10,
+          "requests": 30,
+          "passed": 30,
+          "failed": 0,
+          "errorRate": 0,
+          "elapsedMs": 17.91,
+          "throughputQps": 1675.04,
+          "avgMs": 15.58,
+          "p95Ms": 16.33,
+          "rawRequests": [
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.9
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.44
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.34
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.47
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.35
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.37
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.27
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.28
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.85
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.66
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.93
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.92
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.87
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.33
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.3
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.22
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.01
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.98
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.96
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.92
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.92
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.91
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.79
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.7
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.55
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.54
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.39
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.36
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 14.86
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "startedAt": "2026-09-03T10:41:10.807Z",
+      "targets": [
+        {
+          "name": "dashboard",
+          "url": "http://127.0.0.1:18080/dashboard/me",
+          "requestHeaders": {
+            "authorization": "[redacted]"
+          },
+          "concurrency": 10,
+          "requests": 30,
+          "passed": 30,
+          "failed": 0,
+          "errorRate": 0,
+          "elapsedMs": 12.73,
+          "throughputQps": 2356.64,
+          "avgMs": 10.02,
+          "p95Ms": 11.52,
+          "rawRequests": [
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.85
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.52
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.31
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.25
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.26
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.16
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.02
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 11.08
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.88
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.83
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.78
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.64
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.59
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.55
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.41
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.33
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.22
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 9.97
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 9.81
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 10.14
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 9.26
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.81
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.58
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.93
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.69
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.47
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.22
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.12
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.94
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.9
+            }
+          ]
+        },
+        {
+          "name": "homework-mine",
+          "url": "http://127.0.0.1:18080/homework/mine",
+          "requestHeaders": {
+            "authorization": "[redacted]"
+          },
+          "concurrency": 10,
+          "requests": 30,
+          "passed": 30,
+          "failed": 0,
+          "errorRate": 0,
+          "elapsedMs": 33.28,
+          "throughputQps": 901.44,
+          "avgMs": 8.53,
+          "p95Ms": 9.19,
+          "rawRequests": [
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 9.19
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.88
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.7
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.74
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.68
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.44
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.35
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.3
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.23
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.27
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.09
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.06
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 8.01
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.91
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.89
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.79
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.74
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.46
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.24
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.64
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.41
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.32
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.17
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 7.07
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 30.17
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 6.87
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 6.69
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 6.61
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 6.47
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 6.39
+            }
+          ]
+        },
+        {
+          "name": "lab-overview",
+          "url": "http://127.0.0.1:18080/lab-sets/mine/overview",
+          "requestHeaders": {
+            "authorization": "[redacted]"
+          },
+          "concurrency": 10,
+          "requests": 30,
+          "passed": 30,
+          "failed": 0,
+          "errorRate": 0,
+          "elapsedMs": 31.5,
+          "throughputQps": 952.38,
+          "avgMs": 16.71,
+          "p95Ms": 17.42,
+          "rawRequests": [
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.42
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.21
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.07
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.85
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.67
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.67
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.61
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.56
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.53
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.37
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.33
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 17.05
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.15
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.16
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.04
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.02
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.66
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.6
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.71
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.48
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.35
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.48
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.17
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 16.11
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.94
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.57
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.19
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 15.55
+            },
+            {
+              "ok": true,
+              "status": 200,
+              "durationMs": 26.88
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

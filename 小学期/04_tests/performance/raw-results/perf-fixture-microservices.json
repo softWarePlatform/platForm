@@ -1,0 +1,17 @@
+{
+  "createdAt": "2026-09-03T10:38:25.955Z",
+  "environment": "microservices-k8s-20260903",
+  "baseUrl": "http://127.0.0.1:18080/api",
+  "datasetId": "qa-equivalent-fixture-1788431905116-24316",
+  "accounts": {
+    "teacher": "qa-perf-teacher-microservices-k8s-20260903-1788431905116-24316@example.test",
+    "student": "qa-perf-student-microservices-k8s-20260903-1788431905116-24316@example.test"
+  },
+  "resources": {
+    "courseId": "432f6b9c-9853-4dcd-b051-6106cf28c83c",
+    "homeworkId": "27bf5b4e-ebdb-465b-90f4-14ee8e6117e1",
+    "labSetId": "5b4a79b5-8d58-4000-a15b-d3ef872ae2c9",
+    "labId": "48468498-bdd4-4364-9960-8951106fdc95"
+  },
+  "cleanup": "Retained as an isolated QA fixture. Do not use production data; remove only through a reviewed cleanup operation."
+}

@@ -129,6 +129,25 @@ Pull Request 不推送镜像、不部署；主分支推送会发布并部署；�
 
 ## 6. 回滚与排障
 
+推荐按目标提交 SHA 进行可重复回滚，而不是分别对多个 Deployment 猜测历史 revision：
+
+```powershell
+./scripts/rollback-k8s.ps1 `
+  -ImagePrefix "ghcr.io/<owner>/teaching-platform" `
+  -GitSha "<目标版本的40位提交SHA>" `
+  -EvidenceDirectory "test-results/rollback"
+
+# 只检查目标和将要执行的变更
+./scripts/rollback-k8s.ps1 `
+  -ImagePrefix "ghcr.io/<owner>/teaching-platform" `
+  -GitSha "<目标版本的40位提交SHA>" `
+  -WhatIf
+```
+
+脚本会记录变更前 Deployment JSON、目标镜像计划、逐服务 rollout 日志、健康检查和最终摘要。目标 SHA 必须已经在 GHCR 中发布为 `sha-<40位SHA>`。脚本不运行 migration，也不回退数据库。
+
+单个 Deployment 的诊断命令：
+
 ```powershell
 kubectl -n teaching-platform get pods,services,jobs,hpa -o wide
 kubectl -n teaching-platform get events --sort-by=.lastTimestamp
