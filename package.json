@@ -21,7 +21,9 @@
     "dev:worker": "npm run dev --prefix judge-worker",
     "db:migrate": "npm run db:deploy --prefix backend",
     "db:seed": "npm run db:seed --prefix backend",
-    "perf:smoke": "node scripts/smoke-load.mjs"
+    "perf:smoke": "node scripts/smoke-load.mjs",
+    "qa:perf": "node scripts/qa/performance-benchmark.mjs",
+    "qa:microservices": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/qa/run-microservice-quality.ps1"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
