@@ -42,9 +42,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: platform-secrets
-                  key: DATABASE_URL
+                  key: LAB_DATABASE_URL
             - name: REDIS_URL
-              value: redis://redis:6379
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: REDIS_URL
             - name: JUDGE_QUEUE_NAME
               value: judge-submissions
             - name: INTERNAL_SERVICE_TOKEN
@@ -53,7 +56,10 @@ spec:
                   name: platform-secrets
                   key: INTERNAL_SERVICE_TOKEN
             - name: COURSE_SERVICE_URL
-              value: http://course-service:3001
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: COURSE_SERVICE_URL
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

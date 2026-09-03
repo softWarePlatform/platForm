@@ -8,6 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "check:uc07": "tsc -p tsconfig.uc07.json",
+    "db:migrate": "prisma migrate deploy",
     "start": "node dist/lab-practice-service/src/index.js",
     "test": "npm run build && node --test dist/lab-practice-service/src/app.test.js dist/lab-practice-service/src/course-client.test.js dist/lab-practice-service/src/internal-lab-grades.test.js dist/lab-practice-service/src/internal-wrong-book.test.js dist/lab-practice-service/src/practice-tag-filter.test.js dist/lab-practice-service/src/practice-grade.test.js dist/lab-practice-service/src/practice-answer-meta.test.js dist/lab-practice-service/src/practice-routes.test.js"
   },

@@ -10,6 +10,9 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
+FROM build AS migrate
+CMD ["npx", "--no-install", "prisma", "migrate", "deploy"]
+
 FROM build AS production-deps
 RUN npm prune --omit=dev && npm cache clean --force
 

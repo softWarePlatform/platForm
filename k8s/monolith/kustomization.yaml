@@ -3,16 +3,20 @@ kind: Kustomization
 namespace: teaching-platform
 resources:
   - namespace.yaml
+  - config.yaml
   - postgres.yaml
   - redis.yaml
   - api.yaml
+  - api-gateway.yaml
+  - course-service.yaml
+  - homework-grade-service.yaml
   - judge-worker.yaml
   - lab-practice-service.yaml
   - web.yaml
   - ingress.yaml
+  - hpa.yaml
 labels:
   - pairs:
       app.kubernetes.io/part-of: teaching-platform
 
-# API、Web、Worker 已在各自清单中声明 ghcr-pull。
-# db-migrate 也已声明 ghcr-pull，由工作流单独创建并等待完成后才部署应用。
+# 应用清单声明 ghcr-pull；数据库初始化和各服务 migration Job 由部署脚本串行执行。

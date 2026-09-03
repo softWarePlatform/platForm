@@ -1,13 +1,17 @@
 # 在线教学与实训平台
 
-本仓库包含 React 前端、Fastify API、Judge Worker、PostgreSQL 和 Redis。前端、后端、评测 Worker 与数据库分别运行在容器中；数据库和 Redis 使用官方镜像。CI/CD 使用 GitHub Actions 构建带 Git 提交 SHA 的镜像，并在数据库迁移成功后部署到 Kubernetes。
+本仓库包含 React 前端、API Gateway、三个 Fastify 业务微服务、兼容 API、Judge Worker、PostgreSQL 和 Redis。CI/CD 使用 GitHub Actions 构建带 Git 提交 SHA 的镜像，并在四组数据库迁移成功后部署到 Kubernetes。权威运维说明见 [`docs/devops/README.md`](docs/devops/README.md)。
 
 ## 1. 目录与服务
 
 | 组件 | 实现 | 容器/端口 |
 | --- | --- | --- |
 | Web | React + Vite + Nginx | `nginx`，宿主机默认 `8080` |
-| API | Fastify + Prisma | `api`，仅在容器网络暴露 `3000` |
+| API Gateway | Fastify | `api-gateway`，容器网络 `3081`，统一转发 `/api/*` |
+| Course Service | Fastify + Prisma | `course-service`，容器网络 `3001` |
+| Homework Grade Service | Fastify + Prisma | `homework-grade-service`，容器网络 `3002` |
+| Lab Practice Service | Fastify + Prisma | `lab-practice-service`，容器网络 `3003` |
+| 兼容 API | Fastify + Prisma | `api`，仅承接尚未迁移路由，容器网络 `3000` |
 | Judge Worker | BullMQ | `judge-worker` |
 | 数据库 | PostgreSQL 16 官方镜像 | `db`，宿主机默认 `5433` |
 | 队列 | Redis 7 官方镜像 | `redis`，宿主机默认 `6379` |
@@ -42,10 +46,8 @@ Copy-Item .env.example .env
 docker compose config --quiet
 docker compose build
 
-docker compose up -d db redis
-docker compose up migrate
+docker compose up -d --build
 docker compose --profile tools run --rm seed
-docker compose up -d api judge-worker nginx
 docker compose ps -a
 ```
 
@@ -78,7 +80,7 @@ docker compose up -d
 
 # 查看状态和日志
 docker compose ps -a
-docker compose logs --tail 100 migrate api judge-worker nginx
+docker compose logs --tail 100 api-gateway course-service homework-grade-service lab-practice-service judge-worker nginx
 
 # 停止但保留数据库、Redis 和上传文件
 docker compose down
@@ -88,17 +90,18 @@ docker compose down
 
 ## 3. 数据库建表、迁移和测试数据
 
-数据库定义位于：
+数据库定义分别位于：
 
 - `backend/prisma/schema.prisma`；
-- `backend/prisma/migrations/`；
-- `backend/prisma/seed.ts`。
+- `course-service/prisma/schema.prisma`；
+- `homework-grade-service/prisma/schema.prisma`；
+- `lab-practice-service/prisma/schema.prisma`。
 
 容器环境中：
 
 ```powershell
-# 仅应用尚未执行的迁移
-docker compose up migrate
+# 仅运行数据库初始化和四组迁移
+docker compose up db-init legacy-migrate course-migrate homework-migrate lab-migrate
 
 # 明确允许重置演示数据时才执行
 docker compose --profile tools run --rm seed
@@ -107,8 +110,14 @@ docker compose --profile tools run --rm seed
 本地 Node.js 环境中：
 
 ```powershell
+# 兼容 API
 npm run db:migrate
 npm run db:seed
+
+# 独立业务服务
+npm run db:migrate --prefix course-service
+npm run db:migrate --prefix homework-grade-service
+npm run db:migrate --prefix lab-practice-service
 ```
 
 ## 4. 编译与测试
@@ -119,6 +128,10 @@ npm run db:seed
 npm ci
 npm ci --prefix backend
 npm ci --prefix frontend
+npm ci --prefix api-gateway
+npm ci --prefix course-service
+npm ci --prefix homework-grade-service
+npm ci --prefix lab-practice-service
 npm ci --prefix judge-worker
 ```
 
@@ -128,8 +141,8 @@ npm ci --prefix judge-worker
 # 编译 API、Web、Worker
 npm run build
 
-# 后端 43 条单元测试 + Worker 测试
-npm run test:unit
+# 所有独立服务和 Worker 测试
+npm run test:services
 
 # 需要已迁移的测试数据库
 npm run test:dao
@@ -152,7 +165,7 @@ npm run test:course
 取代码 → 安装依赖 → migration/seed 测试库 → 编译
 → 单元测试 → DAO 集成测试 → 启动应用
 → HTTP/API 集成测试 → 构建并推送镜像
-→ Kubernetes migration Job → 部署 → rollout/健康检查
+→ 数据库初始化与四组 migration Job → 部署 → rollout/健康检查/HPA 指标检查
 ```
 
 `images` Job 依赖 `quality`，`deploy` Job 依赖全部镜像构建。任何命令返回非零，后续部署不会继续。
@@ -197,7 +210,16 @@ GHCR_PAT
   -EvidenceDirectory "test-results/deployment"
 ```
 
-脚本会先部署 PostgreSQL/Redis，等待 Ready，执行版本化 migration Job；只有 migration 完成后才会部署 API、Web 和 Worker。最终清单、日志和健康检查结果写入 `test-results/deployment/`。
+脚本会先部署 PostgreSQL/Redis，创建三个独立业务数据库，然后串行执行兼容 API、Course、Homework 和 Lab 的迁移任务；全部成功后才部署 Gateway、三个业务服务、兼容 API、Web 和 Worker。最终清单、日志和健康检查结果写入 `test-results/deployment/`。
+
+Docker Desktop 本地一键部署：
+
+```powershell
+./scripts/install-metrics-server.ps1
+./scripts/deploy-k8s-local.ps1
+```
+
+HPA 与负载实验见 [`docs/devops/HPA实验.md`](docs/devops/HPA实验.md)。
 
 本地清单校验：
 
@@ -238,7 +260,7 @@ postgresql://platform:<encoded-password>@postgres:5432/teaching_platform?schema=
 
 ## 8. 常见故障
 
-- 本地 Compose 的 `migrate` 失败：查看 `docker compose logs migrate`，确认 `DATABASE_URL` 和数据库健康状态；
+- 本地 Compose 迁移失败：查看 `docker compose logs legacy-migrate course-migrate homework-migrate lab-migrate`；
 - Kubernetes 迁移出现 Prisma `P1000`：确认 `production` Environment 中 `DATABASE_URL` 内嵌密码与 `POSTGRES_PASSWORD` 完全一致。PostgreSQL 官方镜像只会在空数据目录首次初始化时使用 `POSTGRES_PASSWORD`；部署脚本会在保留 PVC 数据的前提下同步 `platform` 角色密码，再执行迁移；
 - API readiness 失败：检查 PostgreSQL、Redis 和 `JWT_SECRET`；
 - Worker 无结果：检查 Redis、Worker 日志以及 `/app/uploads` 共享卷；

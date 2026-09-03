@@ -25,9 +25,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: platform-secrets
-                  key: DATABASE_URL
+                  key: LAB_DATABASE_URL
             - name: REDIS_URL
-              value: redis://redis:6379
+              valueFrom:
+                configMapKeyRef:
+                  name: platform-config
+                  key: REDIS_URL
             - name: JUDGE_QUEUE_NAME
               value: judge-submissions
             - name: UPLOAD_DIR

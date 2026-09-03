@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+spec:
+  selector:
+    app.kubernetes.io/name: api-gateway
+  ports:
+    - name: http
+      port: 3081
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api-gateway
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: api-gateway
+          image: teaching-platform-api-gateway:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3081
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3081"
+            - name: COURSE_SERVICE_URL
+              valueFrom: { configMapKeyRef: { name: platform-config, key: COURSE_SERVICE_URL } }
+            - name: HOMEWORK_SERVICE_URL
+              valueFrom: { configMapKeyRef: { name: platform-config, key: HOMEWORK_SERVICE_URL } }
+            - name: LAB_SERVICE_URL
+              valueFrom: { configMapKeyRef: { name: platform-config, key: LAB_SERVICE_URL } }
+            - name: MONOLITH_URL
+              valueFrom: { configMapKeyRef: { name: platform-config, key: MONOLITH_URL } }
+            - name: CORS_ORIGIN
+              valueFrom: { secretKeyRef: { name: platform-secrets, key: CORS_ORIGIN } }
+            - name: RATE_LIMIT_MAX
+              valueFrom: { configMapKeyRef: { name: platform-config, key: RATE_LIMIT_MAX } }
+          startupProbe:
+            httpGet: { path: /health/live, port: http }
+            failureThreshold: 18
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            periodSeconds: 15
+            timeoutSeconds: 3
+          resources:
+            requests: { cpu: 50m, memory: 96Mi }
+            limits: { cpu: 500m, memory: 256Mi }

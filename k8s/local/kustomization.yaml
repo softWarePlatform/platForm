@@ -27,3 +27,21 @@ patches:
     patch: |-
       - op: remove
         path: /spec/template/spec/imagePullSecrets
+  - target:
+      kind: Deployment
+      name: api-gateway
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/imagePullSecrets
+  - target:
+      kind: Deployment
+      name: course-service
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/imagePullSecrets
+  - target:
+      kind: Deployment
+      name: homework-grade-service
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/imagePullSecrets

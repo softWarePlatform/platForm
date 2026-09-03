@@ -1,5 +1,7 @@
 # GitHub Actions 自动化流水线配置
 
+> 当前三业务微服务版本的权威说明位于 [`docs/devops/README.md`](devops/README.md)。本文保留较早的配置背景；镜像数量、迁移顺序和部署拓扑以权威说明及 `.github/workflows/ci-cd.yml` 为准。
+
 仓库中的 `.github/workflows/ci-cd.yml` 提供以下自动化能力：
 
 1. Pull Request 与 `main` / `master` 推送：安装依赖、迁移并填充测试数据库、构建前端/API/Worker、执行单元测试和只读接口冒烟测试。

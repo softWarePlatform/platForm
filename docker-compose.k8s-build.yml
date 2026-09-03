@@ -4,6 +4,30 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.k8s-local
+  api-gateway:
+    image: teaching-platform-api-gateway:dev
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+      target: runtime
+  course-service:
+    image: teaching-platform-course-service:dev
+    build:
+      context: ./course-service
+      dockerfile: Dockerfile
+      target: runtime
+  homework-grade-service:
+    image: teaching-platform-homework-grade-service:dev
+    build:
+      context: ./homework-grade-service
+      dockerfile: Dockerfile
+      target: runtime
+  lab-practice-service:
+    image: teaching-platform-lab-practice-service:dev
+    build:
+      context: .
+      dockerfile: lab-practice-service/Dockerfile
+      target: runtime
   judge-worker:
     image: teaching-platform-judge-worker:dev
     build:

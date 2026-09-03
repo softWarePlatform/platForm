@@ -25,4 +25,9 @@ RUN --mount=type=cache,target=/root/.npm \
   npm ci --omit=dev --ignore-scripts --no-audit --fund=false --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/dist ./dist
+RUN groupadd --system judge \
+  && useradd --system --gid judge --home-dir /app judge \
+  && mkdir -p /app/uploads \
+  && chown -R judge:judge /app
+USER judge
 CMD ["node", "dist/worker.js"]

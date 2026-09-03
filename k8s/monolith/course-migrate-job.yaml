@@ -1,0 +1,18 @@
+apiVersion: batch/v1
+kind: Job
+metadata: { name: course-migrate, namespace: teaching-platform }
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: Never
+      imagePullSecrets: [{ name: ghcr-pull }]
+      containers:
+        - name: migrate
+          image: teaching-platform-course-migrate:dev
+          env:
+            - { name: DATABASE_URL, valueFrom: { secretKeyRef: { name: platform-secrets, key: COURSE_DATABASE_URL } } }
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }

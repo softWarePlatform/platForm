@@ -1,11 +1,18 @@
-# 宿主机默认使用 PostgreSQL 5433、Redis 6379、Web 8080；可在根目录 .env 覆盖。
-x-app-environment: &app-environment
+# 本地完整拓扑：三业务微服务经 API Gateway 对外；legacy api 仅承接尚未迁移的兼容路由。
+x-common-environment: &common-environment
   NODE_ENV: production
-  DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/${POSTGRES_DB:-teaching_platform}?schema=public
   REDIS_URL: redis://redis:6379
   JUDGE_QUEUE_NAME: judge-submissions
+  JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-long-random-string}
   INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-course-service-internal-local-token}
+  CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
   UPLOAD_DIR: /app/uploads
+
+x-healthcheck: &http-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 12
+  start_period: 20s
 
 services:
   db:
@@ -25,6 +32,25 @@ services:
       retries: 12
       start_period: 5s
 
+  db-init:
+    image: postgres:16-alpine
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-platform}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-platform}
+    command:
+      - sh
+      - -ec
+      - |
+        for database in course_service homework_grade_service lab_practice_service; do
+          exists="$$(psql -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$${database}'")"
+          if [ "$${exists}" != "1" ]; then createdb "$${database}"; fi
+        done
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
@@ -39,125 +65,150 @@ services:
       retries: 12
       start_period: 5s
 
-  migrate:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: migrate
+  legacy-migrate:
+    build: { context: ./backend, dockerfile: Dockerfile, target: migrate }
     environment:
-      <<: *app-environment
+      DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/${POSTGRES_DB:-teaching_platform}?schema=public
     depends_on:
-      db:
-        condition: service_healthy
+      db-init: { condition: service_completed_successfully }
+    restart: "no"
+
+  course-migrate:
+    build: { context: ./course-service, dockerfile: Dockerfile, target: migrate }
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/course_service?schema=public
+    depends_on:
+      db-init: { condition: service_completed_successfully }
+    restart: "no"
+
+  homework-migrate:
+    build: { context: ./homework-grade-service, dockerfile: Dockerfile, target: migrate }
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/homework_grade_service?schema=public
+    depends_on:
+      db-init: { condition: service_completed_successfully }
+    restart: "no"
+
+  lab-migrate:
+    build: { context: ., dockerfile: lab-practice-service/Dockerfile, target: migrate }
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/lab_practice_service?schema=public
+    depends_on:
+      db-init: { condition: service_completed_successfully }
     restart: "no"
 
   seed:
     profiles: ["tools"]
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: build
+    build: { context: ./backend, dockerfile: Dockerfile, target: build }
     environment:
-      <<: *app-environment
+      DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/${POSTGRES_DB:-teaching_platform}?schema=public
     command: ["npx", "--no-install", "prisma", "db", "seed"]
-    volumes:
-      - api_uploads:/app/uploads
+    volumes: ["uploads:/app/uploads"]
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      legacy-migrate: { condition: service_completed_successfully }
     restart: "no"
 
   api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: runtime
+    build: { context: ./backend, dockerfile: Dockerfile, target: runtime }
     environment:
-      <<: *app-environment
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-long-random-string}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
-    volumes:
-      - api_uploads:/app/uploads
+      <<: *common-environment
+      DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/${POSTGRES_DB:-teaching_platform}?schema=public
+    volumes: ["uploads:/app/uploads"]
     depends_on:
-      migrate:
-        condition: service_completed_successfully
-      redis:
-        condition: service_healthy
-    expose:
-      - "3000"
+      legacy-migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    expose: ["3000"]
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://127.0.0.1:3000/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 15s
+      <<: *http-healthcheck
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+
+  course-service:
+    build: { context: ./course-service, dockerfile: Dockerfile, target: runtime }
+    environment:
+      <<: *common-environment
+      PORT: "3001"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/course_service?schema=public
+      HOMEWORK_SERVICE_URL: http://homework-grade-service:3002
+      LAB_SERVICE_URL: http://lab-practice-service:3003
+    volumes: ["uploads:/app/uploads"]
+    depends_on:
+      course-migrate: { condition: service_completed_successfully }
+    expose: ["3001"]
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+
+  homework-grade-service:
+    build: { context: ./homework-grade-service, dockerfile: Dockerfile, target: runtime }
+    environment:
+      <<: *common-environment
+      PORT: "3002"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/homework_grade_service?schema=public
+      COURSE_SERVICE_URL: http://course-service:3001
+      LAB_SERVICE_URL: http://lab-practice-service:3003
+    volumes: ["uploads:/app/uploads"]
+    depends_on:
+      homework-migrate: { condition: service_completed_successfully }
+      course-service: { condition: service_healthy }
+    expose: ["3002"]
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3002/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
 
   lab-practice-service:
-    build:
-      context: .
-      dockerfile: lab-practice-service/Dockerfile
-      target: runtime
+    build: { context: ., dockerfile: lab-practice-service/Dockerfile, target: runtime }
     environment:
-      <<: *app-environment
+      <<: *common-environment
       PORT: "3003"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/lab_practice_service?schema=public
       COURSE_SERVICE_URL: http://course-service:3001
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-long-random-string}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
-    volumes:
-      - api_uploads:/app/uploads
+    volumes: ["uploads:/app/uploads"]
     depends_on:
-      migrate:
-        condition: service_completed_successfully
-      redis:
-        condition: service_healthy
-    expose:
-      - "3003"
+      lab-migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      course-service: { condition: service_healthy }
+    expose: ["3003"]
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://127.0.0.1:3003/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 15s
+      <<: *http-healthcheck
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3003/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
 
   judge-worker:
-    build:
-      context: .
-      dockerfile: judge-worker/Dockerfile
-      target: runtime
+    build: { context: ., dockerfile: judge-worker/Dockerfile, target: runtime }
     environment:
-      <<: *app-environment
+      <<: *common-environment
+      DATABASE_URL: postgresql://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/lab_practice_service?schema=public
       JUDGE_TIMEOUT_MS: "8000"
-    volumes:
-      - api_uploads:/app/uploads
+    volumes: ["uploads:/app/uploads"]
     depends_on:
-      migrate:
-        condition: service_completed_successfully
-      redis:
-        condition: service_healthy
+      lab-migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  api-gateway:
+    build: { context: ./api-gateway, dockerfile: Dockerfile, target: runtime }
+    environment:
+      NODE_ENV: production
+      PORT: "3081"
+      COURSE_SERVICE_URL: http://course-service:3001
+      HOMEWORK_SERVICE_URL: http://homework-grade-service:3002
+      LAB_SERVICE_URL: http://lab-practice-service:3003
+      MONOLITH_URL: http://api:3000
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-300}
+    depends_on:
+      api: { condition: service_healthy }
+      course-service: { condition: service_healthy }
+      homework-grade-service: { condition: service_healthy }
+      lab-practice-service: { condition: service_healthy }
+    expose: ["3081"]
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3081/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
 
   nginx:
-    build:
-      context: .
-      dockerfile: nginx/Dockerfile
-    ports:
-      - "${WEB_PORT:-8080}:80"
+    build: { context: ., dockerfile: nginx/Dockerfile, target: runtime }
+    ports: ["${WEB_PORT:-8080}:80"]
     depends_on:
-      api:
-        condition: service_healthy
-      lab-practice-service:
-        condition: service_healthy
+      api-gateway: { condition: service_healthy }
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health/live >/dev/null || exit 1"]
       interval: 10s
@@ -168,4 +219,4 @@ services:
 volumes:
   pgdata:
   redisdata:
-  api_uploads:
+  uploads:

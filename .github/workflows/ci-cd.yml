@@ -60,6 +60,7 @@ jobs:
       DATABASE_URL: postgresql://platform:platform@127.0.0.1:5432/teaching_platform?schema=public
       REDIS_URL: redis://127.0.0.1:6379
       JWT_SECRET: ci-only-secret-not-used-outside-the-runner
+      INTERNAL_SERVICE_TOKEN: ci-only-internal-service-token
       CORS_ORIGIN: http://127.0.0.1:4173
 
     steps:
@@ -77,6 +78,19 @@ jobs:
             frontend/package-lock.json
             judge-worker/package-lock.json
             lab-practice-service/package-lock.json
+            api-gateway/package-lock.json
+            course-service/package-lock.json
+            homework-grade-service/package-lock.json
+
+      - name: Set up kubectl for manifest validation
+        uses: azure/setup-kubectl@v4
+
+      - name: Validate infrastructure configuration
+        run: |
+          docker compose config --quiet
+          docker compose -f docker-compose.k8s-build.yml config --quiet
+          kubectl kustomize k8s/monolith > /dev/null
+          kubectl kustomize k8s/local > /dev/null
 
       - name: Install dependencies
         run: |
@@ -86,11 +100,22 @@ jobs:
           npm ci --prefix judge-worker --no-audit --fund=false
           npm ci --prefix lab-practice-service --ignore-scripts --no-audit --fund=false
           npm run postinstall --prefix lab-practice-service
+          npm ci --prefix api-gateway --no-audit --fund=false
+          npm ci --prefix course-service --ignore-scripts --no-audit --fund=false
+          npm run db:generate --prefix course-service
+          npm ci --prefix homework-grade-service --ignore-scripts --no-audit --fund=false
+          npm run db:generate --prefix homework-grade-service
 
-      - name: Prepare database and Prisma clients
+      - name: Prepare databases and Prisma clients
         run: |
+          for database in course_service homework_grade_service lab_practice_service; do
+            PGPASSWORD=platform createdb --host=127.0.0.1 --username=platform "$database"
+          done
           npm run db:migrate
           npm run db:seed
+          DATABASE_URL=postgresql://platform:platform@127.0.0.1:5432/course_service?schema=public npm run db:migrate --prefix course-service
+          DATABASE_URL=postgresql://platform:platform@127.0.0.1:5432/homework_grade_service?schema=public npm run db:migrate --prefix homework-grade-service
+          DATABASE_URL=postgresql://platform:platform@127.0.0.1:5432/lab_practice_service?schema=public npm run db:migrate --prefix lab-practice-service
           cd judge-worker
           npx prisma generate --schema=../backend/prisma/schema.prisma
 
@@ -100,24 +125,35 @@ jobs:
       - name: Run unit tests
         run: |
           npm run test:unit
-          npm test --prefix lab-practice-service
+          npm run test:services
 
       - name: Start applications
         run: |
           mkdir -p test-results
           npm run start --prefix backend > test-results/api.log 2>&1 &
-          npm run start --prefix judge-worker > test-results/judge-worker.log 2>&1 &
+          DATABASE_URL=postgresql://platform:platform@127.0.0.1:5432/course_service?schema=public HOMEWORK_SERVICE_URL=http://127.0.0.1:3002 LAB_SERVICE_URL=http://127.0.0.1:3003 npm run start --prefix course-service > test-results/course-service.log 2>&1 &
+          DATABASE_URL=postgresql://platform:platform@127.0.0.1:5432/homework_grade_service?schema=public COURSE_SERVICE_URL=http://127.0.0.1:3001 LAB_SERVICE_URL=http://127.0.0.1:3003 npm run start --prefix homework-grade-service > test-results/homework-grade-service.log 2>&1 &
+          DATABASE_URL=postgresql://platform:platform@127.0.0.1:5432/lab_practice_service?schema=public COURSE_SERVICE_URL=http://127.0.0.1:3001 npm run start --prefix lab-practice-service > test-results/lab-practice-service.log 2>&1 &
+          DATABASE_URL=postgresql://platform:platform@127.0.0.1:5432/lab_practice_service?schema=public npm run start --prefix judge-worker > test-results/judge-worker.log 2>&1 &
+          COURSE_SERVICE_URL=http://127.0.0.1:3001 HOMEWORK_SERVICE_URL=http://127.0.0.1:3002 LAB_SERVICE_URL=http://127.0.0.1:3003 MONOLITH_URL=http://127.0.0.1:3000 npm run start --prefix api-gateway > test-results/api-gateway.log 2>&1 &
           npm run preview --prefix frontend -- --host 127.0.0.1 --port 4173 > test-results/web.log 2>&1 &
 
       - name: Wait for applications
         run: |
-          for attempt in {1..60}; do
-            if curl --fail --silent http://127.0.0.1:3000/health/ready > /dev/null; then break; fi
-            if [ "$attempt" = 60 ]; then
-              echo "API did not become ready"
-              exit 1
-            fi
-            sleep 2
+          for endpoint in \
+            http://127.0.0.1:3000/health/ready \
+            http://127.0.0.1:3001/health/ready \
+            http://127.0.0.1:3002/health/ready \
+            http://127.0.0.1:3003/health/ready \
+            http://127.0.0.1:3081/health/ready; do
+            for attempt in {1..60}; do
+              if curl --fail --silent "$endpoint" > /dev/null; then break; fi
+              if [ "$attempt" = 60 ]; then
+                echo "$endpoint did not become ready"
+                exit 1
+              fi
+              sleep 2
+            done
           done
           for attempt in {1..30}; do
             if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then break; fi
@@ -127,6 +163,7 @@ jobs:
             fi
             sleep 2
           done
+          curl --fail --silent http://127.0.0.1:3081/api/courses > test-results/gateway-course-smoke.json
 
       - name: Run read-only integration smoke tests
         env:
@@ -196,6 +233,30 @@ jobs:
             context: .
             dockerfile: ./lab-practice-service/Dockerfile
             target: runtime
+          - component: api-gateway
+            context: ./api-gateway
+            dockerfile: ./api-gateway/Dockerfile
+            target: runtime
+          - component: course-service
+            context: ./course-service
+            dockerfile: ./course-service/Dockerfile
+            target: runtime
+          - component: course-migrate
+            context: ./course-service
+            dockerfile: ./course-service/Dockerfile
+            target: migrate
+          - component: homework-grade-service
+            context: ./homework-grade-service
+            dockerfile: ./homework-grade-service/Dockerfile
+            target: runtime
+          - component: homework-migrate
+            context: ./homework-grade-service
+            dockerfile: ./homework-grade-service/Dockerfile
+            target: migrate
+          - component: lab-migrate
+            context: .
+            dockerfile: ./lab-practice-service/Dockerfile
+            target: migrate
 
     steps:
       - name: Check out repository

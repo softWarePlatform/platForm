@@ -6,82 +6,67 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-
 $evidencePath = [IO.Path]::GetFullPath($EvidenceDirectory)
 New-Item -ItemType Directory -Path $evidencePath -Force | Out-Null
 
 function Invoke-KubectlChecked {
-  param(
-    [Parameter(Mandatory)]
-    [string[]]$Arguments,
-    [Parameter(Mandatory)]
-    [string]$LogName,
-    [Parameter(Mandatory)]
-    [string]$FailureMessage
-  )
-
+  param([string[]]$Arguments, [string]$LogName, [string]$FailureMessage)
+  $previousErrorPreference = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
   $output = & kubectl @Arguments 2>&1
   $exitCode = $LASTEXITCODE
+  $ErrorActionPreference = $previousErrorPreference
   $output | Tee-Object -FilePath (Join-Path $evidencePath $LogName)
-  if ($exitCode -ne 0) {
-    throw $FailureMessage
-  }
+  if ($exitCode -ne 0) { throw $FailureMessage }
 }
 
-Invoke-KubectlChecked `
-  -Arguments @("--namespace", $Namespace, "rollout", "status", "deployment/api", "--timeout=300s") `
-  -LogName "rollout-api.log" `
-  -FailureMessage "API rollout failed or timed out."
-
-Invoke-KubectlChecked `
-  -Arguments @("--namespace", $Namespace, "rollout", "status", "deployment/judge-worker", "--timeout=300s") `
-  -LogName "rollout-judge-worker.log" `
-  -FailureMessage "Judge Worker rollout failed or timed out."
-
-Invoke-KubectlChecked `
-  -Arguments @("--namespace", $Namespace, "rollout", "status", "deployment/lab-practice-service", "--timeout=300s") `
-  -LogName "rollout-lab-practice-service.log" `
-  -FailureMessage "Lab Practice Service rollout failed or timed out."
-
-Invoke-KubectlChecked `
-  -Arguments @("--namespace", $Namespace, "rollout", "status", "deployment/web", "--timeout=180s") `
-  -LogName "rollout-web.log" `
-  -FailureMessage "Web rollout failed or timed out."
-
-$apiPod = & kubectl --namespace $Namespace get pod `
-  -l app.kubernetes.io/name=api `
-  -o "jsonpath={.items[0].metadata.name}" 2>&1
-$podExitCode = $LASTEXITCODE
-if ($podExitCode -ne 0 -or [string]::IsNullOrWhiteSpace(($apiPod -join ""))) {
-  throw "Unable to find the API pod."
+$deployments = @(
+  @{ Name = "api"; Timeout = 300 },
+  @{ Name = "course-service"; Timeout = 300 },
+  @{ Name = "homework-grade-service"; Timeout = 300 },
+  @{ Name = "lab-practice-service"; Timeout = 300 },
+  @{ Name = "api-gateway"; Timeout = 300 },
+  @{ Name = "judge-worker"; Timeout = 300 },
+  @{ Name = "web"; Timeout = 180 }
+)
+foreach ($deployment in $deployments) {
+  $name = $deployment.Name
+  Invoke-KubectlChecked `
+    -Arguments @("--namespace", $Namespace, "rollout", "status", "deployment/$name", "--timeout=$($deployment.Timeout)s") `
+    -LogName "rollout-$name.log" `
+    -FailureMessage "Deployment $name rollout failed or timed out."
 }
-$apiPodName = ($apiPod -join "").Trim()
 
-$healthExpression = "Promise.all(['/health/live','/health/ready'].map(path=>fetch('http://127.0.0.1:3000'+path).then(response=>{if(!response.ok)throw new Error(path+' '+response.status);return response.text()}))).then(()=>console.log('live and ready checks passed'))"
-Invoke-KubectlChecked `
-  -Arguments @("--namespace", $Namespace, "exec", $apiPodName, "--", "node", "-e", $healthExpression) `
-  -LogName "health-check.log" `
-  -FailureMessage "API live/readiness verification failed."
+$gatewayPod = & kubectl --namespace $Namespace get pod -l app.kubernetes.io/name=api-gateway -o "jsonpath={.items[0].metadata.name}" 2>&1
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace(($gatewayPod -join ""))) { throw "Unable to find the API Gateway pod." }
+$gatewayPodName = ($gatewayPod -join "").Trim()
 
-$webHealthExpression = "fetch('http://web/').then(response=>{console.log('web status '+response.status);if(!response.ok)throw new Error('web '+response.status)})"
+$targets = @("gateway-live", "gateway-ready", "course", "homework", "lab", "legacy-api", "web")
+$healthExpression = "Promise.all(['http://127.0.0.1:3081/health/live','http://127.0.0.1:3081/health/ready','http://course-service:3001/health/ready','http://homework-grade-service:3002/health/ready','http://lab-practice-service:3003/health/ready','http://api:3000/health/ready','http://web/'].map(url=>fetch(url).then(r=>{console.log(url+' '+r.status);if(!r.ok)throw new Error(url+' '+r.status)}))).then(()=>console.log('all health checks passed'))"
 Invoke-KubectlChecked `
-  -Arguments @("--namespace", $Namespace, "exec", $apiPodName, "--", "node", "-e", $webHealthExpression) `
-  -LogName "web-health-check.log" `
-  -FailureMessage "Web service verification failed."
+  -Arguments @("--namespace", $Namespace, "exec", $gatewayPodName, "--", "node", "-e", $healthExpression) `
+  -LogName "service-health-checks.log" `
+  -FailureMessage "One or more in-cluster service health checks failed."
 
 Invoke-KubectlChecked `
-  -Arguments @("--namespace", $Namespace, "get", "pods,services,pvc,jobs", "-o", "wide") `
+  -Arguments @("--namespace", $Namespace, "get", "pods,services,pvc,jobs,hpa", "-o", "wide") `
   -LogName "cluster-resources.log" `
   -FailureMessage "Unable to collect deployed resource status."
+
+Invoke-KubectlChecked `
+  -Arguments @("top", "pods", "--namespace", $Namespace) `
+  -LogName "pod-metrics.log" `
+  -FailureMessage "Metrics API is unavailable; HPA cannot operate. Install or repair Metrics Server."
 
 [ordered]@{
   checkedAt = [DateTimeOffset]::UtcNow.ToString("o")
   namespace = $Namespace
-  apiPod = $apiPodName
-  live = "passed"
-  ready = "passed"
-  web = "passed"
+  gatewayPod = $gatewayPodName
+  services = $targets
+  health = "passed"
   rollout = "passed"
-} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidencePath "health-summary.json") -Encoding utf8
+  hpaConfigured = $true
+  metricsApi = "passed"
+} | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $evidencePath "health-summary.json") -Encoding utf8
 
-Write-Host "Kubernetes rollout and health checks passed."
+Write-Host "Kubernetes rollouts, service health checks, and HPA discovery passed."

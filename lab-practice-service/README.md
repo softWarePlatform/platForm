@@ -6,6 +6,7 @@ UC06—UC08 的独立运行入口，负责实验、判题提交、练习与实�
 `prisma/schema.prisma`。独立 Schema 只声明 Lab 所有的实验、练习、错题和讨论模型；
 `userId`、`courseId` 等跨服务标识为普通标量，不对 User/Course/Enrollment 建数据库外键。
 健康检查、实验成绩和错题内部接口已经使用 Lab 自己的 Prisma Client。
+数据库结构通过 `prisma/migrations` 中已提交的 migration 管理，部署只执行 `prisma migrate deploy`。
 
 UC06 实验域和 UC07 练习域已迁入本服务，并用 Course 内部 API 替换课程、用户、选课和通知查询。
 UC08 讨论域仍处于兼容阶段，是最后一个待迁移公开入口。在全部路由迁出和历史数据迁移验证完成前，

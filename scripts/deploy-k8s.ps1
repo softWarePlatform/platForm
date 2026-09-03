@@ -76,6 +76,13 @@ function Assert-DatabaseConfiguration {
   }
 }
 
+function Get-ServiceDatabaseUrl {
+  param([Parameter(Mandatory)][string]$DatabaseName)
+  $builder = [UriBuilder]$env:DATABASE_URL
+  $builder.Path = "/$DatabaseName"
+  return $builder.Uri.AbsoluteUri
+}
+
 function Invoke-KubectlChecked {
   param(
     [Parameter(Mandatory)]
@@ -173,14 +180,15 @@ function Get-OptionalPropertyValue {
 }
 
 function Wait-MigrationJob {
+  param([string]$JobName = "db-migrate")
   $deadline = [DateTimeOffset]::UtcNow.AddSeconds(330)
   $observations = [Collections.Generic.List[string]]::new()
 
   while ([DateTimeOffset]::UtcNow -lt $deadline) {
-    $jobJson = & kubectl --namespace $Namespace get job db-migrate -o json 2>&1
+    $jobJson = & kubectl --namespace $Namespace get job $JobName -o json 2>&1
     if ($LASTEXITCODE -ne 0) {
-      $jobJson | Tee-Object -FilePath (Join-Path $evidencePath "migration-status-error.log")
-      throw "Unable to read the database migration Job status."
+      $jobJson | Tee-Object -FilePath (Join-Path $evidencePath "$JobName-status-error.log")
+      throw "Unable to read Kubernetes Job $JobName status."
     }
 
     $job = ($jobJson -join "`n") | ConvertFrom-Json
@@ -191,8 +199,8 @@ function Wait-MigrationJob {
     $observations.Add("$(Get-Date -Format o) active=$active succeeded=$succeeded failed=$failed")
 
     if ($succeeded -ge 1) {
-      $observations | Set-Content -LiteralPath (Join-Path $evidencePath "migration-wait.log") -Encoding utf8
-      Write-MigrationLogs
+      $observations | Set-Content -LiteralPath (Join-Path $evidencePath "$JobName-wait.log") -Encoding utf8
+      & kubectl --namespace $Namespace logs "job/$JobName" 2>&1 | Tee-Object -FilePath (Join-Path $evidencePath "$JobName.log")
       return
     }
 
@@ -202,19 +210,19 @@ function Wait-MigrationJob {
       (Get-OptionalPropertyValue -InputObject $_ -Name "status") -eq "True"
     })
     if ($failedCondition.Count -gt 0) {
-      $observations | Set-Content -LiteralPath (Join-Path $evidencePath "migration-wait.log") -Encoding utf8
-      Write-MigrationLogs
+      $observations | Set-Content -LiteralPath (Join-Path $evidencePath "$JobName-wait.log") -Encoding utf8
+      & kubectl --namespace $Namespace logs "job/$JobName" 2>&1 | Tee-Object -FilePath (Join-Path $evidencePath "$JobName.log")
       $reason = Get-OptionalPropertyValue -InputObject $failedCondition[0] -Name "reason" -DefaultValue "Unknown"
       $message = Get-OptionalPropertyValue -InputObject $failedCondition[0] -Name "message" -DefaultValue "No failure message was reported."
-      throw "Database migration Job failed ($reason): $message"
+      throw "Kubernetes Job $JobName failed ($reason): $message"
     }
 
     Start-Sleep -Seconds 5
   }
 
-  $observations | Set-Content -LiteralPath (Join-Path $evidencePath "migration-wait.log") -Encoding utf8
-  Write-MigrationLogs
-  throw "Database migration Job timed out."
+  $observations | Set-Content -LiteralPath (Join-Path $evidencePath "$JobName-wait.log") -Encoding utf8
+  & kubectl --namespace $Namespace logs "job/$JobName" 2>&1 | Tee-Object -FilePath (Join-Path $evidencePath "$JobName.log")
+  throw "Kubernetes Job $JobName timed out."
 }
 
 Assert-RequiredEnvironment
@@ -240,6 +248,9 @@ $platformSecretOutput = & kubectl --namespace $Namespace create secret generic p
   "--from-literal=POSTGRES_PASSWORD=$env:POSTGRES_PASSWORD" `
   --from-literal=POSTGRES_DB=teaching_platform `
   "--from-literal=DATABASE_URL=$env:DATABASE_URL" `
+  "--from-literal=COURSE_DATABASE_URL=$(Get-ServiceDatabaseUrl -DatabaseName 'course_service')" `
+  "--from-literal=HOMEWORK_DATABASE_URL=$(Get-ServiceDatabaseUrl -DatabaseName 'homework_grade_service')" `
+  "--from-literal=LAB_DATABASE_URL=$(Get-ServiceDatabaseUrl -DatabaseName 'lab_practice_service')" `
   "--from-literal=JWT_SECRET=$env:JWT_SECRET" `
   "--from-literal=CORS_ORIGIN=$env:CORS_ORIGIN" `
   "--from-literal=INTERNAL_SERVICE_TOKEN=$env:INTERNAL_SERVICE_TOKEN" `
@@ -277,6 +288,16 @@ Invoke-KubectlChecked `
   -LogName "rollout-redis.log" `
   -FailureMessage "Redis did not become ready."
 
+Invoke-KubectlChecked `
+  -Arguments @("--namespace", $Namespace, "delete", "job", "database-bootstrap", "--ignore-not-found") `
+  -LogName "delete-database-bootstrap.log" `
+  -FailureMessage "Failed to remove the previous database bootstrap Job."
+Invoke-KubectlChecked `
+  -Arguments @("apply", "-f", (Join-Path $repoRoot "k8s/monolith/database-bootstrap-job.yaml")) `
+  -LogName "apply-database-bootstrap.log" `
+  -FailureMessage "Failed to create the database bootstrap Job."
+Wait-MigrationJob -JobName "database-bootstrap"
+
 $migrationTemplate = Get-Content -Raw (Join-Path $repoRoot "k8s/monolith/migrate-job.yaml")
 $migrationManifest = $migrationTemplate.Replace(
   "teaching-platform-migrate:dev",
@@ -297,7 +318,23 @@ Invoke-KubectlChecked `
   -LogName "apply-migration.log" `
   -FailureMessage "Failed to create the migration Job."
 
-Wait-MigrationJob
+Wait-MigrationJob -JobName "db-migrate"
+
+$serviceMigrations = @(
+  @{ Name = "course-migrate"; File = "course-migrate-job.yaml"; Placeholder = "teaching-platform-course-migrate:dev"; Image = "$normalizedPrefix-course-migrate:$imageTag" },
+  @{ Name = "homework-migrate"; File = "homework-migrate-job.yaml"; Placeholder = "teaching-platform-homework-migrate:dev"; Image = "$normalizedPrefix-homework-migrate:$imageTag" },
+  @{ Name = "lab-migrate"; File = "lab-migrate-job.yaml"; Placeholder = "teaching-platform-lab-migrate:dev"; Image = "$normalizedPrefix-lab-migrate:$imageTag" }
+)
+foreach ($migration in $serviceMigrations) {
+  $template = Get-Content -Raw (Join-Path $repoRoot "k8s/monolith/$($migration.File)")
+  $manifest = $template.Replace($migration.Placeholder, $migration.Image)
+  if ($manifest.Contains($migration.Placeholder)) { throw "Migration image placeholder was not replaced for $($migration.Name)." }
+  $path = Join-Path $evidencePath "$($migration.Name).rendered.yaml"
+  [IO.File]::WriteAllText($path, $manifest, [Text.UTF8Encoding]::new($false))
+  Invoke-KubectlChecked -Arguments @("--namespace", $Namespace, "delete", "job", $migration.Name, "--ignore-not-found") -LogName "delete-$($migration.Name).log" -FailureMessage "Failed to remove previous $($migration.Name) Job."
+  Invoke-KubectlChecked -Arguments @("apply", "-f", $path) -LogName "apply-$($migration.Name).log" -FailureMessage "Failed to create $($migration.Name) Job."
+  Wait-MigrationJob -JobName $migration.Name
+}
 
 $renderedManifest = & kubectl kustomize (Join-Path $repoRoot "k8s/monolith") 2>&1
 if ($LASTEXITCODE -ne 0) {
@@ -309,7 +346,10 @@ $platformManifest = $platformManifest.Replace("teaching-platform-api:dev", "$nor
 $platformManifest = $platformManifest.Replace("teaching-platform-web:dev", "$normalizedPrefix-web:$imageTag")
 $platformManifest = $platformManifest.Replace("teaching-platform-judge-worker:dev", "$normalizedPrefix-judge-worker:$imageTag")
 $platformManifest = $platformManifest.Replace("teaching-platform-lab-practice-service:dev", "$normalizedPrefix-lab-practice-service:$imageTag")
-if ($platformManifest -match "teaching-platform-(api|web|judge-worker|lab-practice-service):dev") {
+$platformManifest = $platformManifest.Replace("teaching-platform-api-gateway:dev", "$normalizedPrefix-api-gateway:$imageTag")
+$platformManifest = $platformManifest.Replace("teaching-platform-course-service:dev", "$normalizedPrefix-course-service:$imageTag")
+$platformManifest = $platformManifest.Replace("teaching-platform-homework-grade-service:dev", "$normalizedPrefix-homework-grade-service:$imageTag")
+if ($platformManifest -match "teaching-platform-(api|web|judge-worker|lab-practice-service|api-gateway|course-service|homework-grade-service):dev") {
   throw "One or more application image placeholders were not replaced."
 }
 $platformPath = Join-Path $evidencePath "platform.rendered.yaml"
