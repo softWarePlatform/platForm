@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+data:
+  REDIS_URL: redis://redis:6379
+  COURSE_SERVICE_URL: http://course-service:3001
+  HOMEWORK_SERVICE_URL: http://homework-grade-service:3002
+  LAB_SERVICE_URL: http://lab-practice-service:3003
+  MONOLITH_URL: http://api:3000
+  RATE_LIMIT_MAX: "300"
+  UPSTREAM_TIMEOUT_MS: "2000"

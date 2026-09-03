@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-08-28T12:17:11.712Z",
+  "policy": "Sequential CI stages stop at the first non-zero exit code; jobs depending on quality cannot start.",
+  "injectedExitCode": 17,
+  "blockedAt": "injected-failure",
+  "downstreamExecuted": false,
+  "pipelineBlocked": true,
+  "executed": [
+    {
+      "name": "unit",
+      "exitCode": 0
+    },
+    {
+      "name": "injected-failure",
+      "exitCode": 17
+    }
+  ]
+}

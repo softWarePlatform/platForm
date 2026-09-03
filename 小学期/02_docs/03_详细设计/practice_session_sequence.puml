@@ -1,0 +1,25 @@
+@startuml
+skinparam sequenceMessageAlign center
+
+participant "前端" as Frontend
+participant "practice.ts" as API
+participant "practice-pick.ts" as Pick
+participant "practice-grade.ts" as Grade
+participant "practice-tutor / 本地模板" as LLM
+database "PostgreSQL" as DB
+
+Frontend -> API : POST /courses/:id/practice/sessions {mode:SMART}
+API -> Pick : pickQuestionsForSession(count=10)
+Pick -> DB : 按标签/错题/题库抽题
+API -> DB : 创建 PracticeSession + Items
+Frontend -> API : PATCH .../items/:id {answer}
+API -> DB : 更新 answerJson
+Frontend -> API : POST .../submit
+API -> Grade : gradePracticeAnswer
+API -> DB : 更新得分；写/删 WrongBookEntry
+API -> DB : session.status=GRADED
+Frontend -> API : POST .../hint
+API -> LLM : 有密钥走模型，否则本地模板
+API --> Frontend : 200 辅导文本
+
+@enduml

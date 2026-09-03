@@ -1,0 +1,79 @@
+### 作业与实验模块 API 测试（节选）
+### 将 courseId / homeworkId / labSetId 替换为 seed 数据中的实际 id
+
+@baseUrl = http://127.0.0.1:3000
+@studentToken = {{loginStudent.response.body.token}}
+@teacherToken = {{loginTeacher.response.body.token}}
+@courseId = 00000000-0000-4000-8000-00000001001c
+
+### TC-HW-001 学生查看我的作业
+GET {{baseUrl}}/homework/mine
+Authorization: Bearer {{studentToken}}
+
+### TC-HW-002 教师教学台作业概览
+GET {{baseUrl}}/homework/teaching
+Authorization: Bearer {{teacherToken}}
+
+### TC-HW-003 课程内作业列表
+GET {{baseUrl}}/courses/{{courseId}}/homework
+Authorization: Bearer {{studentToken}}
+
+### TC-LAB-001 学生实验总览
+GET {{baseUrl}}/lab-sets/mine/overview
+Authorization: Bearer {{studentToken}}
+
+### TC-LAB-002 课程实验集列表
+GET {{baseUrl}}/courses/{{courseId}}/lab-sets
+Authorization: Bearer {{studentToken}}
+
+### TC-LAB-003 提交代码评测（需 judge-worker + Redis；Windows 建议测 JS 题）
+@labId = 00000000-0000-4000-8000-00000001003d
+POST {{baseUrl}}/labs/{{labId}}/submit
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "code": "console.log(\"Hello\")",
+  "language": "javascript"
+}
+
+### TC-HW-004 迟交提交（seed fixture，已截止 + allowLate）
+@lateHomeworkId = 00000000-0000-4000-8000-000000090010
+POST {{baseUrl}}/homework/{{lateHomeworkId}}/submit
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "content": "TC-HW-004 迟交测试提交。"
+}
+
+### TC-HW-005 重做申请（seed fixture）
+@redoHomeworkId = 00000000-0000-4000-8000-000000090011
+POST {{baseUrl}}/homework/{{redoHomeworkId}}/redo-request
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "reason": "HTTP 测试重做申请"
+}
+
+### TC-LAB-002 未开始实验集（seed fixture，overview 含「未开始」分组）
+@futureLabSetId = 00000000-0000-4000-8000-000000090020
+@futureLabId = 00000000-0000-4000-8000-000000090021
+GET {{baseUrl}}/lab-sets/mine/overview
+Authorization: Bearer {{studentToken}}
+
+### 预期 403 不可提交
+POST {{baseUrl}}/labs/{{futureLabId}}/submit
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "code": "console.log('x')\n",
+  "language": "javascript"
+}
+
+### TC-LAB-007 已打回提交（seed fixture）
+@returnedSubmissionId = 00000000-0000-4000-8000-000000090024
+GET {{baseUrl}}/submissions/{{returnedSubmissionId}}
+Authorization: Bearer {{studentToken}}

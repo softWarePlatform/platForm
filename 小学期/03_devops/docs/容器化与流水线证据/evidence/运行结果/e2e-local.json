@@ -1,0 +1,341 @@
+{
+  "generatedAt": "2026-08-29T06:39:58.556Z",
+  "environment": "local-verified-2026-08-29",
+  "apiBaseUrl": "http://127.0.0.1:3000",
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "useCasesCovered": 10,
+    "expectedUseCases": 10
+  },
+  "results": [
+    {
+      "id": "E2E-01-01",
+      "uc": "UC-01",
+      "flow": "end-to-end",
+      "title": "管理员为临时学生加课、学生核对日志、管理员退课",
+      "status": "passed",
+      "durationMs": 39.91,
+      "steps": [
+        {
+          "name": "管理员加课",
+          "status": "passed",
+          "durationMs": 18.13
+        },
+        {
+          "name": "学生核对加课日志",
+          "status": "passed",
+          "durationMs": 3.24
+        },
+        {
+          "name": "管理员退课",
+          "status": "passed",
+          "durationMs": 13.99
+        },
+        {
+          "name": "学生核对退课日志",
+          "status": "passed",
+          "durationMs": 4.48
+        }
+      ]
+    },
+    {
+      "id": "E2E-02-01",
+      "uc": "UC-02",
+      "flow": "end-to-end",
+      "title": "教师修改课程说明、读取验证并恢复原值",
+      "status": "passed",
+      "durationMs": 24.2,
+      "steps": [
+        {
+          "name": "读取课程原配置",
+          "status": "passed",
+          "durationMs": 8.79
+        },
+        {
+          "name": "教师保存新说明",
+          "status": "passed",
+          "durationMs": 4.72
+        },
+        {
+          "name": "再次读取确认状态变化",
+          "status": "passed",
+          "durationMs": 5.87
+        },
+        {
+          "name": "恢复原课程说明",
+          "status": "passed",
+          "durationMs": 4.74
+        }
+      ]
+    },
+    {
+      "id": "E2E-03-01",
+      "uc": "UC-03",
+      "flow": "end-to-end",
+      "title": "教师发布公告、学生阅读并回查已读状态",
+      "status": "passed",
+      "durationMs": 28.79,
+      "steps": [
+        {
+          "name": "教师发布公告",
+          "status": "passed",
+          "durationMs": 11.88
+        },
+        {
+          "name": "学生标记已读",
+          "status": "passed",
+          "durationMs": 9.68
+        },
+        {
+          "name": "学生回查公告列表",
+          "status": "passed",
+          "durationMs": 7.14
+        }
+      ]
+    },
+    {
+      "id": "E2E-04-01",
+      "uc": "UC-04",
+      "flow": "end-to-end",
+      "title": "教师上传课程资料、学生下载并校验原文",
+      "status": "passed",
+      "durationMs": 20.27,
+      "steps": [
+        {
+          "name": "教师上传资料",
+          "status": "passed",
+          "durationMs": 9.3
+        },
+        {
+          "name": "学生下载并校验内容",
+          "status": "passed",
+          "durationMs": 10.55
+        }
+      ]
+    },
+    {
+      "id": "E2E-05-01",
+      "uc": "UC-05",
+      "flow": "end-to-end",
+      "title": "作业发布、学生提交、教师批改发布、学生查看成绩",
+      "status": "passed",
+      "durationMs": 83.27,
+      "steps": [
+        {
+          "name": "教师发布作业",
+          "status": "passed",
+          "durationMs": 8.97
+        },
+        {
+          "name": "学生提交作业",
+          "status": "passed",
+          "durationMs": 29.54
+        },
+        {
+          "name": "教师读取提交记录",
+          "status": "passed",
+          "durationMs": 8.33
+        },
+        {
+          "name": "教师批改",
+          "status": "passed",
+          "durationMs": 12.59
+        },
+        {
+          "name": "教师发布成绩",
+          "status": "passed",
+          "durationMs": 12.29
+        },
+        {
+          "name": "学生查看已发布成绩",
+          "status": "passed",
+          "durationMs": 11.42
+        }
+      ]
+    },
+    {
+      "id": "E2E-06-01",
+      "uc": "UC-06",
+      "flow": "end-to-end",
+      "title": "教师建实验与用例、学生提交、系统进入人工评测状态",
+      "status": "passed",
+      "durationMs": 62.15,
+      "steps": [
+        {
+          "name": "教师创建实验集",
+          "status": "passed",
+          "durationMs": 15.72
+        },
+        {
+          "name": "切换为人工评测",
+          "status": "passed",
+          "durationMs": 9.65
+        },
+        {
+          "name": "教师创建实验题",
+          "status": "passed",
+          "durationMs": 7.84
+        },
+        {
+          "name": "教师录入测试用例",
+          "status": "passed",
+          "durationMs": 6.79
+        },
+        {
+          "name": "学生提交代码",
+          "status": "passed",
+          "durationMs": 17.22
+        },
+        {
+          "name": "读取提交确认最终状态",
+          "status": "passed",
+          "durationMs": 4.76
+        }
+      ]
+    },
+    {
+      "id": "E2E-07-01",
+      "uc": "UC-07",
+      "flow": "end-to-end",
+      "title": "学生智能组卷、逐题作答、提交并查看评分",
+      "status": "passed",
+      "durationMs": 233.52,
+      "steps": [
+        {
+          "name": "学生智能组卷",
+          "status": "passed",
+          "durationMs": 16.87
+        },
+        {
+          "name": "逐题保存答案",
+          "status": "passed",
+          "durationMs": 42.29
+        },
+        {
+          "name": "提交练习并自动评分",
+          "status": "passed",
+          "durationMs": 168.31
+        },
+        {
+          "name": "读取评分明细",
+          "status": "passed",
+          "durationMs": 5.93
+        }
+      ]
+    },
+    {
+      "id": "E2E-08-01",
+      "uc": "UC-08",
+      "flow": "end-to-end",
+      "title": "学生发布实验讨论、教师回复、学生读取并删除",
+      "status": "passed",
+      "durationMs": 41.73,
+      "steps": [
+        {
+          "name": "学生发布讨论并@教师",
+          "status": "passed",
+          "durationMs": 11.99
+        },
+        {
+          "name": "教师回复讨论",
+          "status": "passed",
+          "durationMs": 10.82
+        },
+        {
+          "name": "学生读取讨论详情",
+          "status": "passed",
+          "durationMs": 12.12
+        },
+        {
+          "name": "学生删除临时讨论",
+          "status": "passed",
+          "durationMs": 6.71
+        }
+      ]
+    },
+    {
+      "id": "E2E-09-01",
+      "uc": "UC-09",
+      "flow": "end-to-end",
+      "title": "教师调整成绩权重、学生查看总评、恢复原权重",
+      "status": "passed",
+      "durationMs": 35.34,
+      "steps": [
+        {
+          "name": "读取原成绩权重",
+          "status": "passed",
+          "durationMs": 2.22
+        },
+        {
+          "name": "教师设置70/30权重",
+          "status": "passed",
+          "durationMs": 6.07
+        },
+        {
+          "name": "学生读取总评与新权重",
+          "status": "passed",
+          "durationMs": 21.33
+        },
+        {
+          "name": "恢复原成绩权重",
+          "status": "passed",
+          "durationMs": 5.61
+        }
+      ]
+    },
+    {
+      "id": "E2E-10-01",
+      "uc": "UC-10",
+      "flow": "end-to-end",
+      "title": "管理员查看临时用户日志、删除用户并核对审计记录",
+      "status": "passed",
+      "durationMs": 38.54,
+      "steps": [
+        {
+          "name": "管理员查看用户操作日志",
+          "status": "passed",
+          "durationMs": 9.38
+        },
+        {
+          "name": "管理员删除临时用户",
+          "status": "passed",
+          "durationMs": 20.5
+        },
+        {
+          "name": "核对删除审计记录",
+          "status": "passed",
+          "durationMs": 8.56
+        }
+      ]
+    }
+  ],
+  "cleanup": [
+    {
+      "name": "delete-practice-session",
+      "status": "cleaned",
+      "httpStatus": 200
+    },
+    {
+      "name": "delete-homework",
+      "status": "cleaned",
+      "httpStatus": 200
+    },
+    {
+      "name": "delete-material",
+      "status": "cleaned",
+      "httpStatus": 200
+    },
+    {
+      "name": "delete-announcement",
+      "status": "cleaned",
+      "httpStatus": 200
+    },
+    {
+      "name": "delete-lab-set",
+      "status": "cleaned",
+      "httpStatus": 200
+    }
+  ]
+}

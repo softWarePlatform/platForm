@@ -36,21 +36,21 @@ function Wait-Job {
 Push-Location $repoRoot
 try {
   if (-not $SkipBuild) {
-    Invoke-Checked docker @("compose", "build")
+    Invoke-Checked docker @("compose", "-f", "docker-compose.k8s-build.yml", "build")
   }
 
   $imageTags = [ordered]@{
-    "platform-api:latest" = "teaching-platform-api:$localTag"
-    "platform-nginx:latest" = "teaching-platform-web:$localTag"
-    "platform-api-gateway:latest" = "teaching-platform-api-gateway:$localTag"
-    "platform-course-service:latest" = "teaching-platform-course-service:$localTag"
-    "platform-homework-grade-service:latest" = "teaching-platform-homework-grade-service:$localTag"
-    "platform-lab-practice-service:latest" = "teaching-platform-lab-practice-service:$localTag"
-    "platform-judge-worker:latest" = "teaching-platform-judge-worker:$localTag"
-    "platform-legacy-migrate:latest" = "teaching-platform-migrate:$localTag"
-    "platform-course-migrate:latest" = "teaching-platform-course-migrate:$localTag"
-    "platform-homework-migrate:latest" = "teaching-platform-homework-migrate:$localTag"
-    "platform-lab-migrate:latest" = "teaching-platform-lab-migrate:$localTag"
+    "teaching-platform-api:dev" = "teaching-platform-api:$localTag"
+    "teaching-platform-web:dev" = "teaching-platform-web:$localTag"
+    "teaching-platform-api-gateway:dev" = "teaching-platform-api-gateway:$localTag"
+    "teaching-platform-course-service:dev" = "teaching-platform-course-service:$localTag"
+    "teaching-platform-homework-grade-service:dev" = "teaching-platform-homework-grade-service:$localTag"
+    "teaching-platform-lab-practice-service:dev" = "teaching-platform-lab-practice-service:$localTag"
+    "teaching-platform-judge-worker:dev" = "teaching-platform-judge-worker:$localTag"
+    "teaching-platform-migrate:dev" = "teaching-platform-migrate:$localTag"
+    "teaching-platform-course-migrate:dev" = "teaching-platform-course-migrate:$localTag"
+    "teaching-platform-homework-migrate:dev" = "teaching-platform-homework-migrate:$localTag"
+    "teaching-platform-lab-migrate:dev" = "teaching-platform-lab-migrate:$localTag"
   }
   foreach ($entry in $imageTags.GetEnumerator()) {
     & docker image inspect $entry.Key | Out-Null

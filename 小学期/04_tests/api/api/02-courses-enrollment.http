@@ -1,0 +1,93 @@
+### 课程与选课模块 API 测试
+### 先执行 01-auth.http 中的 loginStudent / loginTeacher
+
+@baseUrl = http://127.0.0.1:3000
+@studentToken = {{loginStudent.response.body.token}}
+@teacherToken = {{loginTeacher.response.body.token}}
+
+### TC-COURSE-001 浏览已发布课程列表
+GET {{baseUrl}}/courses
+Authorization: Bearer {{studentToken}}
+
+### TC-COURSE-002 按关键词搜索课程
+GET {{baseUrl}}/courses?search=程序设计
+Authorization: Bearer {{studentToken}}
+
+### TC-COURSE-003 教师查看我的课程
+GET {{baseUrl}}/courses/mine
+Authorization: Bearer {{teacherToken}}
+
+### TC-ENROLL-001 查看选课窗口状态
+GET {{baseUrl}}/enrollment/status
+Authorization: Bearer {{studentToken}}
+
+### TC-ENROLL-002 选课目录（含筛选）
+GET {{baseUrl}}/enrollment/catalog
+Authorization: Bearer {{studentToken}}
+
+### TC-ENROLL-003 学生选课（将 {{courseId}} 替换为 catalog 中某门课 id）
+@courseId = REPLACE_WITH_COURSE_ID
+POST {{baseUrl}}/enrollment/courses/{{courseId}}/enroll
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{}
+
+### TC-ENROLL-004 学生退课
+DELETE {{baseUrl}}/enrollment/courses/{{courseId}}/enroll
+Authorization: Bearer {{studentToken}}
+
+### TC-ENROLL-005 已满课程选课（CS901，seed fixture）
+@fullCourseId = 00000000-0000-4000-8000-000000090001
+GET {{baseUrl}}/enrollment/catalog?courseCode=CS901
+Authorization: Bearer {{studentToken}}
+
+### 预期 409
+POST {{baseUrl}}/enrollment/courses/{{fullCourseId}}/enroll
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{}
+
+### 预期 200 候补
+POST {{baseUrl}}/enrollment/courses/{{fullCourseId}}/waitlist
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{}
+
+### TC-ENROLL-006 非选课窗口（需 admin 先关闭窗口，测完请重新 seed 或恢复 period）
+@adminToken = {{loginAdmin.response.body.token}}
+@closedWindowCourseId = 00000000-0000-4000-8000-000000090030
+PUT {{baseUrl}}/enrollment/period
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "phase": "CLOSED",
+  "openAt": "2026-01-01T00:00:00.000Z",
+  "closeAt": "2026-12-31T23:59:59.000Z"
+}
+
+### 预期 403
+POST {{baseUrl}}/enrollment/courses/{{closedWindowCourseId}}/enroll
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{}
+
+### TC-COURSE-004 教师创建课程
+POST {{baseUrl}}/courses
+Authorization: Bearer {{teacherToken}}
+Content-Type: application/json
+
+{
+  "title": "测试课程-{{$timestamp}}",
+  "description": "测试报告用例创建",
+  "courseCode": "TEST{{$timestamp}}",
+  "credits": 2,
+  "capacity": 50,
+  "courseNature": "ELECTIVE",
+  "subjectCategory": "CORE_MAJOR",
+  "published": false
+}

@@ -1,0 +1,13 @@
+### 在线教学与实训平台 — 健康检查（无需登录）
+### 前置：cd backend && npm run dev 或根目录 npm run dev
+
+@baseUrl = http://127.0.0.1:3000
+
+### TC-HEALTH-001 存活探针
+GET {{baseUrl}}/health/live
+
+### TC-HEALTH-002 就绪探针（需 PostgreSQL + Redis）
+GET {{baseUrl}}/health/ready
+
+### TC-HEALTH-003 兼容健康检查
+GET {{baseUrl}}/health

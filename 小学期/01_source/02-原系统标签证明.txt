@@ -1,0 +1,16 @@
+tag monolith-start
+Tagger:     24371241 <fwx20192020@163.com>
+TaggerDate: Tue Aug 25 19:55:58 2026 +0800
+
+原系统基线版本-2026-08-25
+
+commit f81a11fb86eb95543ec9eb4c0eaca21303a7e273
+Merge: a28e6c6 d506c26
+Author:     Vesperx24 <fwx20192020@163.com>
+AuthorDate: Tue Aug 25 19:12:28 2026 +0800
+Commit:     GitHub <noreply@github.com>
+CommitDate: Tue Aug 25 19:12:28 2026 +0800
+
+    Merge pull request #3 from Vesperx24/codex/fix-api-image
+    
+    fix: repair api image build and upgrade actions

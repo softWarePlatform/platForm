@@ -1,0 +1,407 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*", "monolith-start"]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy the current commit to the production Kubernetes cluster
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: platform
+          POSTGRES_PASSWORD: platform
+          POSTGRES_DB: teaching_platform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U platform -d teaching_platform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      CI: "true"
+      NODE_ENV: test
+      DATABASE_URL: postgresql://platform:platform@127.0.0.1:5432/teaching_platform?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+      JWT_SECRET: ci-only-secret-not-used-outside-the-runner
+      CORS_ORIGIN: http://127.0.0.1:4173
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+            judge-worker/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci --no-audit --fund=false
+          npm ci --prefix backend --no-audit --fund=false
+          npm ci --prefix frontend --no-audit --fund=false
+          npm ci --prefix judge-worker --no-audit --fund=false
+
+      - name: Prepare database and Prisma clients
+        run: |
+          npm run db:migrate
+          npm run db:seed
+          cd judge-worker
+          npx prisma generate --schema=../backend/prisma/schema.prisma
+
+      - name: Build all applications
+        run: npm run build
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Start applications
+        run: |
+          mkdir -p test-results
+          npm run start --prefix backend > test-results/api.log 2>&1 &
+          npm run start --prefix judge-worker > test-results/judge-worker.log 2>&1 &
+          npm run preview --prefix frontend -- --host 127.0.0.1 --port 4173 > test-results/web.log 2>&1 &
+
+      - name: Wait for applications
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:3000/health/ready > /dev/null; then break; fi
+            if [ "$attempt" = 60 ]; then
+              echo "API did not become ready"
+              exit 1
+            fi
+            sleep 2
+          done
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then break; fi
+            if [ "$attempt" = 30 ]; then
+              echo "Web application did not become ready"
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Run read-only integration smoke tests
+        env:
+          API_BASE_URL: http://127.0.0.1:3000
+          WEB_BASE_URL: http://127.0.0.1:4173
+        run: npm run test:integration
+
+      - name: Run DAO integration tests
+        run: npm run test:dao
+
+      - name: Run UC01-UC10 API tests
+        env:
+          API_BASE_URL: http://127.0.0.1:3000
+        run: npm run test:api
+
+      - name: Run UC01-UC10 end-to-end tests
+        env:
+          E2E_BASE_URL: http://127.0.0.1:3000
+          E2E_ENVIRONMENT: github-actions
+          E2E_REPORT_PATH: test-results/e2e-github-actions.json
+        run: npm run test:e2e
+
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ github.run_id }}
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+  images:
+    name: Build ${{ matrix.component }} image
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: api
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+            target: runtime
+          - component: migrate
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+            target: migrate
+          - component: web
+            context: .
+            dockerfile: ./nginx/Dockerfile
+            target: runtime
+          - component: judge-worker
+            context: .
+            dockerfile: ./judge-worker/Dockerfile
+            target: runtime
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set image name
+        shell: bash
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/teaching-platform-${{ matrix.component }}" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Sign in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image tags and labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            type=ref,event=tag
+
+      - name: Build and publish image
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+          provenance: true
+          sbom: true
+
+  deploy:
+    name: Deploy to Kubernetes
+    needs: images
+    if: >-
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy)
+    runs-on: [self-hosted, Windows, X64, k8s-local]
+    timeout-minutes: 20
+    environment: production
+    env:
+      KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
+
+    steps:
+      - name: Check deployment configuration
+        id: deployment-config
+        shell: pwsh
+        run: |
+          $required = @(
+            "KUBE_CONFIG_B64",
+            "POSTGRES_PASSWORD",
+            "DATABASE_URL",
+            "JWT_SECRET",
+            "CORS_ORIGIN",
+            "GHCR_USERNAME",
+            "GHCR_PAT"
+          )
+          $missing = @(
+            foreach ($name in $required) {
+              if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+                $name
+              }
+            }
+          )
+          if ($missing.Count -eq 0) {
+            "ready=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          } elseif ("${{ inputs.deploy }}" -eq "true") {
+            # 手动明确要求部署时必须严格校验，缺失密钥直接失败
+            throw "Missing required production secrets: $($missing -join ' ')"
+          } else {
+            # 自动触发（main/master push）时按文档约定安全跳过部署，不阻塞构建与测试
+            "ready=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Host "::warning::Deployment skipped: production environment secrets not configured ($($missing -join ' ')). Configure the 'production' environment secrets to enable deployment."
+          }
+
+      - name: Check out repository
+        if: steps.deployment-config.outputs.ready == 'true'
+        uses: actions/checkout@v7
+
+      - name: Set up kubectl
+        if: steps.deployment-config.outputs.ready == 'true'
+        uses: azure/setup-kubectl@v4
+
+      - name: Load kubeconfig
+        if: steps.deployment-config.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          $kubeconfigPath = Join-Path $env:RUNNER_TEMP "kubeconfig"
+          try {
+            $kubeconfigBytes = [Convert]::FromBase64String($env:KUBE_CONFIG_B64.Trim())
+          } catch {
+            throw "KUBE_CONFIG_B64 is not valid Base64: $($_.Exception.Message)"
+          }
+          [IO.File]::WriteAllBytes($kubeconfigPath, $kubeconfigBytes)
+          $env:KUBECONFIG = $kubeconfigPath
+          "KUBECONFIG=$kubeconfigPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          kubectl config current-context
+          if ($LASTEXITCODE -ne 0) { throw "Unable to read the kubeconfig context." }
+          kubectl cluster-info
+          if ($LASTEXITCODE -ne 0) {
+            throw "The self-hosted runner cannot reach the Kubernetes API. Ensure the local cluster is running."
+          }
+
+      - name: Create namespace and runtime secrets
+        if: steps.deployment-config.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          kubectl apply -f k8s/monolith/namespace.yaml
+          if ($LASTEXITCODE -ne 0) { throw "Failed to apply the Kubernetes namespace." }
+
+          $platformSecret = kubectl --namespace teaching-platform create secret generic platform-secrets `
+            --from-literal=POSTGRES_USER=platform `
+            "--from-literal=POSTGRES_PASSWORD=$env:POSTGRES_PASSWORD" `
+            --from-literal=POSTGRES_DB=teaching_platform `
+            "--from-literal=DATABASE_URL=$env:DATABASE_URL" `
+            "--from-literal=JWT_SECRET=$env:JWT_SECRET" `
+            "--from-literal=CORS_ORIGIN=$env:CORS_ORIGIN" `
+            --dry-run=client -o yaml
+          if ($LASTEXITCODE -ne 0) { throw "Failed to render platform-secrets." }
+          $platformSecret | kubectl apply -f -
+          if ($LASTEXITCODE -ne 0) { throw "Failed to apply platform-secrets." }
+
+          $registrySecret = kubectl --namespace teaching-platform create secret docker-registry ghcr-pull `
+            --docker-server=ghcr.io `
+            "--docker-username=$env:GHCR_USERNAME" `
+            "--docker-password=$env:GHCR_PAT" `
+            --dry-run=client -o yaml
+          if ($LASTEXITCODE -ne 0) { throw "Failed to render the GHCR pull secret." }
+          $registrySecret | kubectl apply -f -
+          if ($LASTEXITCODE -ne 0) { throw "Failed to apply the GHCR pull secret." }
+
+      - name: Prepare database and run migrations
+        if: steps.deployment-config.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          $imagePrefix = "ghcr.io/$($env:GITHUB_REPOSITORY_OWNER.ToLowerInvariant())/teaching-platform"
+          kubectl --namespace teaching-platform apply -f k8s/monolith/postgres.yaml
+          if ($LASTEXITCODE -ne 0) { throw "Failed to apply PostgreSQL resources." }
+          kubectl --namespace teaching-platform apply -f k8s/monolith/redis.yaml
+          if ($LASTEXITCODE -ne 0) { throw "Failed to apply Redis resources." }
+          kubectl --namespace teaching-platform rollout status statefulset/postgres --timeout=180s
+          if ($LASTEXITCODE -ne 0) { throw "PostgreSQL did not become ready." }
+          kubectl --namespace teaching-platform rollout status deployment/redis --timeout=180s
+          if ($LASTEXITCODE -ne 0) { throw "Redis did not become ready." }
+
+          $migrationPath = Join-Path $env:RUNNER_TEMP "migrate-job.yaml"
+          $migrationManifest = (Get-Content -Raw k8s/monolith/migrate-job.yaml).Replace(
+            "teaching-platform-migrate:dev",
+            "$imagePrefix-migrate:sha-$env:GITHUB_SHA"
+          )
+          [IO.File]::WriteAllText($migrationPath, $migrationManifest, [Text.UTF8Encoding]::new($false))
+          kubectl --namespace teaching-platform delete job db-migrate --ignore-not-found
+          if ($LASTEXITCODE -ne 0) { throw "Failed to remove the previous migration job." }
+          kubectl apply -f $migrationPath
+          if ($LASTEXITCODE -ne 0) { throw "Failed to create the migration job." }
+          kubectl --namespace teaching-platform wait --for=condition=complete job/db-migrate --timeout=300s
+          if ($LASTEXITCODE -ne 0) {
+            kubectl --namespace teaching-platform logs job/db-migrate
+            throw "Database migration failed or timed out."
+          }
+          kubectl --namespace teaching-platform logs job/db-migrate
+          if ($LASTEXITCODE -ne 0) { throw "Failed to read migration logs." }
+
+      - name: Deploy current commit
+        if: steps.deployment-config.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          $imagePrefix = "ghcr.io/$($env:GITHUB_REPOSITORY_OWNER.ToLowerInvariant())/teaching-platform"
+          $platformPath = Join-Path $env:RUNNER_TEMP "platform.yaml"
+          $renderedManifest = kubectl kustomize k8s/monolith
+          if ($LASTEXITCODE -ne 0) { throw "Failed to render the Kubernetes manifests." }
+          $platformManifest = (($renderedManifest -join "`n") + "`n")
+          $platformManifest = $platformManifest.Replace(
+            "teaching-platform-api:dev",
+            "$imagePrefix-api:sha-$env:GITHUB_SHA"
+          )
+          $platformManifest = $platformManifest.Replace(
+            "teaching-platform-web:dev",
+            "$imagePrefix-web:sha-$env:GITHUB_SHA"
+          )
+          $platformManifest = $platformManifest.Replace(
+            "teaching-platform-judge-worker:dev",
+            "$imagePrefix-judge-worker:sha-$env:GITHUB_SHA"
+          )
+          [IO.File]::WriteAllText($platformPath, $platformManifest, [Text.UTF8Encoding]::new($false))
+          kubectl apply -f $platformPath
+          if ($LASTEXITCODE -ne 0) { throw "Failed to deploy the current commit." }
+
+      - name: Verify rollout
+        if: steps.deployment-config.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          kubectl --namespace teaching-platform rollout status deployment/api --timeout=300s
+          if ($LASTEXITCODE -ne 0) { throw "API rollout failed or timed out." }
+          kubectl --namespace teaching-platform rollout status deployment/judge-worker --timeout=300s
+          if ($LASTEXITCODE -ne 0) { throw "Judge worker rollout failed or timed out." }
+          kubectl --namespace teaching-platform rollout status deployment/web --timeout=180s
+          if ($LASTEXITCODE -ne 0) { throw "Web rollout failed or timed out." }
+          $apiPod = kubectl --namespace teaching-platform get pod `
+            -l app.kubernetes.io/name=api `
+            -o "jsonpath={.items[0].metadata.name}"
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($apiPod)) {
+            throw "Unable to find the API pod."
+          }
+          $healthCheck = "Promise.all(['/health/live','/health/ready'].map(path=>fetch('http://127.0.0.1:3000'+path).then(response=>{if(!response.ok)throw new Error(path+' '+response.status)})))"
+          kubectl --namespace teaching-platform exec $apiPod.Trim() -- node -e $healthCheck
+          if ($LASTEXITCODE -ne 0) { throw "API health verification failed." }
+          kubectl --namespace teaching-platform get pods,services
+          if ($LASTEXITCODE -ne 0) { throw "Failed to list deployed resources." }

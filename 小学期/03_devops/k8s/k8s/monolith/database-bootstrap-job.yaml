@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: database-bootstrap
+  namespace: teaching-platform
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: database-bootstrap
+          image: postgres:16-alpine
+          env:
+            - { name: PGHOST, value: postgres }
+            - { name: PGUSER, valueFrom: { secretKeyRef: { name: platform-secrets, key: POSTGRES_USER } } }
+            - { name: PGPASSWORD, valueFrom: { secretKeyRef: { name: platform-secrets, key: POSTGRES_PASSWORD } } }
+          command: [sh, -ec]
+          args:
+            - |
+              for database in course_service homework_grade_service lab_practice_service; do
+                exists="$(psql -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${database}'")"
+                if [ "${exists}" != "1" ]; then createdb "${database}"; fi
+              done
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 128Mi }

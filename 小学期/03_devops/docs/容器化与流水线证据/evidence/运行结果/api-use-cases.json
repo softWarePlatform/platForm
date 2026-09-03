@@ -1,0 +1,135 @@
+{
+  "generatedAt": "2026-08-29T06:39:56.636Z",
+  "apiBaseUrl": "http://127.0.0.1:3000",
+  "summary": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "mainFlowTotal": 10,
+    "mainFlowPassed": 10,
+    "alternativeFlowTotal": 5,
+    "alternativeFlowPassed": 5
+  },
+  "results": [
+    {
+      "id": "API-01-01",
+      "uc": "UC-01",
+      "flow": "main",
+      "title": "学生读取选课阶段与窗口状态",
+      "status": "passed",
+      "durationMs": 8.1
+    },
+    {
+      "id": "API-02-01",
+      "uc": "UC-02",
+      "flow": "main",
+      "title": "教师读取课程配置与发布信息",
+      "status": "passed",
+      "durationMs": 9.25
+    },
+    {
+      "id": "API-03-01",
+      "uc": "UC-03",
+      "flow": "main",
+      "title": "教师发布公告后学生标记已读",
+      "status": "passed",
+      "durationMs": 29.32
+    },
+    {
+      "id": "API-04-01",
+      "uc": "UC-04",
+      "flow": "main",
+      "title": "教师上传资料后学生下载原文件",
+      "status": "passed",
+      "durationMs": 26
+    },
+    {
+      "id": "API-05-01",
+      "uc": "UC-05",
+      "flow": "main",
+      "title": "教师发布作业后学生提交文本答案",
+      "status": "passed",
+      "durationMs": 47.52
+    },
+    {
+      "id": "API-06-01",
+      "uc": "UC-06",
+      "flow": "main",
+      "title": "学生读取实验集及时间窗状态",
+      "status": "passed",
+      "durationMs": 7.9
+    },
+    {
+      "id": "API-07-01",
+      "uc": "UC-07",
+      "flow": "main",
+      "title": "学生智能组卷并读取练习会话",
+      "status": "passed",
+      "durationMs": 34.36
+    },
+    {
+      "id": "API-08-01",
+      "uc": "UC-08",
+      "flow": "main",
+      "title": "学生读取课程讨论与成员列表",
+      "status": "passed",
+      "durationMs": 15.42
+    },
+    {
+      "id": "API-09-01",
+      "uc": "UC-09",
+      "flow": "main",
+      "title": "学生读取成绩汇总与课程权重",
+      "status": "passed",
+      "durationMs": 29.41
+    },
+    {
+      "id": "API-10-01",
+      "uc": "UC-10",
+      "flow": "main",
+      "title": "管理员读取操作审计记录",
+      "status": "passed",
+      "durationMs": 6.48
+    },
+    {
+      "id": "API-03-02",
+      "uc": "UC-03",
+      "flow": "alternative",
+      "title": "学生发布公告被权限校验拒绝",
+      "status": "passed",
+      "durationMs": 4.85
+    },
+    {
+      "id": "API-04-02",
+      "uc": "UC-04",
+      "flow": "alternative",
+      "title": "上传资料缺少 file 字段返回参数错误",
+      "status": "passed",
+      "durationMs": 4.58
+    },
+    {
+      "id": "API-05-02",
+      "uc": "UC-05",
+      "flow": "alternative",
+      "title": "创建空标题作业返回参数错误",
+      "status": "passed",
+      "durationMs": 3.96
+    },
+    {
+      "id": "API-07-02",
+      "uc": "UC-07",
+      "flow": "alternative",
+      "title": "组卷数量为零返回参数错误",
+      "status": "passed",
+      "durationMs": 4.16
+    },
+    {
+      "id": "API-10-02",
+      "uc": "UC-10",
+      "flow": "alternative",
+      "title": "教师访问管理员审计接口被拒绝",
+      "status": "passed",
+      "durationMs": 1.02
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+services:
+  api:
+    image: teaching-platform-api:dev
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.k8s-local
+  judge-worker:
+    image: teaching-platform-judge-worker:dev
+    build:
+      context: .
+      dockerfile: judge-worker/Dockerfile.k8s-local
+  nginx:
+    image: teaching-platform-web:dev
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile.k8s-local
