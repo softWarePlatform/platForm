@@ -130,7 +130,7 @@ jobs:
       - name: Start applications
         run: |
           mkdir -p test-results
-          npm run start --prefix backend > test-results/api.log 2>&1 &
+          MONOLITH_HOMEWORK_ROUTES=1 npm run start --prefix backend > test-results/api.log 2>&1 &
           DATABASE_URL=postgresql://platform:platform@127.0.0.1:5432/course_service?schema=public HOMEWORK_SERVICE_URL=http://127.0.0.1:3002 LAB_SERVICE_URL=http://127.0.0.1:3003 npm run start --prefix course-service > test-results/course-service.log 2>&1 &
           DATABASE_URL=postgresql://platform:platform@127.0.0.1:5432/homework_grade_service?schema=public COURSE_SERVICE_URL=http://127.0.0.1:3001 LAB_SERVICE_URL=http://127.0.0.1:3003 npm run start --prefix homework-grade-service > test-results/homework-grade-service.log 2>&1 &
           DATABASE_URL=postgresql://platform:platform@127.0.0.1:5432/lab_practice_service?schema=public COURSE_SERVICE_URL=http://127.0.0.1:3001 npm run start --prefix lab-practice-service > test-results/lab-practice-service.log 2>&1 &

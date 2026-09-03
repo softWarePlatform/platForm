@@ -16,7 +16,10 @@ test("实验成绩册使用 B 冻结的单课程内部路径和鉴权头", async
     return new Response(JSON.stringify({ courseId: "course-1", labStatus: "OK", labAverage: null, students: [] }), { status: 200 });
   });
   assert.equal(requested, "http://lab.test/internal/courses/course-1/lab-gradebook");
-  assert.equal(headers["x-internal-service-token"], "course-service-internal-local-token");
+  assert.equal(
+    headers["x-internal-service-token"],
+    process.env.INTERNAL_SERVICE_TOKEN ?? "course-service-internal-local-token"
+  );
   assert.equal(headers["x-request-id"], "req-2");
   assert.equal(result.status, "OK");
   assert.equal(result.data.courseId, "course-1");
