@@ -6,7 +6,7 @@ import {
   labGradeRule,
   loadLabGradeReports,
   type LabGradeReport,
-} from "../../backend/src/lib/lab-grade-report.js";
+} from "./lab-grade-report.js";
 
 type Options = {
   token?: string;

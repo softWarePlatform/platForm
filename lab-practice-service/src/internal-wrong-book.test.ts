@@ -4,7 +4,7 @@ import Fastify from "fastify";
 import type {
   SaveHomeworkWrongBookInput,
   SavedWrongBookEntry,
-} from "../../backend/src/lib/wrong-book-write.js";
+} from "./wrong-book-write.js";
 import internalWrongBookRoutes from "./internal-wrong-book.js";
 
 const userId = "00000000-0000-4000-8000-000000000001";

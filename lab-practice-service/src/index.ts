@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { buildApp } from "./app.js";
-import { startJudgeDispatcher } from "../../backend/src/lib/judge-dispatcher.js";
+import { startJudgeDispatcher } from "./lib/judge-dispatcher.js";
 import { labConfig } from "./config.js";
 
 const port = labConfig.port;

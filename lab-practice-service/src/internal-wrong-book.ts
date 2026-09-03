@@ -1,12 +1,12 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { prisma } from "../../backend/src/lib/prisma.js";
+import { prisma } from "./prisma.js";
 import { internalRequired } from "./internal-auth.js";
 import {
   saveHomeworkWrongBookEntries,
   type SaveHomeworkWrongBookInput,
   type SavedWrongBookEntry,
-} from "../../backend/src/lib/wrong-book-write.js";
+} from "./wrong-book-write.js";
 
 type Options = {
   token?: string;

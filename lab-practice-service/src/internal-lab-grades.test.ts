@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import Fastify from "fastify";
-import type { LabGradeReport } from "../../backend/src/lib/lab-grade-report.js";
+import type { LabGradeReport } from "./lab-grade-report.js";
 import internalLabGradesRoutes from "./internal-lab-grades.js";
 
 const courseId = "00000000-0000-4000-8000-000000000001";

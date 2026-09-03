@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "src/routes/practice.ts",
+    "src/lib/**/*.ts",
+    "src/course-client.ts",
+    "src/config.ts",
+    "src/prisma.ts",
+    "src/types/**/*.d.ts",
+    "src/practice-*.test.ts"
+  ],
+  "exclude": ["../backend/**/*"]
+}

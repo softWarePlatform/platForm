@@ -1,7 +1,7 @@
 export type Downstream = "homework" | "course" | "lab" | "monolith" | "none";
 
 const homeworkCourseChild = /^\/api\/courses\/[^/]+\/(homework|grading-config|gradebook)(\/|$)/;
-const labCourseChild = /^\/api\/courses\/[^/]+\/(practice|discussions)(\/|$)/;
+const labCourseChild = /^\/api\/courses\/[^/]+\/(labs|lab-sets|practice|discussions)(\/|$)/;
 const labPrefixes = [
   "/api/lab-sets",
   "/api/labs",

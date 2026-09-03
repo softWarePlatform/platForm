@@ -6,6 +6,7 @@ import { courseAccess } from "../lib/course-access.js";
 import { prisma } from "../lib/prisma.js";
 
 const id = z.string().uuid();
+const userBatchBody = z.object({ userIds: z.array(id).min(1).max(500) });
 const notificationBody = z.object({
   userIds: z.array(id).min(1).max(500),
   type: z.string().min(1).max(64).default("SYSTEM"),
@@ -29,6 +30,33 @@ const internalRoutes: FastifyPluginAsync = async (app) => {
     const user = await prisma.user.findUnique({ where: { id: params.data.userId }, select: { id: true, email: true, name: true, role: true } });
     if (!user) return reply.code(404).send({ code: "USER_NOT_FOUND", message: "用户不存在", requestId: request.id });
     return { user: { ...user, status: "ACTIVE" }, requestId: request.id };
+  });
+
+  app.post("/internal/users:batch", async (request, reply) => {
+    const body = userBatchBody.safeParse(request.body);
+    if (!body.success) return badRequest(reply, request.id, "用户 ID 列表无效");
+    const userIds = [...new Set(body.data.userIds)];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, email: true, name: true, role: true },
+    });
+    const byId = new Map(users.map((user) => [user.id, user]));
+    return {
+      users: userIds.flatMap((userId) => {
+        const user = byId.get(userId);
+        return user ? [{ ...user, status: "ACTIVE" as const }] : [];
+      }),
+      missingUserIds: userIds.filter((userId) => !byId.has(userId)),
+      requestId: request.id,
+    };
+  });
+
+  app.get("/internal/admins", async (request) => {
+    const users = await prisma.user.findMany({
+      where: { role: "ADMIN" },
+      select: { id: true, email: true, name: true, role: true },
+    });
+    return { users: users.map((user) => ({ ...user, status: "ACTIVE" as const })), requestId: request.id };
   });
 
   app.get("/internal/courses/:courseId", async (request, reply) => {

@@ -22,6 +22,8 @@ test("课程路径打到 course", () => {
 
 test("实验练习路径打到 lab，其余 /api 回退单体，internal 不转发", () => {
   assert.equal(classifyApiPath("/api/labs/x"), "lab");
+  assert.equal(classifyApiPath("/api/courses/course-1/lab-sets"), "lab");
+  assert.equal(classifyApiPath("/api/courses/course-1/labs"), "lab");
   assert.equal(classifyApiPath("/api/wrong-book/mine"), "lab");
   assert.equal(classifyApiPath("/api/practice/sessions"), "lab");
   assert.equal(classifyApiPath("/api/unknown"), "monolith");

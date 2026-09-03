@@ -4,16 +4,17 @@ import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { Redis } from "ioredis";
-import { config } from "../../backend/src/lib/config.js";
-import { prisma } from "../../backend/src/lib/prisma.js";
+import { labConfig as config } from "./config.js";
+import { prisma } from "./prisma.js";
 import discussionsRoutes from "../../backend/src/routes/discussions.js";
-import labFilesRoutes from "../../backend/src/routes/lab-files.js";
-import labOverviewRoutes from "../../backend/src/routes/lab-overview.js";
-import labSetsRoutes from "../../backend/src/routes/lab-sets.js";
-import labsRoutes from "../../backend/src/routes/labs.js";
-import practiceRoutes from "../../backend/src/routes/practice.js";
+import labFilesRoutes from "./routes/lab-files.js";
+import labOverviewRoutes from "./routes/lab-overview.js";
+import labSetsRoutes from "./routes/lab-sets.js";
+import labsRoutes from "./routes/labs.js";
+import practiceRoutes from "./routes/practice.js";
 import internalLabGradesRoutes from "./internal-lab-grades.js";
 import internalWrongBookRoutes from "./internal-wrong-book.js";
+import { CourseClientError } from "./course-client.js";
 
 function parseOrigins(): boolean | string | string[] {
   const raw = config.corsOrigin;
@@ -49,6 +50,18 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
     reply.header("X-Request-ID", req.id);
+  });
+
+  app.setErrorHandler((error, request, reply) => {
+    if (error instanceof CourseClientError || (error instanceof Error && error.name === "TimeoutError")) {
+      request.log.warn({ err: error }, "course service unavailable");
+      return reply.code(503).send({
+        code: "COURSE_UNAVAILABLE",
+        message: "课程服务暂时不可用",
+        requestId: request.id,
+      });
+    }
+    return reply.send(error);
   });
 
   app.get("/health/live", async () => ({
