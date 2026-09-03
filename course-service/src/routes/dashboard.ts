@@ -2,10 +2,15 @@ import type { FastifyPluginAsync } from "fastify";
 import { authRequired } from "../lib/auth.js";
 import { config } from "../lib/config.js";
 import { prisma } from "../lib/prisma.js";
-import { requestCourseSummaries, requestHomeworkSummary, type UpstreamResult } from "../lib/upstream-summary.js";
+import { requestHomeworkSummary, requestLabGradebook, type UpstreamResult } from "../lib/upstream-summary.js";
 
 type HomeworkSummary = { courseId: string; homeworkCount: number; publishedCount: number; submittedCount: number; gradedCount: number; averageScore: number | null; calculatedAt: string };
-type LabSummary = { summaries?: Array<{ courseId: string; pendingCount?: number; progressPercent?: number; deadlines?: unknown[] }> };
+type LabGradebook = {
+  courseId: string;
+  labStatus: "OK";
+  labAverage: number | null;
+  students: Array<{ userId: string; labAverage: number | null }>;
+};
 
 function scheduleSlots(value: string | null) {
   try { return value ? JSON.parse(value) : []; } catch { return []; }
@@ -17,18 +22,20 @@ const dashboardRoutes: FastifyPluginAsync = async (app) => {
     const courses = isStaff
       ? await prisma.course.findMany({ where: request.auth!.role === "ADMIN" ? {} : { teacherId: request.auth!.sub }, include: { teacher: { select: { name: true } } }, orderBy: { createdAt: "desc" } })
       : (await prisma.enrollment.findMany({ where: { userId: request.auth!.sub }, include: { course: { include: { teacher: { select: { name: true } } } } }, orderBy: { course: { createdAt: "desc" } } })).map((row) => row.course);
-    const courseIds = courses.map((course) => course.id);
-    const payload = { userId: request.auth!.sub, courseIds };
-    const [homeworkResults, lab] = await Promise.all([
+    const [homeworkResults, labResults] = await Promise.all([
       Promise.all(courses.map((course) => requestHomeworkSummary<HomeworkSummary>(config.homeworkServiceUrl, course.id, request.id))),
-      requestCourseSummaries<LabSummary>(config.labServiceUrl, payload, request.id),
+      Promise.all(courses.map((course) => requestLabGradebook<LabGradebook>(config.labServiceUrl, course.id, request.id))),
     ]);
     const homeworkByCourse = new Map(homeworkResults.flatMap((result) => result.data ? [[result.data.courseId, result.data] as const] : []));
     const homeworkFailure = homeworkResults.find((result) => result.status !== "OK");
     const homework: UpstreamResult<null> = homeworkFailure
       ? { status: "UNAVAILABLE", data: null, reason: homeworkFailure.reason }
       : { status: "OK", data: null };
-    const labByCourse = new Map((lab.data?.summaries ?? []).map((summary) => [summary.courseId, summary]));
+    const labByCourse = new Map(labResults.flatMap((result) => result.status === "OK" && result.data?.labStatus === "OK" ? [[result.data.courseId, result.data] as const] : []));
+    const labFailure = labResults.find((result) => result.status !== "OK" || result.data?.labStatus !== "OK");
+    const lab: UpstreamResult<null> = labFailure
+      ? { status: "UNAVAILABLE", data: null, reason: labFailure.reason ?? "INVALID_RESPONSE" }
+      : { status: "OK", data: null };
 
     return {
       role: request.auth!.role,

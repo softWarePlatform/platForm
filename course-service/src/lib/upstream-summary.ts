@@ -10,23 +10,20 @@ export type UpstreamResult<T> = {
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
-export async function requestCourseSummaries<T>(
+export async function requestLabGradebook<T>(
   serviceUrl: string,
-  payload: { userId: string; courseIds: string[] },
+  courseId: string,
   requestId: string,
   fetcher: FetchLike = fetch,
 ): Promise<UpstreamResult<T>> {
   if (!serviceUrl) return { status: "UNAVAILABLE", data: null, reason: "NOT_CONFIGURED" };
 
   try {
-    const response = await fetcher(`${serviceUrl}/internal/dashboard/course-summaries:batch`, {
-      method: "POST",
+    const response = await fetcher(`${serviceUrl}/internal/courses/${courseId}/lab-gradebook`, {
       headers: {
-        "content-type": "application/json",
         "x-internal-service-token": config.internalServiceToken,
         "x-request-id": requestId,
       },
-      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(config.upstreamTimeoutMs),
     });
     if (!response.ok) return { status: "UNAVAILABLE", data: null, reason: "HTTP_ERROR" };

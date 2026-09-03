@@ -60,7 +60,7 @@ const primary = catalog.body.courses.find((course) => course.courseCode === "CS-
 const conflicting = catalog.body.courses.find((course) => course.courseCode === "CS-SVC-102");
 assert.ok(primary && conflicting, "seed courses must exist");
 const enrolled = await call(`/enrollment/courses/${primary.id}/enroll`, { method: "POST", headers: json(student), body: "{}" });
-assert.equal(enrolled.status, 201);
+assert.ok([201, 409].includes(enrolled.status), "首次或重复执行时均可继续验证后续接口");
 const conflict = await call(`/enrollment/courses/${conflicting.id}/enroll`, { method: "POST", headers: json(student), body: "{}" });
 assert.equal(conflict.status, 409);
 
@@ -71,6 +71,10 @@ assert.equal(studentMe.status, 200);
 const internalUser = await call(`/internal/users/${studentMe.body.user.id}`, { headers: internal() });
 assert.equal(internalUser.status, 200);
 assert.equal(internalUser.body.user.role, "STUDENT");
+const internalUsers = await call("/internal/users:batch", { method: "POST", headers: { ...internal(), "content-type": "application/json" }, body: JSON.stringify({ userIds: [studentMe.body.user.id] }) });
+assert.equal(internalUsers.status, 200);
+assert.equal(internalUsers.body.users[0].id, studentMe.body.user.id);
+assert.equal(internalUsers.body.users[0].status, "ACTIVE");
 const access = await call(`/internal/courses/${primary.id}/access/${studentMe.body.user.id}`, { headers: internal() });
 assert.equal(access.status, 200);
 assert.equal(access.body.access.isEnrolled, true);
