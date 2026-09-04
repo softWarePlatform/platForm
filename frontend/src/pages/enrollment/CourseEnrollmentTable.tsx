@@ -109,6 +109,7 @@ function CourseBlock({
   onLeaveWaitlist: (courseId: string) => void;
 }) {
   const categoryLabel = c.subjectCategoryLabel || c.category || "\u2014";
+  const sections = Array.isArray(c.sections) ? c.sections : [];
 
   return (
     <>
@@ -160,7 +161,7 @@ function CourseBlock({
                 </tr>
               </thead>
               <tbody>
-                {c.sections.map((sec) => (
+                {sections.map((sec) => (
                   <tr key={sec.sectionId} onClick={(e) => e.stopPropagation()}>
                     <td>{sec.sectionLabel}</td>
                     <td>{sec.courseNatureLabel}</td>
@@ -193,6 +194,13 @@ function CourseBlock({
                     </td>
                   </tr>
                 ))}
+                {sections.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="enroll-empty">
+                      暂无可选班次，请刷新后重试
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </td>

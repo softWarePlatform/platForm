@@ -1,4 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
+import { createReadStream } from "node:fs";
+import { access, unlink } from "node:fs/promises";
+import { join } from "node:path";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authRequired } from "../lib/auth.js";
@@ -6,12 +9,16 @@ import { notifyUsers, resolveCourseAccess, sendAccessDenial, teacherAccessDenial
 import { deleteWrongBookEntries } from "../lib/lab-client.js";
 import { sendError } from "../lib/http-error.js";
 import {
+  attachmentExtAllowed,
+  HOMEWORK_ATTACHMENT_MAX_BYTES,
+  HOMEWORK_ATTACHMENT_MAX_COUNT,
   homeworkCreateSchema,
   homeworkPatchSchema,
   normalizeHomeworkSettingsInput,
   revisionSummary,
 } from "../lib/homework-settings.js";
-import { computeLateMeta } from "../lib/homework-student.js";
+import { computeLateMeta, computeStudentStatus, isSubmissionFinalized, STATUS_LABELS } from "../lib/homework-student.js";
+import { UPLOAD_ROOT, saveHomeworkFile } from "../lib/uploads.js";
 
 function serializeHomework(hw: {
   rubricJson: string | null;
@@ -37,18 +44,56 @@ function applyLatePenalty(rawScore: number, lateDays: number, percentPerDay: num
 const homeworkRoutes: FastifyPluginAsync = async (app) => {
   app.get("/homework/teaching", { preHandler: authRequired("TEACHER", "ADMIN") }, async () => {
     const items = await prisma.homework.findMany({ orderBy: { title: "asc" } });
-    return { homeworks: items.map(serializeHomework) };
+    const homeworks = items.map(serializeHomework);
+    return { homeworks, homework: homeworks };
   });
 
   app.get("/homework/mine", { preHandler: authRequired("STUDENT", "ADMIN") }, async (request) => {
     const uid = request.auth!.sub;
     const published = await prisma.homework.findMany({ where: { published: true }, orderBy: { dueAt: "asc" } });
-    const visible = [];
+    const visible: Array<{ homework: (typeof published)[number]; courseTitle: string }> = [];
     for (const hw of published) {
       const access = await resolveCourseAccess(uid, hw.courseId);
-      if (access.canView) visible.push(serializeHomework(hw));
+      if (access.canView) visible.push({ homework: hw, courseTitle: access.course?.title ?? hw.courseId });
     }
-    return { homeworks: visible };
+    const submissions = visible.length
+      ? await prisma.homeworkSubmission.findMany({
+          where: { userId: uid, homeworkId: { in: visible.map((item) => item.homework.id) } },
+          orderBy: { updatedAt: "desc" },
+        })
+      : [];
+    const submissionByHomework = new Map(submissions.map((item) => [item.homeworkId, item]));
+    const courseTitleByHomework = new Map(visible.map((item) => [item.homework.id, item.courseTitle]));
+    const homeworks = visible.map(({ homework, courseTitle }) => ({ ...serializeHomework(homework), courseTitle }));
+    const pending = visible.flatMap(({ homework, courseTitle }) => {
+      const submission = submissionByHomework.get(homework.id) ?? null;
+      if (isSubmissionFinalized(submission)) return [];
+      const status = computeStudentStatus(homework, submission, null);
+      const late = computeLateMeta(homework);
+      return [{
+        id: homework.id,
+        title: homework.title,
+        dueAt: homework.dueAt,
+        courseId: homework.courseId,
+        courseTitle,
+        myStatus: status,
+        myStatusLabel: STATUS_LABELS[status],
+        canSubmit: late.canSubmit,
+        lateHint: late.lateHint,
+      }];
+    });
+    const submissionRows = submissions.map((submission) => {
+      const homework = published.find((item) => item.id === submission.homeworkId)!;
+      const courseTitle = courseTitleByHomework.get(homework.id) ?? homework.courseId;
+      return {
+        ...submission,
+        homework: {
+          ...serializeHomework(homework),
+          course: { id: homework.courseId, title: courseTitle },
+        },
+      };
+    });
+    return { homeworks, homework: homeworks, pending, submissions: submissionRows };
   });
 
   app.post("/courses/:courseId/homework", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
@@ -93,7 +138,8 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
     if (sendAccessDenial(reply, request, viewAccessDenial(access, "无权查看该课程作业"))) return;
     const where = access.isTeacher ? { courseId: params.data.courseId } : { courseId: params.data.courseId, published: true };
     const items = await prisma.homework.findMany({ where, orderBy: { title: "asc" } });
-    return { homeworks: items.map(serializeHomework) };
+    const homeworks = items.map(serializeHomework);
+    return { homeworks, homework: homeworks };
   });
 
   app.get("/homework/:id", { preHandler: authRequired() }, async (request, reply) => {
@@ -105,6 +151,131 @@ const homeworkRoutes: FastifyPluginAsync = async (app) => {
     if (sendAccessDenial(reply, request, viewAccessDenial(access))) return;
     if (!access.isTeacher && !hw.published) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
     return { homework: serializeHomework(hw) };
+  });
+
+  app.post("/homework/:id/attachments", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
+    const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "作业 ID 无效");
+    const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const courseAccess = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(courseAccess))) return;
+
+    const count = await prisma.homeworkAttachment.count({ where: { homeworkId: hw.id } });
+    if (count >= HOMEWORK_ATTACHMENT_MAX_COUNT) {
+      return sendError(reply, request, 400, "ATTACHMENT_LIMIT", `最多 ${HOMEWORK_ATTACHMENT_MAX_COUNT} 个附件`);
+    }
+
+    let fileBuffer: Buffer | null = null;
+    let originalName = "file.bin";
+    let mimeType = "application/octet-stream";
+    for await (const part of request.parts()) {
+      if (part.type === "file" && part.fieldname === "file") {
+        originalName = part.filename;
+        mimeType = part.mimetype;
+        fileBuffer = await part.toBuffer();
+      }
+    }
+    if (!fileBuffer) return sendError(reply, request, 400, "FILE_REQUIRED", "请上传 file 字段");
+    if (!attachmentExtAllowed(originalName)) {
+      return sendError(reply, request, 400, "FILE_TYPE_NOT_ALLOWED", "仅支持 .pdf/.doc/.docx/.zip/.rar");
+    }
+    if (fileBuffer.length > HOMEWORK_ATTACHMENT_MAX_BYTES) {
+      return sendError(reply, request, 400, "FILE_TOO_LARGE", "单个文件不能超过 20MB");
+    }
+
+    const saved = await saveHomeworkFile(hw.id, originalName, fileBuffer);
+    const attachment = await prisma.homeworkAttachment.create({
+      data: {
+        homeworkId: hw.id,
+        fileName: saved.fileName,
+        storedPath: saved.storedPath,
+        mimeType,
+        sizeBytes: fileBuffer.length,
+      },
+    });
+    return reply.code(201).send({ attachment });
+  });
+
+  app.delete("/homework/:id/attachments/:attachmentId", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
+    const params = z.object({ id: z.string().uuid(), attachmentId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "附件 ID 无效");
+    const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const courseAccess = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(courseAccess))) return;
+    const attachment = await prisma.homeworkAttachment.findFirst({
+      where: { id: params.data.attachmentId, homeworkId: hw.id },
+    });
+    if (!attachment) return sendError(reply, request, 404, "ATTACHMENT_NOT_FOUND", "附件不存在");
+    try {
+      await unlink(join(UPLOAD_ROOT, attachment.storedPath));
+    } catch {
+      // The database row is still removable when a file has already disappeared from disk.
+    }
+    await prisma.homeworkAttachment.delete({ where: { id: attachment.id } });
+    return { ok: true };
+  });
+
+  app.get("/homework/:id/attachments/:attachmentId/download", { preHandler: authRequired() }, async (request, reply) => {
+    const params = z.object({ id: z.string().uuid(), attachmentId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "附件 ID 无效");
+    const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const courseAccess = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, viewAccessDenial(courseAccess, "无权下载"))) return;
+    if (!courseAccess.isTeacher && !hw.published) {
+      return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    }
+    const attachment = await prisma.homeworkAttachment.findFirst({
+      where: { id: params.data.attachmentId, homeworkId: hw.id },
+    });
+    if (!attachment) return sendError(reply, request, 404, "ATTACHMENT_NOT_FOUND", "附件不存在");
+    const absolutePath = join(UPLOAD_ROOT, attachment.storedPath);
+    try {
+      await access(absolutePath);
+    } catch {
+      return sendError(reply, request, 404, "FILE_MISSING", "文件已丢失");
+    }
+    return reply
+      .header("Content-Type", attachment.mimeType ?? "application/octet-stream")
+      .header("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(attachment.fileName)}`)
+      .send(createReadStream(absolutePath));
+  });
+
+  app.post("/homework/:id/rubric-file", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {
+    const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return sendError(reply, request, 400, "INVALID_ID", "作业 ID 无效");
+    const hw = await prisma.homework.findUnique({ where: { id: params.data.id } });
+    if (!hw) return sendError(reply, request, 404, "HOMEWORK_NOT_FOUND", "作业不存在");
+    const courseAccess = await resolveCourseAccess(request.auth!.sub, hw.courseId);
+    if (sendAccessDenial(reply, request, teacherAccessDenial(courseAccess))) return;
+
+    let fileBuffer: Buffer | null = null;
+    let originalName = "rubric.pdf";
+    for await (const part of request.parts()) {
+      if (part.type === "file" && part.fieldname === "file") {
+        originalName = part.filename;
+        fileBuffer = await part.toBuffer();
+      }
+    }
+    if (!fileBuffer) return sendError(reply, request, 400, "FILE_REQUIRED", "请上传 file 字段");
+    if (!attachmentExtAllowed(originalName)) {
+      return sendError(reply, request, 400, "FILE_TYPE_NOT_ALLOWED", "评分标准文件格式不支持");
+    }
+    if (fileBuffer.length > HOMEWORK_ATTACHMENT_MAX_BYTES) {
+      return sendError(reply, request, 400, "FILE_TOO_LARGE", "文件不能超过 20MB");
+    }
+    const saved = await saveHomeworkFile(hw.id, originalName, fileBuffer);
+    const updated = await prisma.homework.update({
+      where: { id: hw.id },
+      data: {
+        rubricStoredPath: saved.storedPath,
+        rubricFileName: saved.fileName,
+        requirementsUpdatedAt: new Date(),
+      },
+    });
+    return { homework: serializeHomework(updated) };
   });
 
   app.patch("/homework/:id", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request, reply) => {

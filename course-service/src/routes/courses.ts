@@ -90,6 +90,40 @@ const coursesRoutes: FastifyPluginAsync = async (app) => {
     };
   });
 
+  app.get("/courses/:id/classes", { preHandler: authRequired() }, async (request, reply) => {
+    const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "课程 ID 无效" });
+
+    const course = await prisma.course.findUnique({
+      where: { id: params.data.id },
+      select: { id: true, teacherId: true, published: true },
+    });
+    if (!course) return reply.code(404).send({ error: "课程不存在" });
+
+    const isStaff = request.auth!.role === "ADMIN" || course.teacherId === request.auth!.sub;
+    const enrollment = isStaff
+      ? null
+      : await prisma.enrollment.findUnique({
+          where: { userId_courseId: { userId: request.auth!.sub, courseId: course.id } },
+        });
+    if (!isStaff && (!course.published || !enrollment)) {
+      return reply.code(403).send({ error: "无权查看课程班级" });
+    }
+
+    const classes = await prisma.class.findMany({
+      where: { courseId: course.id },
+      include: { _count: { select: { enrollments: true } } },
+      orderBy: { name: "asc" },
+    });
+    return {
+      classes: classes.map((item) => ({
+        id: item.id,
+        name: item.name,
+        enrollmentCount: item._count.enrollments,
+      })),
+    };
+  });
+
   app.get("/courses/mine", { preHandler: authRequired("TEACHER", "ADMIN") }, async (request) => {
     const courses = await prisma.course.findMany({ where: request.auth!.role === "ADMIN" ? {} : { teacherId: request.auth!.sub }, orderBy: { createdAt: "desc" }, include: { _count: { select: { enrollments: true } } } });
     return { courses: courses.map((course) => serialize(course)) };

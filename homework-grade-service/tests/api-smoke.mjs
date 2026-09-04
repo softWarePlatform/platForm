@@ -87,6 +87,22 @@ const created = await call(`${base}/courses/${primary.id}/homework`, {
 assert.equal(created.status, 201, JSON.stringify(created.body));
 const homeworkId = created.body.homework.id;
 
+const attachmentForm = new FormData();
+attachmentForm.append("file", new Blob(["homework attachment smoke"], { type: "application/pdf" }), "smoke.pdf");
+const attachment = await call(`${base}/homework/${homeworkId}/attachments`, {
+  method: "POST",
+  headers: { authorization: `Bearer ${teacher}` },
+  body: attachmentForm,
+});
+assert.equal(attachment.status, 201, JSON.stringify(attachment.body));
+const attachmentId = attachment.body.attachment.id;
+
+const attachmentDownload = await call(`${base}/homework/${homeworkId}/attachments/${attachmentId}/download`, {
+  headers: { authorization: `Bearer ${teacher}` },
+});
+assert.equal(attachmentDownload.status, 200);
+assert.ok(attachmentDownload.body.byteLength > 0);
+
 const published = await call(`${base}/homework/${homeworkId}/publish`, {
   method: "PATCH",
   headers: json(teacher),
@@ -98,6 +114,7 @@ assert.equal(published.body.homework.published, true);
 const studentList = await call(`${base}/courses/${primary.id}/homework`, { headers: { authorization: `Bearer ${student}` } });
 assert.equal(studentList.status, 200);
 assert.ok(studentList.body.homeworks.some((item) => item.id === homeworkId));
+assert.ok(studentList.body.homework.some((item) => item.id === homeworkId));
 
 const submitted = await call(`${base}/homework/${homeworkId}/submit`, {
   method: "POST",

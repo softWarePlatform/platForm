@@ -59,6 +59,10 @@ assert.equal(catalog.status, 200);
 const primary = catalog.body.courses.find((course) => course.courseCode === "CS-SVC-101");
 const conflicting = catalog.body.courses.find((course) => course.courseCode === "CS-SVC-102");
 assert.ok(primary && conflicting, "seed courses must exist");
+assert.ok(Array.isArray(primary.sections) && primary.sections.length > 0);
+assert.equal(typeof primary.isEnrolled, "boolean");
+assert.equal(typeof primary.isFull, "boolean");
+assert.equal(typeof primary.sections[0].scheduleDetail, "string");
 const enrolled = await call(`/enrollment/courses/${primary.id}/enroll`, { method: "POST", headers: json(student), body: "{}" });
 assert.ok([201, 409].includes(enrolled.status), "首次或重复执行时均可继续验证后续接口");
 const conflict = await call(`/enrollment/courses/${conflicting.id}/enroll`, { method: "POST", headers: json(student), body: "{}" });
@@ -101,9 +105,17 @@ assert.equal(notification.body.created, 1);
 assert.equal(notificationReplay.body.deduped, 1);
 const dashboard = await call("/dashboard/me", { headers: bearer(student) });
 assert.equal(dashboard.status, 200);
+assert.equal(typeof dashboard.body.semester?.key, "string");
+assert.equal(typeof dashboard.body.semester?.label, "string");
+assert.ok(Array.isArray(dashboard.body.deadlines));
 assert.equal(dashboard.body.dependencies.homework.status, "UNAVAILABLE");
 assert.equal(dashboard.body.dependencies.lab.status, "UNAVAILABLE");
 assert.equal(dashboard.body.courses.find((course) => course.id === primary.id).homework, null);
+assert.equal(typeof dashboard.body.courses.find((course) => course.id === primary.id).progressPercent, "number");
+
+const courseClasses = await call(`/courses/${primary.id}/classes`, { headers: bearer(teacher) });
+assert.equal(courseClasses.status, 200);
+assert.ok(Array.isArray(courseClasses.body.classes));
 
 const announcement = await call(`/courses/${primary.id}/announcements`, {
   method: "POST",
