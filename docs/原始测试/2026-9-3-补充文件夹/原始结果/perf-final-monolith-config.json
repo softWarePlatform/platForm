@@ -1,0 +1,33 @@
+{
+  "environment": "monolith-final-scoped",
+  "baseUrl": "http://127.0.0.1:13000",
+  "datasetId": "qa-equivalent-fixture-1788494745258-35208",
+  "sameMachineEvidence": "Windows Docker Desktop Kubernetes port-forward 2026-09-04T04:05:46.455Z",
+  "runs": 5,
+  "concurrency": 5,
+  "requestsPerTarget": 100,
+  "requestTimeoutMs": 10000,
+  "targets": [
+    {
+      "name": "dashboard-teacher",
+      "path": "/dashboard/me",
+      "headers": {
+        "authorization": "[redacted]"
+      }
+    },
+    {
+      "name": "homework-course",
+      "path": "/courses/2380ad11-d64e-4163-8871-2fefbb101d50/homework",
+      "headers": {
+        "authorization": "[redacted]"
+      }
+    },
+    {
+      "name": "lab-sets-course",
+      "path": "/courses/2380ad11-d64e-4163-8871-2fefbb101d50/lab-sets",
+      "headers": {
+        "authorization": "[redacted]"
+      }
+    }
+  ]
+}

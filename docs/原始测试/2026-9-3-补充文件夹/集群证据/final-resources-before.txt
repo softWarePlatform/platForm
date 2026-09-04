@@ -1,0 +1,10 @@
+NAME                                     CPU(cores)   MEMORY(bytes)   
+api-d79c98fd9-rr28d                      1m           105Mi           
+api-gateway-58cf974984-z52rt             1m           32Mi            
+course-service-6bb9859455-r84pd          1m           66Mi            
+homework-grade-service-6cfd84467-jjzpg   2m           41Mi            
+judge-worker-6644dfb45c-m8s59            2m           33Mi            
+lab-practice-service-5bc5c7b59f-8ndft    1m           150Mi           
+postgres-0                               8m           242Mi           
+redis-659689c7b9-4h78p                   12m          10Mi            
+web-59b559bd45-sq76m                     1m           22Mi            

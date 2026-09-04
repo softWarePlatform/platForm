@@ -1,0 +1,12 @@
+NAME                                     READY   STATUS      RESTARTS       AGE     IP            NODE                    NOMINATED NODE   READINESS GATES
+api-d79c98fd9-rr28d                      1/1     Running     0              6m      10.244.0.60   desktop-control-plane   <none>           <none>
+api-gateway-58cf974984-z52rt             1/1     Running     0              6m30s   10.244.0.59   desktop-control-plane   <none>           <none>
+course-service-6bb9859455-r84pd          1/1     Running     0              97m     10.244.0.48   desktop-control-plane   <none>           <none>
+db-migrate-gcpcs                         0/1     Completed   0              98m     10.244.0.43   desktop-control-plane   <none>           <none>
+homework-grade-service-6cfd84467-jjzpg   1/1     Running     0              97m     10.244.0.49   desktop-control-plane   <none>           <none>
+hpa-load                                 0/1     Completed   0              18h     <none>        desktop-control-plane   <none>           <none>
+judge-worker-6644dfb45c-m8s59            1/1     Running     0              97m     10.244.0.50   desktop-control-plane   <none>           <none>
+lab-practice-service-5bc5c7b59f-8ndft    1/1     Running     0              97m     10.244.0.51   desktop-control-plane   <none>           <none>
+postgres-0                               1/1     Running     3 (163m ago)   2d21h   10.244.0.10   desktop-control-plane   <none>           <none>
+redis-659689c7b9-4h78p                   1/1     Running     1 (163m ago)   10h     10.244.0.5    desktop-control-plane   <none>           <none>
+web-59b559bd45-sq76m                     1/1     Running     0              97m     10.244.0.52   desktop-control-plane   <none>           <none>

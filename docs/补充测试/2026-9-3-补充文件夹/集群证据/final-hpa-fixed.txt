@@ -1,0 +1,2 @@
+NAME          REFERENCE                TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+api-gateway   Deployment/api-gateway   cpu: 2%/60%   1         1         1          22h

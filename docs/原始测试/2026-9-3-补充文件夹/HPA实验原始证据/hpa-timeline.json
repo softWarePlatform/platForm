@@ -1,0 +1,93 @@
+{
+  "generatedAt": "2026-09-04T04:47:54.312Z",
+  "samples": [
+    {
+      "elapsedSeconds": 0,
+      "cpuPercent": 2,
+      "replicas": 1
+    },
+    {
+      "elapsedSeconds": 15,
+      "cpuPercent": 30,
+      "replicas": 1
+    },
+    {
+      "elapsedSeconds": 30,
+      "cpuPercent": 302,
+      "replicas": 1
+    },
+    {
+      "elapsedSeconds": 45,
+      "cpuPercent": 182,
+      "replicas": 3
+    },
+    {
+      "elapsedSeconds": 60,
+      "cpuPercent": 145,
+      "replicas": 3
+    },
+    {
+      "elapsedSeconds": 75,
+      "cpuPercent": 144,
+      "replicas": 3
+    },
+    {
+      "elapsedSeconds": 90,
+      "cpuPercent": 131,
+      "replicas": 3
+    },
+    {
+      "elapsedSeconds": 105,
+      "cpuPercent": 127,
+      "replicas": 5
+    },
+    {
+      "elapsedSeconds": 120,
+      "cpuPercent": 98,
+      "replicas": 5
+    },
+    {
+      "elapsedSeconds": 135,
+      "cpuPercent": 88,
+      "replicas": 5
+    },
+    {
+      "elapsedSeconds": 150,
+      "cpuPercent": 93,
+      "replicas": 5
+    },
+    {
+      "elapsedSeconds": 165,
+      "cpuPercent": 85,
+      "replicas": 5
+    }
+  ],
+  "finalState": {
+    "cpuPercent": 2,
+    "replicas": 1
+  },
+  "maxCpu": 302,
+  "maxReplicas": 5,
+  "rescaleEvents": [
+    {
+      "replicas": 3,
+      "reason": "cpu resource utilization (percentage of request) above target"
+    },
+    {
+      "replicas": 5,
+      "reason": "cpu resource utilization (percentage of request) above target"
+    },
+    {
+      "replicas": 4,
+      "reason": "All metrics below target"
+    },
+    {
+      "replicas": 2,
+      "reason": "All metrics below target"
+    },
+    {
+      "replicas": 1,
+      "reason": "All metrics below target"
+    }
+  ]
+}

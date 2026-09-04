@@ -1,0 +1,33 @@
+{
+  "environment": "microservices-final-scoped",
+  "baseUrl": "http://127.0.0.1:18080/api",
+  "datasetId": "qa-equivalent-fixture-1788494746602-22836",
+  "sameMachineEvidence": "Windows Docker Desktop Kubernetes port-forward 2026-09-04T04:05:47.311Z",
+  "runs": 5,
+  "concurrency": 5,
+  "requestsPerTarget": 100,
+  "requestTimeoutMs": 10000,
+  "targets": [
+    {
+      "name": "dashboard-teacher",
+      "path": "/dashboard/me",
+      "headers": {
+        "authorization": "[redacted]"
+      }
+    },
+    {
+      "name": "homework-course",
+      "path": "/courses/b136fa01-4fbd-48ad-b7ac-0895ee9ba609/homework",
+      "headers": {
+        "authorization": "[redacted]"
+      }
+    },
+    {
+      "name": "lab-sets-course",
+      "path": "/courses/b136fa01-4fbd-48ad-b7ac-0895ee9ba609/lab-sets",
+      "headers": {
+        "authorization": "[redacted]"
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "createdAt": "2026-09-04T04:05:46.455Z",
+  "environment": "monolith-final-scoped",
+  "baseUrl": "http://127.0.0.1:13000",
+  "datasetId": "qa-equivalent-fixture-1788494745258-35208",
+  "accounts": {
+    "teacher": "qa-perf-teacher-monolith-final-scoped-1788494745258-35208@example.test",
+    "student": "qa-perf-student-monolith-final-scoped-1788494745258-35208@example.test"
+  },
+  "resources": {
+    "courseId": "2380ad11-d64e-4163-8871-2fefbb101d50",
+    "homeworkId": "efdb28d9-9ca4-4e0c-a439-f2ada5b9ca3f",
+    "labSetId": "d6c40308-ee05-469f-bbaf-bc27b52724ab",
+    "labId": "0259f4c6-e341-48ca-b719-360c14a56c69",
+    "enrollmentCreated": true
+  },
+  "cleanup": "Retained as an isolated QA fixture. Do not use production data; remove only through a reviewed cleanup operation."
+}

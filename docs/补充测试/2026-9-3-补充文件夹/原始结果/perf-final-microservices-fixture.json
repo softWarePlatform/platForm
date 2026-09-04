@@ -1,0 +1,18 @@
+{
+  "createdAt": "2026-09-04T04:05:47.311Z",
+  "environment": "microservices-final-scoped",
+  "baseUrl": "http://127.0.0.1:18080/api",
+  "datasetId": "qa-equivalent-fixture-1788494746602-22836",
+  "accounts": {
+    "teacher": "qa-perf-teacher-microservices-final-scoped-1788494746602-22836@example.test",
+    "student": "qa-perf-student-microservices-final-scoped-1788494746602-22836@example.test"
+  },
+  "resources": {
+    "courseId": "b136fa01-4fbd-48ad-b7ac-0895ee9ba609",
+    "homeworkId": "0c93956f-069a-482d-a171-41d7a56e6aa7",
+    "labSetId": "bcd655df-6340-4fcf-a333-7b627ce4c8ef",
+    "labId": "694d1547-46f2-4f19-b245-dbc0dd541b11",
+    "enrollmentCreated": true
+  },
+  "cleanup": "Retained as an isolated QA fixture. Do not use production data; remove only through a reviewed cleanup operation."
+}
