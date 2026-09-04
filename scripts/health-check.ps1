@@ -42,7 +42,44 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace(($gatewayPod -join ""))
 $gatewayPodName = ($gatewayPod -join "").Trim()
 
 $targets = @("gateway-live", "gateway-ready", "course", "homework", "lab", "legacy-api", "web")
-$healthExpression = "Promise.all(['http://127.0.0.1:3081/health/live','http://127.0.0.1:3081/health/ready','http://course-service:3001/health/ready','http://homework-grade-service:3002/health/ready','http://lab-practice-service:3003/health/ready','http://api:3000/health/ready','http://web/'].map(url=>fetch(url).then(r=>{console.log(url+' '+r.status);if(!r.ok)throw new Error(url+' '+r.status)}))).then(()=>console.log('all health checks passed'))"
+$healthExpression = @'
+const urls = [
+  'http://127.0.0.1:3081/health/live',
+  'http://127.0.0.1:3081/health/ready',
+  'http://course-service:3001/health/ready',
+  'http://homework-grade-service:3002/health/ready',
+  'http://lab-practice-service:3003/health/ready',
+  'http://api:3000/health/ready',
+  'http://web/'
+];
+const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+async function waitForHealthy(url) {
+  let lastFailure = 'no response';
+  for (let attempt = 1; attempt <= 30; attempt += 1) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (response.ok) {
+        console.log(`${url} ${response.status} attempt=${attempt}`);
+        return;
+      }
+      lastFailure = `HTTP ${response.status}`;
+    } catch (error) {
+      lastFailure = error.cause?.code ?? error.code ?? error.message;
+    }
+    console.error(`${url} attempt=${attempt} failed: ${lastFailure}`);
+    if (attempt < 30) await sleep(2000);
+  }
+  throw new Error(`${url} remained unhealthy after 30 attempts: ${lastFailure}`);
+}
+
+Promise.all(urls.map(waitForHealthy))
+  .then(() => console.log('all health checks passed'))
+  .catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+'@
 Invoke-KubectlChecked `
   -Arguments @("--namespace", $Namespace, "exec", $gatewayPodName, "--", "node", "-e", $healthExpression) `
   -LogName "service-health-checks.log" `
