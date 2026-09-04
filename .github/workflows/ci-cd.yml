@@ -211,6 +211,8 @@ jobs:
       packages: write
     strategy:
       fail-fast: false
+      # Avoid overwhelming GHCR with all image and attestation uploads at once.
+      max-parallel: 3
       matrix:
         include:
           - component: api
@@ -287,7 +289,27 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
 
-      - name: Build and publish image
+      - name: Build and publish image (attempt 1)
+        id: publish-image
+        continue-on-error: true
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+          provenance: true
+          sbom: true
+
+      # GHCR can occasionally terminate a blob upload after all layers have
+      # already been built. A second attempt reuses the GHA cache and normally
+      # only repeats the registry upload. If it fails, this step fails the job.
+      - name: Retry image publish after registry failure
+        if: steps.publish-image.outcome == 'failure'
         uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.context }}
